@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="creative-medium" content="interactive-prototype">
+  <title>Album Cleaner</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, "SF Pro", "SF Pro Display", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background: #F2F2F7;
+      overscroll-behavior: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .app-root {
+      width: 100%;
+      height: 100%;
+    }
+    img {
+      -webkit-user-drag: none;
+      user-drag: none;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- React（本地文件，离线可用） -->
+  <script src="vendor/react.production.min.js"></script>
+  <script src="vendor/react-dom.production.min.js"></script>
+
+  <!-- 原生桥接接口 -->
+  <script>
+    window.NativeBridge = {
+      _data: null,
+      _listeners: [],
+      receiveData: function(data) {
+        this._data = data;
+        this._listeners.forEach(function(cb) { cb(data); });
+        this._listeners = [];
+      },
+      getData: function(callback) {
+        if (this._data) {
+          callback(this._data);
+        } else {
+          this._listeners.push(callback);
+          if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.photoApp) {
+            window.webkit.messageHandlers.photoApp.postMessage({ action: 'getData' });
+          }
+        }
+      },
+      deleteAssets: function(identifiers) {
+        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.photoApp) {
+          window.webkit.messageHandlers.photoApp.postMessage({ action: 'deleteAssets', identifiers: identifiers });
+        }
+      },
+      setFavorite: function(identifier, favorite) {
+        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.photoApp) {
+          window.webkit.messageHandlers.photoApp.postMessage({ action: 'setFavorite', identifier: identifier, favorite: favorite });
+        }
+      },
+      addToAlbum: function(assetIdentifier, albumIdentifier) {
+        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.photoApp) {
+          window.webkit.messageHandlers.photoApp.postMessage({ action: 'addToAlbum', assetIdentifier: assetIdentifier, albumIdentifier: albumIdentifier });
+        }
+      },
+      playMedia: function(identifier) {
+        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.photoApp) {
+          window.webkit.messageHandlers.photoApp.postMessage({ action: 'playMedia', identifier: identifier });
+        }
+      },
+      isNative: function() {
+        return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.photoApp);
+      }
+    };
+  </script>
+
+  <!-- 数据 -->
+  <script src="data.js"></script>
+
+  <!-- 预编译组件（普通JS，无运行时Babel依赖） -->
+  <script src="build/SwipeCardStack.js"></script>
+  <script src="build/HomePage.js"></script>
+  <script src="build/SortBottomBar.js"></script>
+  <script src="build/SortPage.js"></script>
+  <script src="build/TrashPage.js"></script>
+  <script src="build/SettingsPage.js"></script>
+  <script src="build/App.js"></script>
+
+  <div id="root"></div>
+
+  <!-- 主入口（含错误边界） -->
+  <script src="build/main.js"></script>
+</body>
+</html>

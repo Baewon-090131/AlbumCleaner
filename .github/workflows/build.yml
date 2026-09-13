@@ -1,0 +1,88 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Select Xcode
+      run: sudo xcode-select -switch /Applications/Xcode.app/Contents/Developer
+
+    - name: Print project tree
+      run: |
+        echo "=== FULL TREE (excluding .git) ==="
+        find . -path ./.git -prune -o -type f -print | sort
+        echo "=== END TREE ==="
+
+    - name: Install xcodegen
+      run: |
+        brew install xcodegen || brew upgrade xcodegen
+        xcodegen --version
+
+    - name: Generate Xcode project
+      run: |
+        xcodegen generate
+        echo "=== Generated project ==="
+        ls -la AlbumCleaner.xcodeproj/
+        ls -la AlbumCleaner.xcodeproj/xcshareddata/xcschemes/ 2>/dev/null || echo "no shared schemes dir"
+
+    - name: Verify project parses
+      run: |
+        xcodebuild -list -project AlbumCleaner.xcodeproj || echo "LIST_FAILED"
+
+    - name: Build unsigned app
+      run: |
+        set -o pipefail
+        xcodebuild -project AlbumCleaner.xcodeproj \
+          -scheme AlbumCleaner \
+          -configuration Release \
+          -sdk iphoneos \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          build 2>&1 | tee build.log | tail -200
+        echo "XCODEBUILD_EXIT=${PIPESTATUS[0]}"
+        test ${PIPESTATUS[0]} -eq 0
+
+    - name: Package IPA
+      run: |
+        echo "=== Locating built app ==="
+        APP_PATH=$(find "$HOME/Library/Developer/Xcode/DerivedData" -name "AlbumCleaner.app" -type d 2>/dev/null | head -1)
+        echo "APP_PATH=$APP_PATH"
+        if [ -z "$APP_PATH" ]; then
+          echo "ERROR: AlbumCleaner.app not found"
+          find "$HOME/Library/Developer/Xcode/DerivedData" -name "*.app" -type d 2>/dev/null | head -5 || echo "No .app found anywhere"
+          exit 1
+        fi
+        echo "=== App contents ==="
+        ls -la "$APP_PATH"
+        echo "=== WebContent in bundle check ==="
+        ls -la "$APP_PATH/WebContent/" 2>/dev/null || echo "WebContent MISSING in bundle"
+        PAYLOAD_DIR="Payload"
+        rm -rf "$PAYLOAD_DIR"
+        mkdir -p "$PAYLOAD_DIR"
+        cp -R "$APP_PATH" "$PAYLOAD_DIR/"
+        zip -r AlbumCleaner.ipa "$PAYLOAD_DIR"
+        ls -lh AlbumCleaner.ipa
+
+    - name: Upload build log on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-log
+        path: build.log
+        retention-days: 7
+
+    - name: Upload IPA
+      uses: actions/upload-artifact@v4
+      with:
+        name: AlbumCleaner-ipa
+        path: AlbumCleaner.ipa
+        retention-days: 30
