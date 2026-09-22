@@ -23,15 +23,16 @@ function TrashPage({
     setShowActionSheet(false);
     setSelectedPhoto(null);
   };
-  return React.createElement("div", {
+  return /*#__PURE__*/React.createElement("div", {
     style: {
       height: '100%',
       background: '#F2F2F7',
       display: 'flex',
       flexDirection: 'column'
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
+      // v2.3 液态玻璃
       background: 'rgba(250,250,252,0.72)',
       backdropFilter: 'blur(30px) saturate(200%)',
       WebkitBackdropFilter: 'blur(30px) saturate(200%)',
@@ -41,7 +42,7 @@ function TrashPage({
       borderBottom: '0.5px solid rgba(60,60,67,0.08)',
       boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)'
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       height: 44,
       display: 'flex',
@@ -50,7 +51,7 @@ function TrashPage({
       padding: '0 8px',
       position: 'relative'
     }
-  }, React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("button", {
     onClick: onBack,
     style: {
       display: 'flex',
@@ -78,18 +79,18 @@ function TrashPage({
       e.currentTarget.style.transform = 'scale(1)';
       e.currentTarget.style.opacity = '1';
     }
-  }, React.createElement("svg", {
+  }, /*#__PURE__*/React.createElement("svg", {
     width: "12",
     height: "20",
     viewBox: "0 0 12 20"
-  }, React.createElement("path", {
+  }, /*#__PURE__*/React.createElement("path", {
     d: "M10 2L2 10l8 8",
     stroke: themeColor,
     strokeWidth: "2.5",
     fill: "none",
     strokeLinecap: "round",
     strokeLinejoin: "round"
-  })), React.createElement("span", null, "\u8FD4\u56DE")), React.createElement("div", {
+  })), /*#__PURE__*/React.createElement("span", null, "\u8FD4\u56DE")), /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
       left: '50%',
@@ -101,11 +102,11 @@ function TrashPage({
       fontFamily: '-apple-system, "SF Pro", system-ui',
       letterSpacing: -0.4
     }
-  }, "\u56DE\u6536\u7AD9"), React.createElement("div", {
+  }, "\u56DE\u6536\u7AD9"), /*#__PURE__*/React.createElement("div", {
     style: {
       width: 60
     }
-  }))), React.createElement("div", {
+  }))), /*#__PURE__*/React.createElement("div", {
     style: {
       padding: '14px 20px',
       fontSize: 13,
@@ -113,20 +114,20 @@ function TrashPage({
       fontFamily: '-apple-system, "SF Pro", system-ui',
       textAlign: 'center'
     }
-  }, trashPhotos.length > 0 ? `共 ${trashPhotos.length} 张照片将在 30 天后删除` : '回收站为空'), React.createElement("div", {
+  }, trashPhotos.length > 0 ? `共 ${trashPhotos.length} 张照片将在 30 天后删除` : '回收站为空'), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
       overflowY: 'auto',
       padding: '0 2px',
       WebkitOverflowScrolling: 'touch'
     }
-  }, trashPhotos.length > 0 ? React.createElement("div", {
+  }, trashPhotos.length > 0 ? /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'grid',
       gridTemplateColumns: 'repeat(3, 1fr)',
       gap: 2
     }
-  }, trashPhotos.map((photo, idx) => React.createElement("div", {
+  }, trashPhotos.map((photo, idx) => /*#__PURE__*/React.createElement("div", {
     key: photo.id,
     onClick: () => handlePhotoClick(photo),
     style: {
@@ -147,7 +148,7 @@ function TrashPage({
     onMouseLeave: e => {
       e.currentTarget.style.transform = 'scale(1)';
     }
-  }, photo.thumbnailUrl && photo.thumbnailUrl.startsWith('photo://') && React.createElement("img", {
+  }, photo.thumbnailUrl && photo.thumbnailUrl.startsWith('photo://') && /*#__PURE__*/React.createElement("img", {
     src: photo.thumbnailUrl,
     alt: "",
     style: {
@@ -157,7 +158,7 @@ function TrashPage({
       display: 'block'
     },
     draggable: false
-  }), photo.isVideo && React.createElement("div", {
+  }), photo.isVideo && /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
       bottom: 4,
@@ -169,21 +170,21 @@ function TrashPage({
       padding: '1px 4px',
       borderRadius: 3
     }
-  }, React.createElement("svg", {
+  }, /*#__PURE__*/React.createElement("svg", {
     width: "6",
     height: "7",
     viewBox: "0 0 6 7"
-  }, React.createElement("polygon", {
+  }, /*#__PURE__*/React.createElement("polygon", {
     points: "0,0 6,3.5 0,7",
     fill: "#fff"
-  })), React.createElement("span", {
+  })), /*#__PURE__*/React.createElement("span", {
     style: {
       color: '#fff',
       fontSize: 9,
       fontWeight: 500,
       fontFamily: '-apple-system, "SF Pro", system-ui'
     }
-  }, photo.duration))))) : React.createElement("div", {
+  }, photo.duration))))) : /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       flexDirection: 'column',
@@ -193,23 +194,24 @@ function TrashPage({
       gap: 10,
       animation: 'fadeIn 0.4s ease'
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 48,
       opacity: 0.3
     }
-  }, "\uD83D\uDDD1"), React.createElement("div", {
+  }, "\uD83D\uDDD1"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 16,
       color: 'rgba(60,60,67,0.5)',
       fontFamily: '-apple-system, "SF Pro", system-ui'
     }
-  }, "\u56DE\u6536\u7AD9\u6CA1\u6709\u7167\u7247")), React.createElement("div", {
+  }, "\u56DE\u6536\u7AD9\u6CA1\u6709\u7167\u7247")), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 80
     }
-  })), React.createElement("div", {
+  })), /*#__PURE__*/React.createElement("div", {
     style: {
+      // v2.3 液态玻璃
       background: 'rgba(250,250,252,0.72)',
       backdropFilter: 'blur(30px) saturate(200%)',
       WebkitBackdropFilter: 'blur(30px) saturate(200%)',
@@ -218,7 +220,7 @@ function TrashPage({
       padding: '12px 16px calc(12px + var(--ios-safe-bottom))',
       animation: 'slideUpBar 0.3s ease'
     }
-  }, React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("button", {
     onClick: () => trashPhotos.length > 0 && setShowAlert(true),
     disabled: trashPhotos.length === 0,
     style: {
@@ -246,7 +248,7 @@ function TrashPage({
     onMouseLeave: e => {
       e.currentTarget.style.transform = 'scale(1)';
     }
-  }, "\u5220\u9664\u5168\u90E8")), showAlert && React.createElement(IOSAlert, {
+  }, "\u5220\u9664\u5168\u90E8")), showAlert && /*#__PURE__*/React.createElement(IOSAlert, {
     title: "\u5220\u9664\u7167\u7247\uFF1F",
     message: `将从回收站中永久删除 ${trashPhotos.length} 张照片，此操作不可撤销。`,
     actions: [{
@@ -261,7 +263,7 @@ function TrashPage({
         setShowAlert(false);
       }
     }]
-  }), showActionSheet && selectedPhoto && React.createElement(IOSActionSheet, {
+  }), showActionSheet && selectedPhoto && /*#__PURE__*/React.createElement(IOSActionSheet, {
     title: `#${selectedPhoto.id}`,
     message: "\u9009\u62E9\u64CD\u4F5C",
     actions: [{
@@ -284,7 +286,7 @@ function IOSAlert({
   message,
   actions
 }) {
-  return React.createElement("div", {
+  return /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
       inset: 0,
@@ -296,7 +298,7 @@ function IOSAlert({
       padding: '0 40px',
       animation: 'fadeIn 0.2s ease'
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       background: 'rgba(242,242,247,0.95)',
       backdropFilter: 'blur(30px) saturate(180%)',
@@ -307,13 +309,13 @@ function IOSAlert({
       overflow: 'hidden',
       animation: 'alertScaleIn 0.25s cubic-bezier(0.32, 0.72, 0, 1)'
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       padding: '20px 16px 14px',
       textAlign: 'center',
       borderBottom: '0.5px solid rgba(60,60,67,0.15)'
     }
-  }, title && React.createElement("div", {
+  }, title && /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 17,
       fontWeight: 600,
@@ -322,19 +324,19 @@ function IOSAlert({
       letterSpacing: -0.4,
       marginBottom: message ? 6 : 0
     }
-  }, title), message && React.createElement("div", {
+  }, title), message && /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 13,
       color: 'rgba(60,60,67,0.8)',
       fontFamily: '-apple-system, "SF Pro", system-ui',
       lineHeight: 1.4
     }
-  }, message)), React.createElement("div", {
+  }, message)), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       flexDirection: actions.length === 2 ? 'row' : 'column'
     }
-  }, actions.map((action, i) => React.createElement("button", {
+  }, actions.map((action, i) => /*#__PURE__*/React.createElement("button", {
     key: i,
     onClick: action.onClick,
     style: {
@@ -369,7 +371,7 @@ function IOSActionSheet({
   actions,
   onCancel
 }) {
-  return React.createElement("div", {
+  return /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
       inset: 0,
@@ -381,13 +383,13 @@ function IOSActionSheet({
       animation: 'fadeIn 0.2s ease'
     },
     onClick: onCancel
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     onClick: e => e.stopPropagation(),
     style: {
       padding: '8px 10px calc(8px + var(--ios-safe-bottom))',
       animation: 'slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1)'
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       background: 'rgba(242,242,247,0.95)',
       backdropFilter: 'blur(30px) saturate(180%)',
@@ -396,26 +398,26 @@ function IOSActionSheet({
       overflow: 'hidden',
       marginBottom: 8
     }
-  }, title && React.createElement("div", {
+  }, title && /*#__PURE__*/React.createElement("div", {
     style: {
       padding: '14px 16px 10px',
       textAlign: 'center',
       borderBottom: '0.5px solid rgba(60,60,67,0.12)'
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 13,
       color: 'rgba(60,60,67,0.6)',
       fontFamily: '-apple-system, "SF Pro", system-ui'
     }
-  }, title), message && React.createElement("div", {
+  }, title), message && /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 13,
       color: 'rgba(60,60,67,0.6)',
       fontFamily: '-apple-system, "SF Pro", system-ui',
       marginTop: 2
     }
-  }, message)), actions.map((action, i) => React.createElement("button", {
+  }, message)), actions.map((action, i) => /*#__PURE__*/React.createElement("button", {
     key: i,
     onClick: action.onClick,
     style: {
@@ -442,7 +444,7 @@ function IOSActionSheet({
     onMouseLeave: e => {
       e.currentTarget.style.background = 'transparent';
     }
-  }, action.label))), React.createElement("button", {
+  }, action.label))), /*#__PURE__*/React.createElement("button", {
     onClick: onCancel,
     style: {
       width: '100%',

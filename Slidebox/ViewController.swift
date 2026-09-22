@@ -165,6 +165,15 @@ class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKSc
     // 记录已取消的加载任务，防止回调时重复完成
     private var cancelledTasks: Set<ObjectIdentifier> = []
 
+    // v2.3.2：PNG 数据二级缓存（UIImage 之上再缓存编码后的 PNG Data，
+    // 避免每次 photo:// 请求都重复 PNG 编码，删除/切换照片时响应快、不闪黑）
+    // totalCostLimit 50MB，NSCache 会自动按内存压力驱逐
+    private let pngDataCache: NSCache<NSString, NSData> = {
+        let cache = NSCache<NSString, NSData>()
+        cache.totalCostLimit = 50 * 1024 * 1024
+        return cache
+    }()
+
     func webView(_ webView: WKWebView, start urlSchemeTask: WKURLSchemeTask) {
         let taskID = ObjectIdentifier(urlSchemeTask)
         guard !cancelledTasks.contains(taskID) else { return }
@@ -194,22 +203,34 @@ class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKSc
         let targetSize = photoManager.targetSizeForAsset(asset)
 
         photoManager.requestThumbnail(for: asset, size: targetSize) { [weak self] image in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                // 任务已被取消时不再回调
-                guard !self.cancelledTasks.contains(taskID) else {
-                    self.cancelledTasks.remove(taskID)
-                    return
-                }
-                guard let image = image, let pngData = image.pngData() else {
-                    urlSchemeTask.didFailWithError(NSError(domain: "PhotoScheme", code: -3, userInfo: nil))
-                    return
-                }
-                let response = URLResponse(url: url, mimeType: "image/png", expectedContentLength: pngData.count, textEncodingName: nil)
-                urlSchemeTask.didReceive(response)
-                urlSchemeTask.didReceive(pngData)
-                urlSchemeTask.didFinish()
+            // requestThumbnail 保证 completion 在主线程回调
+            // （cache hit 同步；cache miss 内部已 DispatchQueue.main.async）
+            guard let self = self else { return }
+            // 任务已被取消时不再回调
+            guard !self.cancelledTasks.contains(taskID) else {
+                self.cancelledTasks.remove(taskID)
+                return
             }
+            guard let image = image else {
+                urlSchemeTask.didFailWithError(NSError(domain: "PhotoScheme", code: -3, userInfo: nil))
+                return
+            }
+            // PNG 数据二级缓存：命中直接使用，避免重复 PNG 编码（删除后下一张秒显、不闪黑）
+            let cacheKey = "\(identifier)|\(Int(targetSize.width))x\(Int(targetSize.height))" as NSString
+            let pngData: Data
+            if let cached = self.pngDataCache.object(forKey: cacheKey) {
+                pngData = cached as Data
+            } else if let encoded = image.pngData() {
+                self.pngDataCache.setObject(encoded as NSData, forKey: cacheKey, cost: encoded.count)
+                pngData = encoded
+            } else {
+                urlSchemeTask.didFailWithError(NSError(domain: "PhotoScheme", code: -3, userInfo: nil))
+                return
+            }
+            let response = URLResponse(url: url, mimeType: "image/png", expectedContentLength: pngData.count, textEncodingName: nil)
+            urlSchemeTask.didReceive(response)
+            urlSchemeTask.didReceive(pngData)
+            urlSchemeTask.didFinish()
         }
     }
 

@@ -4,6 +4,17 @@ function PhotoCard({ photo, onTap }) {
     photo.thumbnailUrl.startsWith('photo://') || photo.thumbnailUrl.startsWith('data:')
   );
 
+  // v2.3.2：图片加载完成前保持透明，加载完成后 0.18s 淡入。
+  // 删除/切换照片时新图就绪前不再长时间露出纯黑（配合原生 PNG 缓存秒显）
+  const imgRef = React.useRef(null);
+  const [imgLoaded, setImgLoaded] = React.useState(false);
+  React.useEffect(() => {
+    setImgLoaded(false);
+    const img = imgRef.current;
+    // 已加载完成（如缓存命中）直接显示，不闪不淡
+    if (img && img.complete && img.naturalWidth > 0) setImgLoaded(true);
+  }, [photo.id]);
+
   return (
     <div
       onClick={(e) => { e.stopPropagation(); if (onTap) onTap(photo); }}
@@ -19,10 +30,13 @@ function PhotoCard({ photo, onTap }) {
       }}>
       {hasRealImage ? (
         <img
+          ref={imgRef}
           src={photo.thumbnailUrl}
           alt=""
           decoding="async"
           draggable={false}
+          onLoad={() => setImgLoaded(true)}
+          onError={() => setImgLoaded(true)}
           style={{
             width: '100%',
             height: '100%',
@@ -30,6 +44,8 @@ function PhotoCard({ photo, onTap }) {
             objectFit: 'contain',
             display: 'block',
             pointerEvents: 'none',
+            opacity: imgLoaded ? 1 : 0,
+            transition: 'opacity 0.18s ease',
           }}
         />
       ) : (

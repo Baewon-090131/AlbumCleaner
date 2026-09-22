@@ -1,9 +1,21 @@
+// 照片卡片组件 - v2.3：原生相册式完整显示 + 点击全屏/LIVE标识
 function PhotoCard({
   photo,
   onTap
 }) {
   const hasRealImage = photo.thumbnailUrl && (photo.thumbnailUrl.startsWith('photo://') || photo.thumbnailUrl.startsWith('data:'));
-  return React.createElement("div", {
+
+  // v2.3.2：图片加载完成前保持透明，加载完成后 0.18s 淡入。
+  // 删除/切换照片时新图就绪前不再长时间露出纯黑（配合原生 PNG 缓存秒显）
+  const imgRef = React.useRef(null);
+  const [imgLoaded, setImgLoaded] = React.useState(false);
+  React.useEffect(() => {
+    setImgLoaded(false);
+    const img = imgRef.current;
+    // 已加载完成（如缓存命中）直接显示，不闪不淡
+    if (img && img.complete && img.naturalWidth > 0) setImgLoaded(true);
+  }, [photo.id]);
+  return /*#__PURE__*/React.createElement("div", {
     onClick: e => {
       e.stopPropagation();
       if (onTap) onTap(photo);
@@ -18,19 +30,28 @@ function PhotoCard({
       overflow: 'hidden',
       cursor: 'pointer'
     }
-  }, hasRealImage ? React.createElement("img", {
+  }, hasRealImage ? /*#__PURE__*/React.createElement("img", {
+    ref: imgRef,
     src: photo.thumbnailUrl,
     alt: "",
     decoding: "async",
     draggable: false,
+    onLoad: () => setImgLoaded(true),
+    onError: () => setImgLoaded(true),
     style: {
       width: '100%',
       height: '100%',
+      // 原生相册模式：contain 完整显示整张照片，任意比例不变形不丢内容（黑边补齐）
       objectFit: 'contain',
       display: 'block',
-      pointerEvents: 'none'
+      pointerEvents: 'none',
+      opacity: imgLoaded ? 1 : 0,
+      transition: 'opacity 0.18s ease'
     }
-  }) : React.createElement("div", {
+  }) :
+  /*#__PURE__*/
+  // 模拟数据占位：渐变色块 + 图片符号（网页模拟器可见）
+  React.createElement("div", {
     style: {
       position: 'absolute',
       inset: 0,
@@ -40,14 +61,14 @@ function PhotoCard({
       justifyContent: 'center',
       pointerEvents: 'none'
     }
-  }, React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 56,
       color: 'rgba(255,255,255,0.75)',
       filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.3))',
       userSelect: 'none'
     }
-  }, "\uD83D\uDDBC\uFE0F")), photo.isVideo && React.createElement("div", {
+  }, "\uD83D\uDDBC\uFE0F")), photo.isVideo && /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
       bottom: 16,
@@ -61,21 +82,21 @@ function PhotoCard({
       borderRadius: 9,
       pointerEvents: 'none'
     }
-  }, React.createElement("svg", {
+  }, /*#__PURE__*/React.createElement("svg", {
     width: "11",
     height: "13",
     viewBox: "0 0 10 12"
-  }, React.createElement("polygon", {
+  }, /*#__PURE__*/React.createElement("polygon", {
     points: "0,0 10,6 0,12",
     fill: "#fff"
-  })), React.createElement("span", {
+  })), /*#__PURE__*/React.createElement("span", {
     style: {
       color: '#fff',
       fontSize: 12,
       fontWeight: 500,
       fontFamily: '-apple-system, "SF Pro", system-ui'
     }
-  }, photo.duration)), photo.isLivePhoto && React.createElement("div", {
+  }, photo.duration)), photo.isLivePhoto && /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
       bottom: 16,
@@ -88,7 +109,7 @@ function PhotoCard({
       borderRadius: 9,
       pointerEvents: 'none'
     }
-  }, React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("span", {
     style: {
       color: '#fff',
       fontSize: 12,
@@ -96,10 +117,12 @@ function PhotoCard({
       letterSpacing: 1,
       fontFamily: '-apple-system, "SF Pro", system-ui'
     }
-  }, "LIVE")), React.createElement(SwipeHint, {
+  }, "LIVE")), /*#__PURE__*/React.createElement(SwipeHint, {
     photo: photo
   }));
 }
+
+// 拖拽时显示的操作方向提示
 function SwipeHint({
   photo
 }) {
@@ -111,6 +134,7 @@ function SwipeHint({
     };
     window.__swipeHintBus.subscribe(handler);
     return () => {
+      // 防御：页面卸载时父组件可能已删除全局总线
       if (window.__swipeHintBus) window.__swipeHintBus.unsubscribe(handler);
     };
   }, [photo.id]);
@@ -153,7 +177,7 @@ function SwipeHint({
       text: '收藏'
     }
   }[hint];
-  return React.createElement("div", {
+  return /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
       zIndex: 30,
@@ -171,6 +195,13 @@ function SwipeHint({
     }
   }, styles.text);
 }
+
+// 全幅卡片展示组件（v2.3）
+// - 原生相册式：照片 contain 完整显示，黑底
+// - 滑动手势（slidebox 风格）：上滑删除 / 左滑下一张 / 右滑撤回 / 下滑收藏
+// - 底部按钮模式并存（撤回/删除/下一张/相簿）
+// - 暴露 playFly(type, onComplete)：按钮操作时播放飞出/滑入动效
+// - onPhotoTap：点击媒体项目进入全屏观看
 const SwipeCardStack = React.forwardRef(function SwipeCardStack({
   photos,
   currentIndex,
@@ -193,6 +224,8 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
     moved: false
   });
   const suppressClickRef = React.useRef(false);
+
+  // 播放飞出/滑入动效（拖拽与按钮共用）
   const playFly = (type, onComplete) => {
     const card = cardRef.current;
     if (animatingRef.current || !card) {
@@ -202,10 +235,11 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
     animatingRef.current = true;
     const EASE = 'cubic-bezier(0.32, 0.72, 0, 1)';
     if (type === 'in') {
+      // 滑入（撤回后新卡片从右侧进入）
       card.style.transition = 'none';
       card.style.transform = 'translateX(130vw)';
       card.style.opacity = '0';
-      void card.offsetWidth;
+      void card.offsetWidth; // 强制重排，确保过渡生效
       card.style.transition = `all 0.38s ${EASE}`;
       card.style.transform = 'translateX(0)';
       card.style.opacity = '1';
@@ -214,6 +248,7 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
         if (onComplete) onComplete();
       }, 360);
     } else {
+      // 飞出：删除↑ / 下一张← / 撤回→ / 收藏↓
       var transforms = {
         up: 'translateY(-130vh) rotate(0deg)',
         left: 'translateX(-130vw) rotate(-12deg)',
@@ -225,6 +260,8 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
       card.style.opacity = '0';
       setTimeout(function () {
         animatingRef.current = false;
+        // 关键修复：飞出动画结束后必须复位卡片位置，
+        // 否则残留的 translateX(-130vw) 会让下一张照片渲染在屏幕外（黑屏）
         card.style.transition = 'none';
         card.style.transform = 'translateX(0) translateY(0) rotate(0deg)';
         card.style.opacity = '1';
@@ -240,6 +277,8 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
   }));
   const currentPhoto = photos[currentIndex];
   const nextPhoto = photos[currentIndex + 1];
+
+  // 拖拽方向提示总线（ref 直驱，零 React 渲染）
   const hintBus = React.useMemo(() => {
     const listeners = [];
     return {
@@ -260,6 +299,8 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
       if (window.__swipeHintBus === hintBus) delete window.__swipeHintBus;
     };
   }, [hintBus]);
+
+  // 手势：pointerdown/move/up（拖动跟手，rAF 节流，零 React 渲染）
   const onPointerDown = e => {
     if (animatingRef.current) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -288,6 +329,8 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
     if (Math.abs(dx) > 6 || Math.abs(dy) > 6) drag.moved = true;
     drag.dx = dx;
     drag.dy = dy;
+
+    // 方向提示（超过阈值一半时显示）
     if (drag.moved) {
       const TH = 90;
       const hintDir = Math.abs(dx) > Math.abs(dy) ? dx < -TH * 0.4 ? 'left' : dx > TH * 0.4 ? 'right' : null : dy < -TH * 0.4 ? 'up' : dy > TH * 0.4 ? 'down' : null;
@@ -317,13 +360,16 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
       dy = drag.dy;
     const TH = 90;
     if (drag.moved && (Math.abs(dx) > TH || Math.abs(dy) > TH)) {
+      // 已达成操作阈值 → 飞出并执行对应操作
       suppressClickRef.current = true;
       if (Math.abs(dx) > Math.abs(dy)) {
         if (dx < 0) {
+          // 左滑：保留并下一张
           playFly('left', function () {
             if (onSwipeLeft) onSwipeLeft();
           });
         } else {
+          // 右滑：撤回上一个操作，新卡从右侧滑入
           playFly('right', function () {
             if (onSwipeRight) onSwipeRight();
             setTimeout(function () {
@@ -333,16 +379,19 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
         }
       } else {
         if (dy < 0) {
+          // 上滑：删除
           playFly('up', function () {
             if (onSwipeUp) onSwipeUp();
           });
         } else {
+          // 下滑：收藏
           playFly('down', function () {
             if (onSwipeDown) onSwipeDown();
           });
         }
       }
     } else {
+      // 未达阈值 → 回弹到原位
       const card = cardRef.current;
       if (card) {
         card.style.transition = 'transform 0.28s cubic-bezier(0.32, 0.72, 0, 1)';
@@ -365,6 +414,7 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
     }
   };
   const handlePhotoTap = photo => {
+    // 拖拽后浏览器会触发 click，用标志吞掉
     if (suppressClickRef.current) {
       suppressClickRef.current = false;
       return;
@@ -372,7 +422,7 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
     if (onPhotoTap) onPhotoTap(photo);
   };
   if (!currentPhoto) {
-    return React.createElement("div", {
+    return /*#__PURE__*/React.createElement("div", {
       style: {
         flex: 1,
         background: '#000',
@@ -383,11 +433,11 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
         gap: 12,
         animation: 'fadeIn 0.4s ease'
       }
-    }, React.createElement("div", {
+    }, /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 52
       }
-    }, "\uD83C\uDF89"), React.createElement("div", {
+    }, "\uD83C\uDF89"), /*#__PURE__*/React.createElement("div", {
       style: {
         fontFamily: '-apple-system, "SF Pro", system-ui',
         fontSize: 17,
@@ -395,7 +445,7 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
       }
     }, "\u672C\u6708\u9879\u76EE\u5DF2\u6574\u7406\u5B8C\u6BD5"));
   }
-  return React.createElement("div", {
+  return /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
       position: 'relative',
@@ -403,7 +453,7 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
       overflow: 'hidden',
       touchAction: 'none'
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     key: currentPhoto.id,
     ref: cardRef,
     onPointerDown: onPointerDown,
@@ -416,10 +466,10 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
       willChange: 'transform, opacity',
       cursor: 'grab'
     }
-  }, React.createElement(PhotoCard, {
+  }, /*#__PURE__*/React.createElement(PhotoCard, {
     photo: currentPhoto,
     onTap: handlePhotoTap
-  })), nextPhoto && nextPhoto.thumbnailUrl && React.createElement("img", {
+  })), nextPhoto && nextPhoto.thumbnailUrl && /*#__PURE__*/React.createElement("img", {
     src: nextPhoto.thumbnailUrl,
     alt: "",
     "aria-hidden": "true",

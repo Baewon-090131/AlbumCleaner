@@ -1,3 +1,4 @@
+// 首页 - 月份列表
 function HomePage({
   months,
   onMonthClick,
@@ -6,14 +7,14 @@ function HomePage({
   themeColor = '#007AFF',
   trashCount
 }) {
-  return React.createElement("div", {
+  return /*#__PURE__*/React.createElement("div", {
     style: {
       height: '100%',
       background: '#F2F2F7',
       display: 'flex',
       flexDirection: 'column'
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'sticky',
       top: 0,
@@ -25,7 +26,7 @@ function HomePage({
       borderBottom: '0.5px solid rgba(60,60,67,0.08)',
       boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)'
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'relative',
       padding: '4px 20px 12px',
@@ -33,7 +34,7 @@ function HomePage({
       justifyContent: 'space-between',
       alignItems: 'flex-end'
     }
-  }, React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("button", {
     onClick: onSettingsClick,
     style: {
       background: 'none',
@@ -55,24 +56,24 @@ function HomePage({
     onMouseLeave: e => {
       e.currentTarget.style.transform = 'scale(1)';
     }
-  }, React.createElement("svg", {
+  }, /*#__PURE__*/React.createElement("svg", {
     width: "24",
     height: "24",
     viewBox: "0 0 24 24",
     fill: "none"
-  }, React.createElement("circle", {
+  }, /*#__PURE__*/React.createElement("circle", {
     cx: "12",
     cy: "12",
     r: "3",
     stroke: themeColor,
     strokeWidth: "2"
-  }), React.createElement("path", {
+  }), /*#__PURE__*/React.createElement("path", {
     d: "M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z",
     stroke: themeColor,
     strokeWidth: "2",
     strokeLinecap: "round",
     strokeLinejoin: "round"
-  }))), React.createElement("h1", {
+  }))), /*#__PURE__*/React.createElement("h1", {
     style: {
       margin: 0,
       fontSize: 28,
@@ -82,7 +83,7 @@ function HomePage({
       color: '#000',
       lineHeight: 1.1
     }
-  }, "Album Cleaner"), React.createElement("button", {
+  }, "Album Cleaner"), /*#__PURE__*/React.createElement("button", {
     onClick: onTrashClick,
     style: {
       background: 'none',
@@ -105,18 +106,18 @@ function HomePage({
     onMouseLeave: e => {
       e.currentTarget.style.transform = 'scale(1)';
     }
-  }, React.createElement("svg", {
+  }, /*#__PURE__*/React.createElement("svg", {
     width: "22",
     height: "22",
     viewBox: "0 0 24 24",
     fill: "none"
-  }, React.createElement("path", {
+  }, /*#__PURE__*/React.createElement("path", {
     d: "M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z",
     stroke: themeColor,
     strokeWidth: "2",
     strokeLinecap: "round",
     strokeLinejoin: "round"
-  })), trashCount > 0 && React.createElement("div", {
+  })), trashCount > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
       top: -2,
@@ -133,14 +134,14 @@ function HomePage({
       justifyContent: 'center',
       padding: '0 4px'
     }
-  }, trashCount > 99 ? '99+' : trashCount)))), React.createElement("div", {
+  }, trashCount > 99 ? '99+' : trashCount)))), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
       overflowY: 'auto',
       overflowX: 'hidden',
       WebkitOverflowScrolling: 'touch'
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       padding: '16px 20px 8px',
       fontSize: 13,
@@ -150,30 +151,32 @@ function HomePage({
       letterSpacing: -0.08,
       fontWeight: 500
     }
-  }, "\u6708\u4EFD"), React.createElement("div", {
+  }, "\u6708\u4EFD"), /*#__PURE__*/React.createElement("div", {
     style: {
       padding: '0 16px 24px',
       display: 'flex',
       flexDirection: 'column',
       gap: 16
     }
-  }, months.map((month, idx) => React.createElement(MonthCard, {
+  }, months.map((month, idx) => /*#__PURE__*/React.createElement(MonthCard, {
     key: month.id,
     month: month,
     index: idx,
     onClick: () => onMonthClick(month)
-  }))), React.createElement("div", {
+  }))), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 'var(--ios-safe-bottom)'
     }
   })));
 }
+
+// 月份卡片（v2.3：液态玻璃质感）
 function MonthCard({
   month,
   onClick,
   index = 0
 }) {
-  return React.createElement("div", {
+  return /*#__PURE__*/React.createElement("div", {
     onClick: onClick,
     style: {
       background: 'rgba(255,255,255,0.62)',
@@ -201,7 +204,7 @@ function MonthCard({
       e.currentTarget.style.transform = 'scale(1)';
       e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(0,0,0,0.05)';
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       width: 48,
       height: 48,
@@ -214,20 +217,20 @@ function MonthCard({
       justifyContent: 'center',
       flexShrink: 0
     }
-  }, React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 18,
       fontWeight: 600,
       color: 'rgba(60,60,67,0.7)',
       fontFamily: '-apple-system, "SF Pro", system-ui'
     }
-  }, month.shortTitle)), React.createElement("div", {
+  }, month.shortTitle)), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
       marginLeft: 14,
       minWidth: 0
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 17,
       fontWeight: 600,
@@ -235,21 +238,21 @@ function MonthCard({
       fontFamily: '-apple-system, "SF Pro", system-ui',
       letterSpacing: -0.4
     }
-  }, month.title), React.createElement("div", {
+  }, month.title), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 13,
       color: 'rgba(60,60,67,0.6)',
       fontFamily: '-apple-system, "SF Pro", system-ui',
       marginTop: 2
     }
-  }, month.photos.length, " \u4E2A\u9879\u76EE")), React.createElement("svg", {
+  }, month.photos.length, " \u4E2A\u9879\u76EE")), /*#__PURE__*/React.createElement("svg", {
     width: "8",
     height: "14",
     viewBox: "0 0 8 14",
     style: {
       flexShrink: 0
     }
-  }, React.createElement("path", {
+  }, /*#__PURE__*/React.createElement("path", {
     d: "M1 1l6 6-6 6",
     stroke: "rgba(60,60,67,0.3)",
     strokeWidth: "2",

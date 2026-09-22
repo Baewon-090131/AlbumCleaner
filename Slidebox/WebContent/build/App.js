@@ -14,6 +14,8 @@ function App() {
   const [historyStack, setHistoryStack] = React.useState([]);
   const [addedFeedback, setAddedFeedback] = React.useState(null);
   const [toastMessage, setToastMessage] = React.useState(null);
+
+  // 加载数据
   React.useEffect(() => {
     if (window.DataLoader) {
       window.DataLoader.load(function (data) {
@@ -145,6 +147,7 @@ function App() {
       };
     }));
     setProcessedCount(prev => prev + 1);
+    // 调用原生桥接收藏
     if (window.NativeBridge && window.NativeBridge.isNative() && !photo.id.startsWith('mock_')) {
       window.NativeBridge.setFavorite(photo.id, true);
     }
@@ -169,6 +172,7 @@ function App() {
     setAddedFeedback(album.name);
     setTimeout(() => setAddedFeedback(null), 1000);
     setProcessedCount(prev => prev + 1);
+    // 调用原生桥接添加到相簿
     if (window.NativeBridge && window.NativeBridge.isNative() && !photo.id.startsWith('mock_')) {
       window.NativeBridge.addToAlbum(photo.id, album.id);
     }
@@ -185,6 +189,7 @@ function App() {
   const handleDeleteOne = photoId => {
     const photo = trashPhotos.find(p => p.id === photoId);
     setTrashPhotos(prev => prev.filter(p => p.id !== photoId));
+    // 调用原生桥接彻底删除
     if (photo && window.NativeBridge && window.NativeBridge.isNative() && !photo.id.startsWith('mock_')) {
       window.NativeBridge.deleteAssets([photo.id]);
     }
@@ -192,6 +197,7 @@ function App() {
   const handleDeleteAll = () => {
     const realIds = trashPhotos.filter(p => !p.id.startsWith('mock_')).map(p => p.id);
     setTrashPhotos([]);
+    // 调用原生桥接彻底删除
     if (realIds.length > 0 && window.NativeBridge && window.NativeBridge.isNative()) {
       window.NativeBridge.deleteAssets(realIds);
     }
@@ -199,8 +205,10 @@ function App() {
   const handleThemeChange = color => {
     setThemeColor(color);
   };
+
+  // 加载中状态
   if (isLoading) {
-    return React.createElement("div", {
+    return /*#__PURE__*/React.createElement("div", {
       style: {
         width: '100%',
         height: '100%',
@@ -211,7 +219,7 @@ function App() {
         gap: 16,
         background: '#F2F2F7'
       }
-    }, React.createElement("div", {
+    }, /*#__PURE__*/React.createElement("div", {
       style: {
         width: 40,
         height: 40,
@@ -220,18 +228,18 @@ function App() {
         borderRadius: '50%',
         animation: 'spin 0.8s linear infinite'
       }
-    }), React.createElement("div", {
+    }), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 15,
         color: 'rgba(60,60,67,0.6)',
         fontFamily: '-apple-system, "SF Pro", system-ui'
       }
-    }, "\u6B63\u5728\u52A0\u8F7D\u7167\u7247\u5E93..."), React.createElement("style", null, `@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`));
+    }, "\u6B63\u5728\u52A0\u8F7D\u7167\u7247\u5E93..."), /*#__PURE__*/React.createElement("style", null, `@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`));
   }
   const renderPage = () => {
     switch (page) {
       case 'home':
-        return React.createElement(HomePage, {
+        return /*#__PURE__*/React.createElement(HomePage, {
           months: monthsData,
           themeColor: themeColor,
           onMonthClick: month => navigateTo('sort', {
@@ -242,7 +250,7 @@ function App() {
           trashCount: trashPhotos.length
         });
       case 'sort':
-        return React.createElement(SortPage, {
+        return /*#__PURE__*/React.createElement(SortPage, {
           month: currentMonth || {
             title: ''
           },
@@ -267,7 +275,7 @@ function App() {
           onKeepButton: handleKeep
         });
       case 'trash':
-        return React.createElement(TrashPage, {
+        return /*#__PURE__*/React.createElement(TrashPage, {
           trashPhotos: trashPhotos,
           themeColor: themeColor,
           onBack: goBack,
@@ -276,7 +284,7 @@ function App() {
           onDeleteAll: handleDeleteAll
         });
       case 'settings':
-        return React.createElement(SettingsPage, {
+        return /*#__PURE__*/React.createElement(SettingsPage, {
           themeColor: themeColor,
           onThemeChange: handleThemeChange,
           onBack: goBack
@@ -285,14 +293,14 @@ function App() {
         return null;
     }
   };
-  return React.createElement("div", {
+  return /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'relative',
       width: '100%',
       height: '100%',
       overflow: 'hidden'
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     key: page,
     style: {
       position: 'absolute',

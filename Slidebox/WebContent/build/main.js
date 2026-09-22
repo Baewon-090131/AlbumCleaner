@@ -1,3 +1,5 @@
+// 全局动画样式 + 错误边界 + 主入口（预编译版本）
+
 const globalAnimations = `
   @keyframes pageSlideLeft {
     from { transform: translateX(100%); }
@@ -54,6 +56,8 @@ const globalAnimations = `
 const styleEl = document.createElement('style');
 styleEl.textContent = globalAnimations;
 document.head.appendChild(styleEl);
+
+// JS 全局错误上报（原生侧记录日志，便于排查）
 window.addEventListener('error', function (e) {
   var msg = 'JS_ERROR: ' + (e.message || 'unknown');
   if (e.filename) msg += ' @ ' + e.filename + ':' + (e.lineno || 0);
@@ -66,6 +70,8 @@ window.addEventListener('error', function (e) {
     } catch (err) {}
   }
 });
+
+// React 错误边界：渲染出错时显示具体信息，而不是白屏
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -90,7 +96,7 @@ class ErrorBoundary extends React.Component {
   }
   render() {
     if (this.state.error) {
-      return React.createElement("div", {
+      return /*#__PURE__*/React.createElement("div", {
         style: {
           padding: 40,
           fontFamily: '-apple-system, system-ui',
@@ -99,17 +105,17 @@ class ErrorBoundary extends React.Component {
           background: '#F2F2F7',
           minHeight: '100vh'
         }
-      }, React.createElement("div", {
+      }, /*#__PURE__*/React.createElement("div", {
         style: {
           fontWeight: 600,
           marginBottom: 10
         }
-      }, "\u9875\u9762\u51FA\u9519"), React.createElement("div", {
+      }, "\u9875\u9762\u51FA\u9519"), /*#__PURE__*/React.createElement("div", {
         style: {
           fontSize: 13,
           lineHeight: 1.5
         }
-      }, this.state.error.message || String(this.state.error)), React.createElement("pre", {
+      }, this.state.error.message || String(this.state.error)), /*#__PURE__*/React.createElement("pre", {
         style: {
           fontSize: 11,
           whiteSpace: 'pre-wrap',
@@ -121,8 +127,10 @@ class ErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
+
+// 主入口
 function RootApp() {
-  return React.createElement("div", {
+  return /*#__PURE__*/React.createElement("div", {
     style: {
       width: '100vw',
       height: '100vh',
@@ -132,7 +140,7 @@ function RootApp() {
       background: '#F2F2F7',
       overflow: 'hidden'
     }
-  }, React.createElement(ErrorBoundary, null, React.createElement(App, null)));
+  }, /*#__PURE__*/React.createElement(ErrorBoundary, null, /*#__PURE__*/React.createElement(App, null)));
 }
 const root = document.getElementById('root');
-ReactDOM.createRoot(root).render(React.createElement(RootApp, null));
+ReactDOM.createRoot(root).render(/*#__PURE__*/React.createElement(RootApp, null));

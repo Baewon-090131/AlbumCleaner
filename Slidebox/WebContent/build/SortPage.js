@@ -1,3 +1,5 @@
+// 全屏观看层（v2.3：支持捏合缩放 / 双击放大 / 平移 / 单击退出）
+// mode: 'photo' 静态照片全屏 | 'video' 模拟视频播放 | 'live' 模拟 Live Photo
 function MediaFullscreenOverlay({
   mode,
   photo,
@@ -63,6 +65,7 @@ function MediaFullscreenOverlay({
     };
     t.pointers.set(e.pointerId, cur);
     if (t.pointers.size === 2) {
+      // 双指捏合缩放（以屏幕中心为缩放原点）
       const pts = [...t.pointers.values()];
       const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
       let nextZoom = t.startZoom * (dist / t.startDist);
@@ -75,6 +78,7 @@ function MediaFullscreenOverlay({
       applyTransform();
       t.moved = true;
     } else if (t.pointers.size === 1 && t.zoom > 1) {
+      // 单指平移（仅放大状态下）
       const p = t.pointers.get(e.pointerId);
       t.pan = {
         x: t.startPanX + (p.x - t.sx),
@@ -88,9 +92,12 @@ function MediaFullscreenOverlay({
     const t = touchRef.current;
     if (!t.pointers.has(e.pointerId)) return;
     t.pointers.delete(e.pointerId);
+
+    // 单击 / 双击判定（仅无位移时）
     if (!t.moved) {
       const now = Date.now();
       if (now - t.lastTap < 300) {
+        // 双击：切换放大/还原
         t.lastTap = 0;
         t.zoom = t.zoom > 1 ? 1 : 2.5;
         if (t.zoom <= 1) t.pan = {
@@ -110,6 +117,7 @@ function MediaFullscreenOverlay({
       t.lastTap = now;
       setTimeout(function () {
         if (t.lastTap === now) {
+          // 单击 → 退出全屏
           t.lastTap = 0;
           onClose();
         }
@@ -118,7 +126,7 @@ function MediaFullscreenOverlay({
       t.moved = false;
     }
   };
-  return React.createElement("div", {
+  return /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'fixed',
       inset: 0,
@@ -131,7 +139,7 @@ function MediaFullscreenOverlay({
       overflow: 'hidden',
       touchAction: 'none'
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
       inset: 0,
@@ -144,7 +152,7 @@ function MediaFullscreenOverlay({
     onPointerMove: onPointerMove,
     onPointerUp: onPointerUp,
     onPointerCancel: onPointerUp
-  }, React.createElement("img", {
+  }, /*#__PURE__*/React.createElement("img", {
     ref: imgRef,
     src: photo.thumbnailUrl,
     alt: "",
@@ -159,7 +167,7 @@ function MediaFullscreenOverlay({
       transformOrigin: 'center center',
       cursor: 'grab'
     }
-  })), mode === 'video' && React.createElement("div", {
+  })), mode === 'video' && /*#__PURE__*/React.createElement("div", {
     onClick: e => e.stopPropagation(),
     style: {
       position: 'absolute',
@@ -172,13 +180,13 @@ function MediaFullscreenOverlay({
       flexDirection: 'column',
       gap: 12
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'center',
       gap: 16
     }
-  }, React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setPlaying(!playing),
     style: {
       width: 44,
@@ -191,32 +199,32 @@ function MediaFullscreenOverlay({
       justifyContent: 'center',
       cursor: 'pointer'
     }
-  }, playing ? React.createElement("svg", {
+  }, playing ? /*#__PURE__*/React.createElement("svg", {
     width: "16",
     height: "16",
     viewBox: "0 0 16 16"
-  }, React.createElement("rect", {
+  }, /*#__PURE__*/React.createElement("rect", {
     x: "2",
     y: "2",
     width: "4.5",
     height: "12",
     rx: "1",
     fill: "#fff"
-  }), React.createElement("rect", {
+  }), /*#__PURE__*/React.createElement("rect", {
     x: "9.5",
     y: "2",
     width: "4.5",
     height: "12",
     rx: "1",
     fill: "#fff"
-  })) : React.createElement("svg", {
+  })) : /*#__PURE__*/React.createElement("svg", {
     width: "16",
     height: "16",
     viewBox: "0 0 16 16"
-  }, React.createElement("polygon", {
+  }, /*#__PURE__*/React.createElement("polygon", {
     points: "3,1 14,8 3,15",
     fill: "#fff"
-  }))), React.createElement("div", {
+  }))), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
       height: 4,
@@ -224,7 +232,7 @@ function MediaFullscreenOverlay({
       borderRadius: 2,
       overflow: 'hidden'
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       width: playing ? '100%' : '35%',
       height: '100%',
@@ -232,20 +240,20 @@ function MediaFullscreenOverlay({
       borderRadius: 2,
       transition: playing ? 'width 6s linear' : 'none'
     }
-  })), React.createElement("span", {
+  })), /*#__PURE__*/React.createElement("span", {
     style: {
       color: 'rgba(255,255,255,0.8)',
       fontSize: 13,
       fontFamily: '-apple-system, "SF Pro", system-ui'
     }
-  }, photo.duration || '0:05')), React.createElement("div", {
+  }, photo.duration || '0:05')), /*#__PURE__*/React.createElement("div", {
     style: {
       color: 'rgba(255,255,255,0.6)',
       fontSize: 12,
       textAlign: 'center',
       fontFamily: '-apple-system, "SF Pro", system-ui'
     }
-  }, "\u6A21\u62DF\u5668\u6F14\u793A \xB7 \u771F\u673A\u5C06\u8C03\u7528\u7CFB\u7EDF\u64AD\u653E\u5668\u5168\u5C4F\u64AD\u653E")), mode === 'live' && React.createElement("div", {
+  }, "\u6A21\u62DF\u5668\u6F14\u793A \xB7 \u771F\u673A\u5C06\u8C03\u7528\u7CFB\u7EDF\u64AD\u653E\u5668\u5168\u5C4F\u64AD\u653E")), mode === 'live' && /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
       top: 60,
@@ -256,7 +264,7 @@ function MediaFullscreenOverlay({
       padding: '6px 14px',
       borderRadius: 20
     }
-  }, React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("span", {
     style: {
       color: '#fff',
       fontSize: 13,
@@ -264,7 +272,7 @@ function MediaFullscreenOverlay({
       letterSpacing: 1.5,
       fontFamily: '-apple-system, "SF Pro", system-ui'
     }
-  }, "LIVE"), React.createElement("span", {
+  }, "LIVE"), /*#__PURE__*/React.createElement("span", {
     style: {
       width: 8,
       height: 8,
@@ -272,7 +280,7 @@ function MediaFullscreenOverlay({
       background: '#FF453A',
       animation: 'livePulse 1.2s ease-in-out infinite'
     }
-  })), React.createElement("div", {
+  })), /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
       bottom: mode === 'video' ? 120 : 48,
@@ -281,7 +289,7 @@ function MediaFullscreenOverlay({
       fontFamily: '-apple-system, "SF Pro", system-ui',
       pointerEvents: 'none'
     }
-  }, mode === 'video' ? '点击空白处退出' : '轻点退出全屏'), React.createElement("style", null, `@keyframes livePulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }`));
+  }, mode === 'video' ? '点击空白处退出' : '轻点退出全屏'), /*#__PURE__*/React.createElement("style", null, `@keyframes livePulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }`));
 }
 function SortPage({
   month,
@@ -307,13 +315,15 @@ function SortPage({
 }) {
   const [bottomMode, setBottomMode] = React.useState('buttons');
   const [animating, setAnimating] = React.useState(false);
-  const [fullscreen, setFullscreen] = React.useState(null);
+  const [fullscreen, setFullscreen] = React.useState(null); // {mode:'photo'|'video'|'live', photo}
   const stackRef = React.useRef(null);
   const total = totalCount || photos.length;
   const remaining = Math.max(0, total - processedCount);
   const progress = total > 0 ? processedCount / total * 100 : 0;
   const displayCurrent = photos.length > 0 ? processedCount + 1 : total;
   const hasPhoto = photos.length > 0 && currentIndex < photos.length;
+
+  // 按钮操作：先播放动效，动画完成后再执行实际逻辑（防止连点）
   const playThen = (type, fn) => {
     if (animating) return;
     if (!fn) return;
@@ -340,6 +350,9 @@ function SortPage({
     onAlbumAdd(album);
     setBottomMode('buttons');
   });
+
+  // 点击媒体项目 → 全屏观看（v2.2.4）
+  // 照片：前端全屏纯净模式；视频/Live：真机走原生播放器，模拟器演示
   const handlePhotoTap = photo => {
     if (!photo || animating) return;
     if (photo.isVideo || photo.isLivePhoto) {
@@ -358,7 +371,7 @@ function SortPage({
       });
     }
   };
-  return React.createElement("div", {
+  return /*#__PURE__*/React.createElement("div", {
     style: {
       height: '100%',
       background: '#F2F2F7',
@@ -366,18 +379,19 @@ function SortPage({
       flexDirection: 'column',
       position: 'relative'
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'relative',
       zIndex: 100,
       paddingTop: 'var(--ios-safe-top)',
+      // v2.3 液态玻璃：半透明 + 强模糊 + 顶部高光描边
       background: 'rgba(250,250,252,0.72)',
       backdropFilter: 'blur(30px) saturate(200%)',
       WebkitBackdropFilter: 'blur(30px) saturate(200%)',
       borderBottom: '0.5px solid rgba(60,60,67,0.08)',
       boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)'
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'relative',
       height: 44,
@@ -386,7 +400,7 @@ function SortPage({
       justifyContent: 'space-between',
       padding: '0 8px'
     }
-  }, React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("button", {
     onClick: onBack,
     style: {
       display: 'flex',
@@ -401,18 +415,18 @@ function SortPage({
       fontFamily: '-apple-system, "SF Pro", system-ui',
       fontWeight: 400
     }
-  }, React.createElement("svg", {
+  }, /*#__PURE__*/React.createElement("svg", {
     width: "12",
     height: "20",
     viewBox: "0 0 12 20"
-  }, React.createElement("path", {
+  }, /*#__PURE__*/React.createElement("path", {
     d: "M10 2L2 10l8 8",
     stroke: themeColor,
     strokeWidth: "2.5",
     fill: "none",
     strokeLinecap: "round",
     strokeLinejoin: "round"
-  })), React.createElement("span", null, "\u7167\u7247")), React.createElement("div", {
+  })), /*#__PURE__*/React.createElement("span", null, "\u7167\u7247")), /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
       left: '50%',
@@ -424,7 +438,7 @@ function SortPage({
       fontFamily: '-apple-system, "SF Pro", system-ui',
       letterSpacing: -0.4
     }
-  }, month.title), React.createElement("button", {
+  }, month.title), /*#__PURE__*/React.createElement("button", {
     onClick: onTrashClick,
     style: {
       background: 'none',
@@ -435,18 +449,18 @@ function SortPage({
       alignItems: 'center',
       justifyContent: 'center'
     }
-  }, React.createElement("svg", {
+  }, /*#__PURE__*/React.createElement("svg", {
     width: "22",
     height: "22",
     viewBox: "0 0 24 24",
     fill: "none"
-  }, React.createElement("path", {
+  }, /*#__PURE__*/React.createElement("path", {
     d: "M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z",
     stroke: themeColor,
     strokeWidth: "2",
     strokeLinecap: "round",
     strokeLinejoin: "round"
-  }))))), React.createElement(SwipeCardStack, {
+  }))))), /*#__PURE__*/React.createElement(SwipeCardStack, {
     ref: stackRef,
     photos: photos,
     currentIndex: currentIndex,
@@ -456,12 +470,12 @@ function SortPage({
     onSwipeLeft: onSwipeLeft,
     onSwipeRight: onSwipeRight,
     onSwipeDown: onSwipeDown
-  }), fullscreen && React.createElement(MediaFullscreenOverlay, {
+  }), fullscreen && /*#__PURE__*/React.createElement(MediaFullscreenOverlay, {
     mode: fullscreen.mode,
     photo: fullscreen.photo,
     themeColor: themeColor,
     onClose: () => setFullscreen(null)
-  }), toastMessage && React.createElement("div", {
+  }), toastMessage && /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
       top: '50%',
@@ -483,25 +497,25 @@ function SortPage({
       animation: 'fadeInScale 0.25s ease',
       pointerEvents: 'none'
     }
-  }, React.createElement("svg", {
+  }, /*#__PURE__*/React.createElement("svg", {
     width: "28",
     height: "28",
     viewBox: "0 0 28 28"
-  }, React.createElement("circle", {
+  }, /*#__PURE__*/React.createElement("circle", {
     cx: "14",
     cy: "14",
     r: "12",
     fill: "none",
     stroke: "#34C759",
     strokeWidth: "2.5"
-  }), React.createElement("path", {
+  }), /*#__PURE__*/React.createElement("path", {
     d: "M8 14l4 4 8-8",
     stroke: "#34C759",
     strokeWidth: "2.5",
     fill: "none",
     strokeLinecap: "round",
     strokeLinejoin: "round"
-  })), React.createElement("span", null, toastMessage)), addedFeedback && React.createElement("div", {
+  })), /*#__PURE__*/React.createElement("span", null, toastMessage)), addedFeedback && /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
       top: '50%',
@@ -523,55 +537,55 @@ function SortPage({
       animation: 'fadeInScale 0.25s ease',
       pointerEvents: 'none'
     }
-  }, React.createElement("svg", {
+  }, /*#__PURE__*/React.createElement("svg", {
     width: "28",
     height: "28",
     viewBox: "0 0 28 28"
-  }, React.createElement("circle", {
+  }, /*#__PURE__*/React.createElement("circle", {
     cx: "14",
     cy: "14",
     r: "12",
     fill: "none",
     stroke: "#34C759",
     strokeWidth: "2.5"
-  }), React.createElement("path", {
+  }), /*#__PURE__*/React.createElement("path", {
     d: "M8 14l4 4 8-8",
     stroke: "#34C759",
     strokeWidth: "2.5",
     fill: "none",
     strokeLinecap: "round",
     strokeLinejoin: "round"
-  })), React.createElement("span", null, "\u5DF2\u6DFB\u52A0\u5230\u300C", addedFeedback, "\u300D")), React.createElement("div", {
+  })), /*#__PURE__*/React.createElement("span", null, "\u5DF2\u6DFB\u52A0\u5230\u300C", addedFeedback, "\u300D")), /*#__PURE__*/React.createElement("div", {
     style: {
       padding: '0 20px 10px'
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
       marginBottom: 6
     }
-  }, React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 13,
       color: 'rgba(60,60,67,0.6)',
       fontFamily: '-apple-system, "SF Pro", system-ui'
     }
-  }, Math.min(displayCurrent, total), " / ", total), React.createElement("span", {
+  }, Math.min(displayCurrent, total), " / ", total), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 13,
       color: 'rgba(60,60,67,0.6)',
       fontFamily: '-apple-system, "SF Pro", system-ui'
     }
-  }, "\u5269\u4F59 ", remaining, " \u5F20")), React.createElement("div", {
+  }, "\u5269\u4F59 ", remaining, " \u5F20")), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 4,
       background: 'rgba(60,60,67,0.1)',
       borderRadius: 2,
       overflow: 'hidden'
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       height: '100%',
       width: `${progress}%`,
@@ -579,7 +593,7 @@ function SortPage({
       borderRadius: 2,
       transition: 'width 0.3s ease'
     }
-  }))), React.createElement(SortBottomBar, {
+  }))), /*#__PURE__*/React.createElement(SortBottomBar, {
     themeColor: themeColor,
     mode: bottomMode,
     albums: albums,

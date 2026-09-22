@@ -1,3 +1,4 @@
+// 整理页面底部操作区 - 优化动效
 function SortBottomBar({
   themeColor = '#007AFF',
   mode = 'buttons',
@@ -14,12 +15,13 @@ function SortBottomBar({
 }) {
   const albumList = albums && albums.length > 0 ? albums : window.MockData.albums;
   if (mode === 'albums') {
-    return React.createElement("div", {
+    return /*#__PURE__*/React.createElement("div", {
       style: {
         padding: '0 14px calc(14px + var(--ios-safe-bottom))'
       }
-    }, React.createElement("div", {
+    }, /*#__PURE__*/React.createElement("div", {
       style: {
+        // v2.3 液态玻璃面板
         background: 'rgba(255,255,255,0.62)',
         backdropFilter: 'blur(35px) saturate(200%)',
         WebkitBackdropFilter: 'blur(35px) saturate(200%)',
@@ -29,14 +31,14 @@ function SortBottomBar({
         padding: '10px 0 12px',
         animation: 'slideUpBar 0.3s cubic-bezier(0.32, 0.72, 0, 1)'
       }
-    }, React.createElement("div", {
+    }, /*#__PURE__*/React.createElement("div", {
       style: {
         display: 'flex',
         alignItems: 'center',
         padding: '0 18px 10px',
         gap: 10
       }
-    }, React.createElement("button", {
+    }, /*#__PURE__*/React.createElement("button", {
       onClick: onBackToButtons,
       style: {
         display: 'flex',
@@ -64,18 +66,18 @@ function SortBottomBar({
         e.currentTarget.style.transform = 'scale(1)';
         e.currentTarget.style.opacity = '1';
       }
-    }, React.createElement("svg", {
+    }, /*#__PURE__*/React.createElement("svg", {
       width: "14",
       height: "14",
       viewBox: "0 0 14 14"
-    }, React.createElement("path", {
+    }, /*#__PURE__*/React.createElement("path", {
       d: "M8.5 2L3.5 7l5 5",
       stroke: themeColor,
       strokeWidth: "2",
       fill: "none",
       strokeLinecap: "round",
       strokeLinejoin: "round"
-    })), React.createElement("span", null, "\u8FD4\u56DE")), React.createElement("div", {
+    })), /*#__PURE__*/React.createElement("span", null, "\u8FD4\u56DE")), /*#__PURE__*/React.createElement("div", {
       style: {
         flex: 1,
         textAlign: 'center',
@@ -85,7 +87,7 @@ function SortBottomBar({
         fontWeight: 500,
         paddingRight: 50
       }
-    }, "\u6DFB\u52A0\u5230\u76F8\u7C3F")), React.createElement("div", {
+    }, "\u6DFB\u52A0\u5230\u76F8\u7C3F")), /*#__PURE__*/React.createElement("div", {
       style: {
         display: 'flex',
         gap: 12,
@@ -95,13 +97,13 @@ function SortBottomBar({
         msOverflowStyle: 'none',
         WebkitOverflowScrolling: 'touch'
       }
-    }, albumList.map((album, idx) => React.createElement("div", {
+    }, albumList.map((album, idx) => /*#__PURE__*/React.createElement("div", {
       key: album.id,
       style: {
         animation: `cardIn 0.3s ease ${idx * 0.04}s both`,
         flexShrink: 0
       }
-    }, React.createElement(AlbumChip, {
+    }, /*#__PURE__*/React.createElement(AlbumChip, {
       album: album,
       onClick: () => onAlbumAdd(album)
     }))))));
@@ -112,17 +114,17 @@ function SortBottomBar({
     color: canUndo ? themeColor : 'rgba(60,60,67,0.3)',
     enabled: canUndo && !animating,
     onClick: onUndo,
-    icon: React.createElement("svg", {
+    icon: /*#__PURE__*/React.createElement("svg", {
       width: "22",
       height: "22",
       viewBox: "0 0 24 24",
       fill: "none"
-    }, React.createElement("path", {
+    }, /*#__PURE__*/React.createElement("path", {
       d: "M9 14L4 9l5-5",
       strokeWidth: "2",
       strokeLinecap: "round",
       strokeLinejoin: "round"
-    }), React.createElement("path", {
+    }), /*#__PURE__*/React.createElement("path", {
       d: "M4 9h11a6 6 0 010 12h-3",
       strokeWidth: "2",
       strokeLinecap: "round",
@@ -134,12 +136,12 @@ function SortBottomBar({
     color: '#FF3B30',
     enabled: hasPhoto && !animating,
     onClick: onDelete,
-    icon: React.createElement("svg", {
+    icon: /*#__PURE__*/React.createElement("svg", {
       width: "22",
       height: "22",
       viewBox: "0 0 24 24",
       fill: "none"
-    }, React.createElement("path", {
+    }, /*#__PURE__*/React.createElement("path", {
       d: "M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z",
       strokeWidth: "2",
       strokeLinecap: "round",
@@ -151,12 +153,12 @@ function SortBottomBar({
     color: '#34C759',
     enabled: hasPhoto && !animating,
     onClick: onNext,
-    icon: React.createElement("svg", {
+    icon: /*#__PURE__*/React.createElement("svg", {
       width: "22",
       height: "22",
       viewBox: "0 0 24 24",
       fill: "none"
-    }, React.createElement("path", {
+    }, /*#__PURE__*/React.createElement("path", {
       d: "M5 4v16M10 20l9-8-9-8",
       strokeWidth: "2",
       strokeLinecap: "round",
@@ -168,35 +170,36 @@ function SortBottomBar({
     color: themeColor,
     enabled: hasPhoto && !animating,
     onClick: onAlbumMode,
-    icon: React.createElement("svg", {
+    icon: /*#__PURE__*/React.createElement("svg", {
       width: "24",
       height: "20",
       viewBox: "0 0 24 20",
       fill: "none"
-    }, React.createElement("rect", {
+    }, /*#__PURE__*/React.createElement("rect", {
       x: "1",
       y: "2",
       width: "22",
       height: "16",
       rx: "3",
       strokeWidth: "2"
-    }), React.createElement("path", {
+    }), /*#__PURE__*/React.createElement("path", {
       d: "M1 6h22",
       strokeWidth: "2",
       strokeLinecap: "round"
-    }), React.createElement("path", {
+    }), /*#__PURE__*/React.createElement("path", {
       d: "M9 6L11 2h4",
       strokeWidth: "2",
       strokeLinecap: "round",
       strokeLinejoin: "round"
     }))
   }];
-  return React.createElement("div", {
+  return /*#__PURE__*/React.createElement("div", {
     style: {
       padding: '0 14px calc(14px + var(--ios-safe-bottom))'
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
+      // v2.3 液态玻璃浮动胶囊（iOS 26 风格）
       background: 'rgba(255,255,255,0.62)',
       backdropFilter: 'blur(35px) saturate(200%)',
       WebkitBackdropFilter: 'blur(35px) saturate(200%)',
@@ -209,7 +212,7 @@ function SortBottomBar({
       alignItems: 'center',
       animation: 'slideUpBar 0.3s cubic-bezier(0.32, 0.72, 0, 1)'
     }
-  }, buttons.map((btn, idx) => React.createElement("button", {
+  }, buttons.map((btn, idx) => /*#__PURE__*/React.createElement("button", {
     key: btn.id,
     onClick: btn.enabled ? btn.onClick : undefined,
     disabled: !btn.enabled,
@@ -239,7 +242,7 @@ function SortBottomBar({
     onMouseLeave: e => {
       e.currentTarget.style.transform = 'scale(1)';
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       color: btn.color,
       display: 'flex',
@@ -249,7 +252,7 @@ function SortBottomBar({
     }
   }, React.cloneElement(btn.icon, {
     stroke: btn.color
-  })), React.createElement("span", {
+  })), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 10,
       color: btn.color,
@@ -263,7 +266,7 @@ function AlbumChip({
   album,
   onClick
 }) {
-  return React.createElement("div", {
+  return /*#__PURE__*/React.createElement("div", {
     onClick: onClick,
     style: {
       width: 72,
@@ -283,7 +286,7 @@ function AlbumChip({
     onMouseLeave: e => {
       e.currentTarget.style.transform = 'scale(1)';
     }
-  }, React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       width: 64,
       height: 64,
@@ -296,7 +299,7 @@ function AlbumChip({
       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
       transition: 'box-shadow 0.15s ease'
     }
-  }, album.icon), React.createElement("span", {
+  }, album.icon), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 11,
       color: 'rgba(60,60,67,0.8)',
