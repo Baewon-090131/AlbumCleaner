@@ -293,11 +293,14 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
       card.style.opacity = '0';
       setTimeout(function () {
         animatingRef.current = false;
-        // 关键修复：飞出动画结束后必须复位卡片位置，
-        // 否则残留的 translateX(-105%) 会让下一张照片渲染在屏幕外（黑屏）
+        // 关键修复（v2.4 闪回）：飞出结束后复位位置但保持【不可见】(opacity 0)。
+        // 1. 复位位置：防止残留 transform 让下一张渲染在屏幕外（历史黑屏 bug 双保险）
+        // 2. 保持不可见：删除/切换后旧卡 DOM 由 React 卸载（key 变化 → 全新 DOM），
+        //    期间若把 opacity 复位为 1，旧照片会在切换间隙"闪回"一帧（用户反馈的删除闪一下）
+        // 3. 新卡片挂载后由自身淡入路径（photo.id 变化 useEffect / 撤回滑入）接管显示
         card.style.transition = 'none';
         card.style.transform = 'translateX(0) translateY(0) rotate(0deg)';
-        card.style.opacity = '1';
+        card.style.opacity = '0';
         if (onComplete) onComplete();
       }, 300);
     }
