@@ -50,6 +50,16 @@ const globalAnimations = `
     0%, 100% { opacity: 1; }
     50% { opacity: 0.6; }
   }
+  /* v2.4 Liquid Glass：照片切换原生淡入淡出（轻微上移+缩放） */
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  /* v2.4：玻璃面板浮现 */
+  @keyframes glassIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
   ::-webkit-scrollbar { display: none; }
   * { -webkit-tap-highlight-color: transparent; }
 `;

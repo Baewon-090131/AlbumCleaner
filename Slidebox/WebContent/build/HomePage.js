@@ -1,4 +1,4 @@
-// 首页 - 月份列表
+// 首页 - 月份列表（v2.4 Liquid Glass：大标题 + 悬浮玻璃工具按钮 + 玻璃月份卡片）
 function HomePage({
   months,
   onMonthClick,
@@ -16,49 +16,39 @@ function HomePage({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      position: 'sticky',
-      top: 0,
-      zIndex: 100,
       paddingTop: 'var(--ios-safe-top)',
-      background: 'rgba(250,250,252,0.72)',
-      backdropFilter: 'blur(30px) saturate(200%)',
-      WebkitBackdropFilter: 'blur(30px) saturate(200%)',
-      borderBottom: '0.5px solid rgba(60,60,67,0.08)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)'
+      paddingBottom: 10
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      position: 'relative',
-      padding: '4px 20px 12px',
+      padding: '6px 24px 2px',
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'flex-end'
     }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: onSettingsClick,
+  }, /*#__PURE__*/React.createElement("h1", {
     style: {
-      background: 'none',
-      border: 'none',
-      padding: 4,
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 3,
-      transition: 'transform 0.15s ease'
-    },
-    onMouseDown: e => {
-      e.currentTarget.style.transform = 'scale(0.85)';
-    },
-    onMouseUp: e => {
-      e.currentTarget.style.transform = 'scale(1)';
-    },
-    onMouseLeave: e => {
-      e.currentTarget.style.transform = 'scale(1)';
+      margin: 0,
+      fontSize: 34,
+      fontWeight: 700,
+      fontFamily: '-apple-system, "SF Pro Display", "SF Pro", system-ui',
+      letterSpacing: -1.2,
+      color: '#000',
+      lineHeight: 1.08
     }
+  }, "Album Cleaner"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 10,
+      marginBottom: 2
+    }
+  }, /*#__PURE__*/React.createElement(GlassIconButton, {
+    onClick: onSettingsClick,
+    color: themeColor,
+    label: "\u8BBE\u7F6E"
   }, /*#__PURE__*/React.createElement("svg", {
-    width: "24",
-    height: "24",
+    width: "22",
+    height: "22",
     viewBox: "0 0 24 24",
     fill: "none"
   }, /*#__PURE__*/React.createElement("circle", {
@@ -73,42 +63,14 @@ function HomePage({
     strokeWidth: "2",
     strokeLinecap: "round",
     strokeLinejoin: "round"
-  }))), /*#__PURE__*/React.createElement("h1", {
-    style: {
-      margin: 0,
-      fontSize: 28,
-      fontWeight: 700,
-      fontFamily: '-apple-system, "SF Pro Display", "SF Pro", system-ui',
-      letterSpacing: -0.9,
-      color: '#000',
-      lineHeight: 1.1
-    }
-  }, "Album Cleaner"), /*#__PURE__*/React.createElement("button", {
+  }))), /*#__PURE__*/React.createElement(GlassIconButton, {
     onClick: onTrashClick,
-    style: {
-      background: 'none',
-      border: 'none',
-      padding: 4,
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 3,
-      transition: 'transform 0.15s ease',
-      position: 'relative'
-    },
-    onMouseDown: e => {
-      e.currentTarget.style.transform = 'scale(0.85)';
-    },
-    onMouseUp: e => {
-      e.currentTarget.style.transform = 'scale(1)';
-    },
-    onMouseLeave: e => {
-      e.currentTarget.style.transform = 'scale(1)';
-    }
+    color: themeColor,
+    label: "\u56DE\u6536\u7AD9",
+    badge: trashCount
   }, /*#__PURE__*/React.createElement("svg", {
-    width: "22",
-    height: "22",
+    width: "21",
+    height: "21",
     viewBox: "0 0 24 24",
     fill: "none"
   }, /*#__PURE__*/React.createElement("path", {
@@ -117,24 +79,7 @@ function HomePage({
     strokeWidth: "2",
     strokeLinecap: "round",
     strokeLinejoin: "round"
-  })), trashCount > 0 && /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: 'absolute',
-      top: -2,
-      right: -4,
-      background: '#FF3B30',
-      color: '#fff',
-      fontSize: 10,
-      fontWeight: 600,
-      minWidth: 16,
-      height: 16,
-      borderRadius: 8,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '0 4px'
-    }
-  }, trashCount > 99 ? '99+' : trashCount)))), /*#__PURE__*/React.createElement("div", {
+  })))))), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
       overflowY: 'auto',
@@ -143,20 +88,20 @@ function HomePage({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: '16px 20px 8px',
+      padding: '10px 28px 8px',
       fontSize: 13,
       color: 'rgba(60,60,67,0.6)',
       fontFamily: '-apple-system, "SF Pro", system-ui',
       textTransform: 'uppercase',
       letterSpacing: -0.08,
-      fontWeight: 500
+      fontWeight: 600
     }
   }, "\u6708\u4EFD"), /*#__PURE__*/React.createElement("div", {
     style: {
       padding: '0 16px 24px',
       display: 'flex',
       flexDirection: 'column',
-      gap: 16
+      gap: 14
     }
   }, months.map((month, idx) => /*#__PURE__*/React.createElement(MonthCard, {
     key: month.id,
@@ -170,7 +115,64 @@ function HomePage({
   })));
 }
 
-// 月份卡片（v2.3：液态玻璃质感）
+// 悬浮玻璃圆形工具按钮（iOS 26 Liquid Glass）
+function GlassIconButton({
+  onClick,
+  color,
+  children,
+  label,
+  badge = 0
+}) {
+  return /*#__PURE__*/React.createElement("button", {
+    onClick: onClick,
+    "aria-label": label,
+    style: {
+      position: 'relative',
+      width: 46,
+      height: 46,
+      borderRadius: 23,
+      border: '0.5px solid rgba(255,255,255,0.8)',
+      background: 'rgba(255,255,255,0.55)',
+      backdropFilter: 'blur(30px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(30px) saturate(180%)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 16px rgba(0,0,0,0.07)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      cursor: 'pointer',
+      transition: 'transform 0.16s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.15s ease'
+    },
+    onMouseDown: e => {
+      e.currentTarget.style.transform = 'scale(0.86)';
+    },
+    onMouseUp: e => {
+      e.currentTarget.style.transform = 'scale(1)';
+    },
+    onMouseLeave: e => {
+      e.currentTarget.style.transform = 'scale(1)';
+    }
+  }, children, badge > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      top: -3,
+      right: -3,
+      minWidth: 18,
+      height: 18,
+      padding: '0 5px',
+      borderRadius: 9,
+      background: '#FF3B30',
+      color: '#fff',
+      fontSize: 11,
+      fontWeight: 700,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      border: '1.5px solid #F2F2F7'
+    }
+  }, badge > 99 ? '99+' : badge));
+}
+
+// 月份卡片（v2.4 Liquid Glass：白玻璃 + 大圆角 + 内高光）
 function MonthCard({
   month,
   onClick,
@@ -179,39 +181,39 @@ function MonthCard({
   return /*#__PURE__*/React.createElement("div", {
     onClick: onClick,
     style: {
-      background: 'rgba(255,255,255,0.62)',
-      backdropFilter: 'blur(20px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-      borderRadius: 18,
+      background: 'rgba(255,255,255,0.58)',
+      backdropFilter: 'blur(25px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(25px) saturate(180%)',
+      borderRadius: 22,
       cursor: 'pointer',
-      border: '0.5px solid rgba(255,255,255,0.7)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(0,0,0,0.05)',
-      animation: `cardIn 0.4s cubic-bezier(0.32, 0.72, 0, 1) ${index * 0.05}s both`,
-      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+      border: '0.5px solid rgba(255,255,255,0.75)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), 0 6px 20px rgba(0,0,0,0.05)',
+      animation: `glassIn 0.45s cubic-bezier(0.32, 0.72, 0, 1) ${index * 0.05}s both`,
+      transition: 'transform 0.2s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.2s ease',
       display: 'flex',
       alignItems: 'center',
-      padding: '14px 16px'
+      padding: '14px 18px'
     },
     onMouseDown: e => {
       e.currentTarget.style.transform = 'scale(0.98)';
-      e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.8), 0 8px 20px rgba(0,0,0,0.09)';
+      e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.85), 0 10px 24px rgba(0,0,0,0.08)';
     },
     onMouseUp: e => {
       e.currentTarget.style.transform = 'scale(1)';
-      e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(0,0,0,0.05)';
+      e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.85), 0 6px 20px rgba(0,0,0,0.05)';
     },
     onMouseLeave: e => {
       e.currentTarget.style.transform = 'scale(1)';
-      e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(0,0,0,0.05)';
+      e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.85), 0 6px 20px rgba(0,0,0,0.05)';
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 48,
-      height: 48,
-      borderRadius: 12,
-      background: 'linear-gradient(135deg, rgba(242,242,247,0.9) 0%, rgba(229,229,234,0.8) 100%)',
-      border: '0.5px solid rgba(255,255,255,0.7)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9)',
+      width: 50,
+      height: 50,
+      borderRadius: 14,
+      background: 'linear-gradient(145deg, rgba(250,250,252,0.9) 0%, rgba(226,226,232,0.75) 100%)',
+      border: '0.5px solid rgba(255,255,255,0.85)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.95), 0 2px 8px rgba(0,0,0,0.05)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -219,15 +221,16 @@ function MonthCard({
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 18,
+      fontSize: 19,
       fontWeight: 600,
-      color: 'rgba(60,60,67,0.7)',
-      fontFamily: '-apple-system, "SF Pro", system-ui'
+      color: 'rgba(60,60,67,0.75)',
+      fontFamily: '-apple-system, "SF Pro", system-ui',
+      letterSpacing: -0.3
     }
   }, month.shortTitle)), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
-      marginLeft: 14,
+      marginLeft: 15,
       minWidth: 0
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -263,5 +266,6 @@ function MonthCard({
 }
 Object.assign(window, {
   HomePage,
-  MonthCard
+  MonthCard,
+  GlassIconButton
 });

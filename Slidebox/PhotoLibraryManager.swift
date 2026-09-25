@@ -154,10 +154,10 @@ class PhotoLibraryManager: NSObject {
         }
     }
 
-    // v2.3：按照片原始比例构造缩略图请求尺寸（长边 900pt），源头不裁切照片比例
+    // v2.4：按照片原始比例构造缩略图请求尺寸（长边 400pt，比屏宽略大，放大显示不发糊），源头不裁切照片比例
     func targetSizeForAsset(_ asset: PHAsset) -> CGSize {
         let scale = UIScreen.main.scale
-        let base: CGFloat = 300 * scale
+        let base: CGFloat = 400 * scale
         var w = base
         var h = base
         if asset.pixelWidth > 0 && asset.pixelHeight > 0 {

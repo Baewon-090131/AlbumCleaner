@@ -32,24 +32,24 @@ function TrashPage({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      // v2.3 液态玻璃
-      background: 'rgba(250,250,252,0.72)',
-      backdropFilter: 'blur(30px) saturate(200%)',
-      WebkitBackdropFilter: 'blur(30px) saturate(200%)',
       position: 'relative',
       zIndex: 100,
-      paddingTop: 'var(--ios-safe-top)',
-      borderBottom: '0.5px solid rgba(60,60,67,0.08)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)'
+      padding: 'var(--ios-safe-top) 12px 6px'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      height: 44,
+      position: 'relative',
+      height: 50,
+      borderRadius: 25,
+      background: 'rgba(255,255,255,0.58)',
+      backdropFilter: 'blur(35px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(35px) saturate(180%)',
+      border: '0.5px solid rgba(255,255,255,0.8)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 6px 20px rgba(0,0,0,0.06)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 8px',
-      position: 'relative'
+      padding: '0 8px'
     }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: onBack,
@@ -65,19 +65,16 @@ function TrashPage({
       fontSize: 17,
       fontFamily: '-apple-system, "SF Pro", system-ui',
       fontWeight: 400,
-      transition: 'transform 0.15s ease, opacity 0.15s ease'
+      transition: 'transform 0.16s cubic-bezier(0.32, 0.72, 0, 1)'
     },
     onMouseDown: e => {
       e.currentTarget.style.transform = 'scale(0.9)';
-      e.currentTarget.style.opacity = '0.6';
     },
     onMouseUp: e => {
       e.currentTarget.style.transform = 'scale(1)';
-      e.currentTarget.style.opacity = '1';
     },
     onMouseLeave: e => {
       e.currentTarget.style.transform = 'scale(1)';
-      e.currentTarget.style.opacity = '1';
     }
   }, /*#__PURE__*/React.createElement("svg", {
     width: "12",
@@ -211,14 +208,18 @@ function TrashPage({
     }
   })), /*#__PURE__*/React.createElement("div", {
     style: {
-      // v2.3 液态玻璃
-      background: 'rgba(250,250,252,0.72)',
-      backdropFilter: 'blur(30px) saturate(200%)',
-      WebkitBackdropFilter: 'blur(30px) saturate(200%)',
-      borderTop: '0.5px solid rgba(60,60,67,0.08)',
-      boxShadow: 'inset 0 -1px 0 rgba(255,255,255,0.6)',
-      padding: '12px 16px calc(12px + var(--ios-safe-bottom))',
-      animation: 'slideUpBar 0.3s ease'
+      padding: '0 12px calc(12px + var(--ios-safe-bottom))'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      borderRadius: 26,
+      background: 'rgba(255,255,255,0.55)',
+      backdropFilter: 'blur(35px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(35px) saturate(180%)',
+      border: '0.5px solid rgba(255,255,255,0.8)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 6px 22px rgba(0,0,0,0.07)',
+      padding: '8px',
+      animation: 'slideUpBar 0.3s cubic-bezier(0.32, 0.72, 0, 1)'
     }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => trashPhotos.length > 0 && setShowAlert(true),
@@ -226,16 +227,17 @@ function TrashPage({
     style: {
       width: '100%',
       padding: '14px 20px',
-      background: trashPhotos.length === 0 ? 'rgba(255,59,48,0.3)' : '#FF3B30',
+      background: trashPhotos.length === 0 ? 'rgba(255,59,48,0.25)' : 'linear-gradient(135deg, #FF453A 0%, #FF3B30 100%)',
       color: '#fff',
       border: 'none',
-      borderRadius: 14,
+      borderRadius: 20,
       fontSize: 17,
       fontWeight: 600,
       fontFamily: '-apple-system, "SF Pro", system-ui',
       cursor: trashPhotos.length === 0 ? 'not-allowed' : 'pointer',
       letterSpacing: -0.4,
-      transition: 'transform 0.15s ease, background 0.15s ease'
+      boxShadow: trashPhotos.length === 0 ? 'none' : '0 4px 14px rgba(255,59,48,0.35)',
+      transition: 'transform 0.15s cubic-bezier(0.32, 0.72, 0, 1), background 0.15s ease'
     },
     onMouseDown: e => {
       if (trashPhotos.length > 0) {
@@ -248,7 +250,7 @@ function TrashPage({
     onMouseLeave: e => {
       e.currentTarget.style.transform = 'scale(1)';
     }
-  }, "\u5220\u9664\u5168\u90E8")), showAlert && /*#__PURE__*/React.createElement(IOSAlert, {
+  }, "\u5220\u9664\u5168\u90E8"))), showAlert && /*#__PURE__*/React.createElement(IOSAlert, {
     title: "\u5220\u9664\u7167\u7247\uFF1F",
     message: `将从回收站中永久删除 ${trashPhotos.length} 张照片，此操作不可撤销。`,
     actions: [{

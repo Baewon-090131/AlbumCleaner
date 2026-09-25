@@ -237,7 +237,13 @@ function SortPage({
       fn();
     }
   };
-  const handleUndoClick = () => playThen('in', onUndo);
+  // v2.4：撤回 = 当前卡片向右飞出 → 上一张从右侧滑回（与右滑手势一致的连贯动效，不再单卡横滑）
+  const handleUndoClick = () => playThen('right', () => {
+    if (onUndo) onUndo();
+    setTimeout(function() {
+      if (stackRef.current && stackRef.current.playFly) stackRef.current.playFly('in', function() {});
+    }, 50);
+  });
   const handleDeleteClick = () => playThen('up', onDeleteButton);
   const handleKeepClick = () => playThen('left', onKeepButton);
   const handleAlbumMode = () => { if (!hasPhoto) return; setBottomMode('albums'); };
@@ -264,18 +270,20 @@ function SortPage({
       height: '100%', background: '#F2F2F7',
       display: 'flex', flexDirection: 'column', position: 'relative',
     }}>
+      {/* v2.4 iOS 26 Liquid Glass：独立悬浮玻璃胶囊导航条 */}
       <div style={{
         position: 'relative', zIndex: 100,
         paddingTop: 'var(--ios-safe-top)',
-        // v2.3 液态玻璃：半透明 + 强模糊 + 顶部高光描边
-        background: 'rgba(250,250,252,0.72)',
-        backdropFilter: 'blur(30px) saturate(200%)',
-        WebkitBackdropFilter: 'blur(30px) saturate(200%)',
-        borderBottom: '0.5px solid rgba(60,60,67,0.08)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)',
+        padding: 'var(--ios-safe-top) 12px 6px',
       }}>
         <div style={{
-          position: 'relative', height: 44,
+          position: 'relative', height: 50,
+          borderRadius: 25,
+          background: 'rgba(255,255,255,0.58)',
+          backdropFilter: 'blur(35px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(35px) saturate(180%)',
+          border: '0.5px solid rgba(255,255,255,0.8)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 6px 20px rgba(0,0,0,0.06)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0 8px',
         }}>
@@ -284,7 +292,12 @@ function SortPage({
             background: 'none', border: 'none', padding: '6px 10px', cursor: 'pointer',
             color: themeColor, fontSize: 17,
             fontFamily: '-apple-system, "SF Pro", system-ui', fontWeight: 400,
-          }}>
+            transition: 'transform 0.16s cubic-bezier(0.32, 0.72, 0, 1)',
+          }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.9)'; }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+          >
             <svg width="12" height="20" viewBox="0 0 12 20">
               <path d="M10 2L2 10l8 8" stroke={themeColor} strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -299,8 +312,13 @@ function SortPage({
           <button onClick={onTrashClick} style={{
             background: 'none', border: 'none', padding: 6, cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            transition: 'transform 0.16s cubic-bezier(0.32, 0.72, 0, 1)',
+          }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.86)'; }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+          >
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none">
               <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"
                 stroke={themeColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -363,29 +381,39 @@ function SortPage({
         </div>
       )}
 
-      <div style={{ padding: '0 20px 10px' }}>
+      <div style={{ padding: '0 12px 8px' }}>
         <div style={{
-          display: 'flex', justifyContent: 'space-between',
-          alignItems: 'center', marginBottom: 6,
-        }}>
-          <span style={{
-            fontSize: 13, color: 'rgba(60,60,67,0.6)',
-            fontFamily: '-apple-system, "SF Pro", system-ui',
-          }}>{Math.min(displayCurrent, total)} / {total}</span>
-          <span style={{
-            fontSize: 13, color: 'rgba(60,60,67,0.6)',
-            fontFamily: '-apple-system, "SF Pro", system-ui',
-          }}>剩余 {remaining} 张</span>
-        </div>
-        <div style={{
-          height: 4, background: 'rgba(60,60,67,0.1)',
-          borderRadius: 2, overflow: 'hidden',
+          borderRadius: 18,
+          background: 'rgba(255,255,255,0.5)',
+          backdropFilter: 'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+          border: '0.5px solid rgba(255,255,255,0.7)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 10px rgba(0,0,0,0.04)',
+          padding: '8px 14px 10px',
         }}>
           <div style={{
-            height: '100%', width: `${progress}%`,
-            background: themeColor, borderRadius: 2,
-            transition: 'width 0.3s ease',
-          }} />
+            display: 'flex', justifyContent: 'space-between',
+            alignItems: 'center', marginBottom: 6,
+          }}>
+            <span style={{
+              fontSize: 13, color: 'rgba(60,60,67,0.6)',
+              fontFamily: '-apple-system, "SF Pro", system-ui',
+            }}>{Math.min(displayCurrent, total)} / {total}</span>
+            <span style={{
+              fontSize: 13, color: 'rgba(60,60,67,0.6)',
+              fontFamily: '-apple-system, "SF Pro", system-ui',
+            }}>剩余 {remaining} 张</span>
+          </div>
+          <div style={{
+            height: 4, background: 'rgba(60,60,67,0.12)',
+            borderRadius: 2, overflow: 'hidden',
+          }}>
+            <div style={{
+              height: '100%', width: `${progress}%`,
+              background: themeColor, borderRadius: 2,
+              transition: 'width 0.3s ease',
+            }} />
+          </div>
         </div>
       </div>
 

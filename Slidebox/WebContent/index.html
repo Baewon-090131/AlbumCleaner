@@ -18,10 +18,13 @@
       font-family: -apple-system, "SF Pro", "SF Pro Display", system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      /* iOS 26 Liquid Glass 基础：SystemGroupedBackground 浅灰 */
       background: #F2F2F7;
       overscroll-behavior: none;
       -webkit-user-select: none;
       user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-text-size-adjust: 100%;
     }
     .app-root {
       width: 100%;
@@ -31,6 +34,12 @@
       -webkit-user-drag: none;
       user-drag: none;
       pointer-events: none;
+    }
+    /* 隐藏滚动条（iOS 风格） */
+    ::-webkit-scrollbar { display: none; }
+    button {
+      font-family: inherit;
+      -webkit-tap-highlight-color: transparent;
     }
   </style>
 </head>

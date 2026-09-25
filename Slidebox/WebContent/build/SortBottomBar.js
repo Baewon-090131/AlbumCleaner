@@ -217,8 +217,8 @@ function SortBottomBar({
     onClick: btn.enabled ? btn.onClick : undefined,
     disabled: !btn.enabled,
     style: {
-      width: 62,
-      height: 58,
+      width: 74,
+      height: 62,
       borderRadius: 20,
       background: 'transparent',
       border: 'none',
@@ -230,7 +230,7 @@ function SortBottomBar({
       transition: 'transform 0.15s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.15s ease',
       color: btn.color,
       flexDirection: 'column',
-      gap: 3,
+      gap: 4,
       animation: `cardIn 0.3s cubic-bezier(0.32, 0.72, 0, 1) ${idx * 0.05}s both`
     },
     onMouseDown: e => {
@@ -244,17 +244,26 @@ function SortBottomBar({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
+      width: 46,
+      height: 46,
+      borderRadius: 16,
+      background: 'rgba(255,255,255,0.6)',
+      backdropFilter: 'blur(16px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+      border: '0.5px solid rgba(255,255,255,0.85)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 10px rgba(0,0,0,0.06)',
       color: btn.color,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      transition: 'transform 0.15s ease'
+      transition: 'transform 0.15s cubic-bezier(0.32, 0.72, 0, 1)'
     }
   }, React.cloneElement(btn.icon, {
-    stroke: btn.color
+    stroke: btn.color,
+    strokeWidth: 1.8
   })), /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 10,
+      fontSize: 10.5,
       color: btn.color,
       fontFamily: '-apple-system, "SF Pro", system-ui',
       fontWeight: 500,

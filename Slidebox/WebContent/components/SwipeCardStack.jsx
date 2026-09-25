@@ -183,6 +183,31 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
   const dragRef = React.useRef({ active: false, pointerId: null, sx: 0, sy: 0, dx: 0, dy: 0, raf: 0, moved: false });
   const suppressClickRef = React.useRef(false);
 
+  // v2.4：照片切换淡入淡出（原生 iOS 相册观感）。
+  // firstRenderRef：首次进入不播；enteringRef：右滑/按钮撤回的“滑入”路径已自带动画，跳过淡入防二次闪烁
+  const firstRenderRef = React.useRef(true);
+  const enteringRef = React.useRef(false);
+
+  const currentPhoto = photos[currentIndex];
+  const nextPhoto = photos[currentIndex + 1];
+
+  // v2.4：当前照片变化 → 卡片轻微上移+缩放淡入（0.3s，iOS ease）
+  React.useEffect(() => {
+    if (firstRenderRef.current) { firstRenderRef.current = false; return; }
+    if (enteringRef.current) { enteringRef.current = false; return; }
+    const card = cardRef.current;
+    if (!card) return;
+    card.style.transition = 'none';
+    card.style.opacity = '0.2';
+    card.style.transform = 'translateY(10px) scale(0.985)';
+    void card.offsetWidth;
+    card.style.transition = 'opacity 0.26s ease, transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)';
+    card.style.opacity = '1';
+    card.style.transform = 'translateY(0) scale(1)';
+    const tid = setTimeout(function() { card.style.transition = 'none'; }, 340);
+    return () => clearTimeout(tid);
+  }, [currentPhoto && currentPhoto.id]);
+
   // 播放飞出/滑入动效（拖拽与按钮共用）
   const playFly = (type, onComplete) => {
     const card = cardRef.current;
@@ -191,38 +216,39 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
     const EASE = 'cubic-bezier(0.32, 0.72, 0, 1)';
 
     if (type === 'in') {
-      // 滑入（撤回后新卡片从右侧进入）
+      // 滑入（撤回后新卡片从右侧滑回）— 已自带动画，切换淡入需跳过
+      enteringRef.current = true;
       card.style.transition = 'none';
-      card.style.transform = 'translateX(130vw)';
+      card.style.transform = 'translateX(100%)';
       card.style.opacity = '0';
       void card.offsetWidth; // 强制重排，确保过渡生效
-      card.style.transition = `all 0.38s ${EASE}`;
+      card.style.transition = `all 0.32s ${EASE}`;
       card.style.transform = 'translateX(0)';
       card.style.opacity = '1';
       setTimeout(function() {
         animatingRef.current = false;
         if (onComplete) onComplete();
-      }, 360);
+      }, 300);
     } else {
-      // 飞出：删除↑ / 下一张← / 撤回→ / 收藏↓
+      // 飞出：删除↑ / 下一张← / 撤回→ / 收藏↓（行程 105%，利落不拖沓）
       var transforms = {
-        up: 'translateY(-130vh) rotate(0deg)',
-        left: 'translateX(-130vw) rotate(-12deg)',
-        right: 'translateX(130vw) rotate(12deg)',
-        down: 'translateY(130vh) rotate(0deg)',
+        up: 'translateY(-105%) rotate(0deg)',
+        left: 'translateX(-105%) rotate(-12deg)',
+        right: 'translateX(105%) rotate(12deg)',
+        down: 'translateY(105%) rotate(0deg)',
       };
-      card.style.transition = `all 0.36s ${EASE}`;
+      card.style.transition = `all 0.32s ${EASE}`;
       card.style.transform = transforms[type] || 'scale(0.7) rotate(0deg)';
       card.style.opacity = '0';
       setTimeout(function() {
         animatingRef.current = false;
         // 关键修复：飞出动画结束后必须复位卡片位置，
-        // 否则残留的 translateX(-130vw) 会让下一张照片渲染在屏幕外（黑屏）
+        // 否则残留的 translateX(-105%) 会让下一张照片渲染在屏幕外（黑屏）
         card.style.transition = 'none';
         card.style.transform = 'translateX(0) translateY(0) rotate(0deg)';
         card.style.opacity = '1';
         if (onComplete) onComplete();
-      }, 340);
+      }, 300);
     }
   };
 
@@ -230,9 +256,6 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
     playFly: playFly,
     isAnimating: function() { return animatingRef.current; },
   }));
-
-  const currentPhoto = photos[currentIndex];
-  const nextPhoto = photos[currentIndex + 1];
 
   // 拖拽方向提示总线（ref 直驱，零 React 渲染）
   const hintBus = React.useMemo(() => {
@@ -305,10 +328,11 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
           // 左滑：保留并下一张
           playFly('left', function() { if (onSwipeLeft) onSwipeLeft(); });
         } else {
-          // 右滑：撤回上一个操作，新卡从右侧滑入
+          // 右滑：撤回上一个操作，新卡从右侧滑回（缩短空窗，衔接更紧凑）
           playFly('right', function() {
+            enteringRef.current = true; // 即将滑入，跳过淡入防闪烁
             if (onSwipeRight) onSwipeRight();
-            setTimeout(function() { playFly('in', function() {}); }, 90);
+            setTimeout(function() { playFly('in', function() {}); }, 50);
           });
         }
       } else {

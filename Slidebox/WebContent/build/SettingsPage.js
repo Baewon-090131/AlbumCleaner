@@ -63,18 +63,18 @@ function SettingsPage({
     style: {
       position: 'relative',
       zIndex: 100,
-      paddingTop: 'var(--ios-safe-top)',
-      // v2.3 液态玻璃
-      background: 'rgba(250,250,252,0.72)',
-      backdropFilter: 'blur(30px) saturate(200%)',
-      WebkitBackdropFilter: 'blur(30px) saturate(200%)',
-      borderBottom: '0.5px solid rgba(60,60,67,0.08)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)'
+      padding: 'var(--ios-safe-top) 12px 6px'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'relative',
-      height: 44,
+      height: 50,
+      borderRadius: 25,
+      background: 'rgba(255,255,255,0.58)',
+      backdropFilter: 'blur(35px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(35px) saturate(180%)',
+      border: '0.5px solid rgba(255,255,255,0.8)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 6px 20px rgba(0,0,0,0.06)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -93,7 +93,17 @@ function SettingsPage({
       color: themeColor,
       fontSize: 17,
       fontFamily: '-apple-system, "SF Pro", system-ui',
-      fontWeight: 400
+      fontWeight: 400,
+      transition: 'transform 0.16s cubic-bezier(0.32, 0.72, 0, 1)'
+    },
+    onMouseDown: e => {
+      e.currentTarget.style.transform = 'scale(0.9)';
+    },
+    onMouseUp: e => {
+      e.currentTarget.style.transform = 'scale(1)';
+    },
+    onMouseLeave: e => {
+      e.currentTarget.style.transform = 'scale(1)';
     }
   }, /*#__PURE__*/React.createElement("svg", {
     width: "12",
@@ -148,7 +158,7 @@ function SettingsPage({
       WebkitBackdropFilter: 'blur(20px) saturate(180%)',
       border: '0.5px solid rgba(255,255,255,0.7)',
       boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(0,0,0,0.05)',
-      borderRadius: 18,
+      borderRadius: 20,
       margin: '0 16px',
       padding: '16px 20px'
     }
@@ -176,7 +186,7 @@ function SettingsPage({
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
-        boxShadow: isSelected ? `0 0 0 3px #fff, 0 0 0 5px ${t.color}` : '0 1px 3px rgba(0,0,0,0.15)',
+        boxShadow: isSelected ? `0 0 0 3px #fff, 0 0 0 5.5px ${t.color}, 0 0 0 7px rgba(255,255,255,0.9)` : 'inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 3px rgba(0,0,0,0.15)',
         transition: 'all 0.2s ease'
       }
     }, isSelected && /*#__PURE__*/React.createElement("svg", {
@@ -219,7 +229,7 @@ function SettingsPage({
   }, /*#__PURE__*/React.createElement(SettingRow, {
     iconColor: themeColor,
     title: "\u5173\u4E8E",
-    detail: "Album Cleaner 2.3"
+    detail: "Album Cleaner 2.4"
   }), /*#__PURE__*/React.createElement(SettingRow, {
     iconColor: themeColor,
     title: "\u64CD\u4F5C\u6307\u5F15",

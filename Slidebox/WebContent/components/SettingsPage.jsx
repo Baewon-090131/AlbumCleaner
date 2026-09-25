@@ -16,18 +16,19 @@ const THEME_COLORS = [
 function SettingsPage({ themeColor, onThemeChange, onBack }) {
   return (
     <div style={{ height: '100%', background: '#F2F2F7', display: 'flex', flexDirection: 'column' }}>
+      {/* v2.4 iOS 26 Liquid Glass：独立悬浮玻璃胶囊导航条 */}
       <div style={{
         position: 'relative', zIndex: 100,
-        paddingTop: 'var(--ios-safe-top)',
-        // v2.3 液态玻璃
-        background: 'rgba(250,250,252,0.72)',
-        backdropFilter: 'blur(30px) saturate(200%)',
-        WebkitBackdropFilter: 'blur(30px) saturate(200%)',
-        borderBottom: '0.5px solid rgba(60,60,67,0.08)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)',
+        padding: 'var(--ios-safe-top) 12px 6px',
       }}>
         <div style={{
-          position: 'relative', height: 44,
+          position: 'relative', height: 50,
+          borderRadius: 25,
+          background: 'rgba(255,255,255,0.58)',
+          backdropFilter: 'blur(35px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(35px) saturate(180%)',
+          border: '0.5px solid rgba(255,255,255,0.8)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 6px 20px rgba(0,0,0,0.06)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0 8px',
         }}>
@@ -36,7 +37,12 @@ function SettingsPage({ themeColor, onThemeChange, onBack }) {
             background: 'none', border: 'none', padding: '6px 10px', cursor: 'pointer',
             color: themeColor, fontSize: 17,
             fontFamily: '-apple-system, "SF Pro", system-ui', fontWeight: 400,
-          }}>
+            transition: 'transform 0.16s cubic-bezier(0.32, 0.72, 0, 1)',
+          }}
+          onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.9)'; }}
+          onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+          >
             <svg width="12" height="20" viewBox="0 0 12 20">
               <path d="M10 2L2 10l8 8" stroke={themeColor} strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -66,7 +72,7 @@ function SettingsPage({ themeColor, onThemeChange, onBack }) {
             WebkitBackdropFilter: 'blur(20px) saturate(180%)',
             border: '0.5px solid rgba(255,255,255,0.7)',
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(0,0,0,0.05)',
-            borderRadius: 18,
+            borderRadius: 20,
             margin: '0 16px', padding: '16px 20px',
           }}>
             <div style={{
@@ -81,7 +87,9 @@ function SettingsPage({ themeColor, onThemeChange, onBack }) {
                     background: t.color, border: 'none', cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     position: 'relative',
-                    boxShadow: isSelected ? `0 0 0 3px #fff, 0 0 0 5px ${t.color}` : '0 1px 3px rgba(0,0,0,0.15)',
+                    boxShadow: isSelected
+                      ? `0 0 0 3px #fff, 0 0 0 5.5px ${t.color}, 0 0 0 7px rgba(255,255,255,0.9)`
+                      : 'inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 3px rgba(0,0,0,0.15)',
                     transition: 'all 0.2s ease',
                   }}>
                     {isSelected && (
@@ -112,7 +120,7 @@ function SettingsPage({ themeColor, onThemeChange, onBack }) {
             borderRadius: 18,
             margin: '0 16px', overflow: 'hidden',
           }}>
-            <SettingRow iconColor={themeColor} title="关于" detail="Album Cleaner 2.3" />
+            <SettingRow iconColor={themeColor} title="关于" detail="Album Cleaner 2.4" />
             <SettingRow iconColor={themeColor} title="操作指引" detail="" />
             <SettingRow iconColor={themeColor} title="清理缓存" detail="0 KB" isLast />
           </div>

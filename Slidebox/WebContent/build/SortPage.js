@@ -338,7 +338,13 @@ function SortPage({
       fn();
     }
   };
-  const handleUndoClick = () => playThen('in', onUndo);
+  // v2.4：撤回 = 当前卡片向右飞出 → 上一张从右侧滑回（与右滑手势一致的连贯动效，不再单卡横滑）
+  const handleUndoClick = () => playThen('right', () => {
+    if (onUndo) onUndo();
+    setTimeout(function () {
+      if (stackRef.current && stackRef.current.playFly) stackRef.current.playFly('in', function () {});
+    }, 50);
+  });
   const handleDeleteClick = () => playThen('up', onDeleteButton);
   const handleKeepClick = () => playThen('left', onKeepButton);
   const handleAlbumMode = () => {
@@ -384,17 +390,18 @@ function SortPage({
       position: 'relative',
       zIndex: 100,
       paddingTop: 'var(--ios-safe-top)',
-      // v2.3 液态玻璃：半透明 + 强模糊 + 顶部高光描边
-      background: 'rgba(250,250,252,0.72)',
-      backdropFilter: 'blur(30px) saturate(200%)',
-      WebkitBackdropFilter: 'blur(30px) saturate(200%)',
-      borderBottom: '0.5px solid rgba(60,60,67,0.08)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)'
+      padding: 'var(--ios-safe-top) 12px 6px'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'relative',
-      height: 44,
+      height: 50,
+      borderRadius: 25,
+      background: 'rgba(255,255,255,0.58)',
+      backdropFilter: 'blur(35px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(35px) saturate(180%)',
+      border: '0.5px solid rgba(255,255,255,0.8)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 6px 20px rgba(0,0,0,0.06)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -413,7 +420,17 @@ function SortPage({
       color: themeColor,
       fontSize: 17,
       fontFamily: '-apple-system, "SF Pro", system-ui',
-      fontWeight: 400
+      fontWeight: 400,
+      transition: 'transform 0.16s cubic-bezier(0.32, 0.72, 0, 1)'
+    },
+    onMouseDown: e => {
+      e.currentTarget.style.transform = 'scale(0.9)';
+    },
+    onMouseUp: e => {
+      e.currentTarget.style.transform = 'scale(1)';
+    },
+    onMouseLeave: e => {
+      e.currentTarget.style.transform = 'scale(1)';
     }
   }, /*#__PURE__*/React.createElement("svg", {
     width: "12",
@@ -447,11 +464,21 @@ function SortPage({
       cursor: 'pointer',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'center'
+      justifyContent: 'center',
+      transition: 'transform 0.16s cubic-bezier(0.32, 0.72, 0, 1)'
+    },
+    onMouseDown: e => {
+      e.currentTarget.style.transform = 'scale(0.86)';
+    },
+    onMouseUp: e => {
+      e.currentTarget.style.transform = 'scale(1)';
+    },
+    onMouseLeave: e => {
+      e.currentTarget.style.transform = 'scale(1)';
     }
   }, /*#__PURE__*/React.createElement("svg", {
-    width: "22",
-    height: "22",
+    width: "21",
+    height: "21",
     viewBox: "0 0 24 24",
     fill: "none"
   }, /*#__PURE__*/React.createElement("path", {
@@ -557,7 +584,17 @@ function SortPage({
     strokeLinejoin: "round"
   })), /*#__PURE__*/React.createElement("span", null, "\u5DF2\u6DFB\u52A0\u5230\u300C", addedFeedback, "\u300D")), /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: '0 20px 10px'
+      padding: '0 12px 8px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      borderRadius: 18,
+      background: 'rgba(255,255,255,0.5)',
+      backdropFilter: 'blur(20px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+      border: '0.5px solid rgba(255,255,255,0.7)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 10px rgba(0,0,0,0.04)',
+      padding: '8px 14px 10px'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -581,7 +618,7 @@ function SortPage({
   }, "\u5269\u4F59 ", remaining, " \u5F20")), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 4,
-      background: 'rgba(60,60,67,0.1)',
+      background: 'rgba(60,60,67,0.12)',
       borderRadius: 2,
       overflow: 'hidden'
     }
@@ -593,7 +630,7 @@ function SortPage({
       borderRadius: 2,
       transition: 'width 0.3s ease'
     }
-  }))), /*#__PURE__*/React.createElement(SortBottomBar, {
+  })))), /*#__PURE__*/React.createElement(SortBottomBar, {
     themeColor: themeColor,
     mode: bottomMode,
     albums: albums,
