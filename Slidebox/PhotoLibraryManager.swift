@@ -274,8 +274,8 @@ class PhotoLibraryManager: NSObject {
             let options = PHVideoRequestOptions()
             options.isNetworkAccessAllowed = true
             options.deliveryMode = .highQualityFormat
-            // iOS 26 SDK：requestAVAsset 更名为 requestVideo(forVideo:)
-            imageManager.requestVideo(forVideo: asset, options: options) { avAsset, _, _ in
+            // iOS 26 SDK：requestAVAsset 第一个参数标签改为 forVideo
+            imageManager.requestAVAsset(forVideo: asset, options: options) { avAsset, _, _ in
                 guard let urlAsset = avAsset as? AVURLAsset else {
                     DispatchQueue.main.async { completion(nil, nil) }
                     return
