@@ -1,4 +1,4 @@
-// 首页 - 月份列表（v2.4 Liquid Glass：大标题 + 悬浮玻璃工具按钮 + 玻璃月份卡片）
+// 首页 - 月份列表（v2.5 Liquid Glass：壁纸背景透出 + 大标题 + 悬浮玻璃工具按钮 + 主题色玻璃月份卡片）
 function HomePage({
   months,
   onMonthClick,
@@ -7,10 +7,13 @@ function HomePage({
   themeColor = '#007AFF',
   trashCount
 }) {
+  const totalItems = months.reduce(function (acc, m) {
+    return acc + (m.photos ? m.photos.length : 0);
+  }, 0);
   return /*#__PURE__*/React.createElement("div", {
     style: {
       height: '100%',
-      background: '#F2F2F7',
+      background: 'transparent',
       display: 'flex',
       flexDirection: 'column'
     }
@@ -26,7 +29,7 @@ function HomePage({
       justifyContent: 'space-between',
       alignItems: 'flex-end'
     }
-  }, /*#__PURE__*/React.createElement("h1", {
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h1", {
     style: {
       margin: 0,
       fontSize: 34,
@@ -37,6 +40,14 @@ function HomePage({
       lineHeight: 1.08
     }
   }, "Album Cleaner"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 5,
+      fontSize: 13,
+      color: 'rgba(60,60,67,0.55)',
+      fontFamily: '-apple-system, "SF Pro", system-ui',
+      letterSpacing: -0.2
+    }
+  }, months.length, " \u4E2A\u6708\u4EFD \xB7 ", totalItems, " \u4E2A\u5A92\u4F53\u9879\u76EE")), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       gap: 10,
@@ -107,6 +118,7 @@ function HomePage({
     key: month.id,
     month: month,
     index: idx,
+    themeColor: themeColor,
     onClick: () => onMonthClick(month)
   }))), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -132,10 +144,10 @@ function GlassIconButton({
       height: 46,
       borderRadius: 23,
       border: '0.5px solid rgba(255,255,255,0.8)',
-      background: 'rgba(255,255,255,0.55)',
-      backdropFilter: 'blur(30px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(30px) saturate(180%)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 16px rgba(0,0,0,0.07)',
+      background: 'rgba(255,255,255,0.45)',
+      backdropFilter: 'blur(30px) saturate(200%)',
+      WebkitBackdropFilter: 'blur(30px) saturate(200%)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.35), 0 4px 18px rgba(30,40,90,0.10)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -172,48 +184,53 @@ function GlassIconButton({
   }, badge > 99 ? '99+' : badge));
 }
 
-// 月份卡片（v2.4 Liquid Glass：白玻璃 + 大圆角 + 内高光）
+// 月份卡片（v2.5 Liquid Glass：主题色玻璃图标 + 透出壁纸 + 按压动效）
 function MonthCard({
   month,
   onClick,
-  index = 0
+  index = 0,
+  themeColor = '#007AFF'
 }) {
+  const iconBg = `linear-gradient(145deg, ${themeColor} 0%, ${themeColor}CC 100%)`;
   return /*#__PURE__*/React.createElement("div", {
     onClick: onClick,
     style: {
-      background: 'rgba(255,255,255,0.58)',
-      backdropFilter: 'blur(25px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(25px) saturate(180%)',
-      borderRadius: 22,
+      background: 'rgba(255,255,255,0.50)',
+      backdropFilter: 'blur(25px) saturate(200%)',
+      WebkitBackdropFilter: 'blur(25px) saturate(200%)',
+      borderRadius: 24,
       cursor: 'pointer',
       border: '0.5px solid rgba(255,255,255,0.75)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), 0 6px 20px rgba(0,0,0,0.05)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 8px 24px rgba(30,40,90,0.08)',
       animation: `glassIn 0.45s cubic-bezier(0.32, 0.72, 0, 1) ${index * 0.05}s both`,
       transition: 'transform 0.2s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.2s ease',
       display: 'flex',
       alignItems: 'center',
       padding: '14px 18px'
     },
+    onMouseEnter: e => {
+      e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.9), 0 12px 30px rgba(30,40,90,0.12)';
+    },
     onMouseDown: e => {
-      e.currentTarget.style.transform = 'scale(0.98)';
-      e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.85), 0 10px 24px rgba(0,0,0,0.08)';
+      e.currentTarget.style.transform = 'scale(0.97)';
+      e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.9), 0 10px 26px rgba(30,40,90,0.12)';
     },
     onMouseUp: e => {
       e.currentTarget.style.transform = 'scale(1)';
-      e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.85), 0 6px 20px rgba(0,0,0,0.05)';
+      e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 24px rgba(30,40,90,0.08)';
     },
     onMouseLeave: e => {
       e.currentTarget.style.transform = 'scale(1)';
-      e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.85), 0 6px 20px rgba(0,0,0,0.05)';
+      e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 24px rgba(30,40,90,0.08)';
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       width: 50,
       height: 50,
-      borderRadius: 14,
-      background: 'linear-gradient(145deg, rgba(250,250,252,0.9) 0%, rgba(226,226,232,0.75) 100%)',
-      border: '0.5px solid rgba(255,255,255,0.85)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.95), 0 2px 8px rgba(0,0,0,0.05)',
+      borderRadius: 16,
+      background: iconBg,
+      border: '0.5px solid rgba(255,255,255,0.6)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4), 0 3px 10px rgba(30,40,90,0.15)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -221,11 +238,12 @@ function MonthCard({
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 19,
-      fontWeight: 600,
-      color: 'rgba(60,60,67,0.75)',
+      fontSize: 18,
+      fontWeight: 700,
+      color: '#fff',
       fontFamily: '-apple-system, "SF Pro", system-ui',
-      letterSpacing: -0.3
+      letterSpacing: -0.3,
+      textShadow: '0 1px 3px rgba(0,0,0,0.18)'
     }
   }, month.shortTitle)), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -248,21 +266,29 @@ function MonthCard({
       fontFamily: '-apple-system, "SF Pro", system-ui',
       marginTop: 2
     }
-  }, month.photos.length, " \u4E2A\u9879\u76EE")), /*#__PURE__*/React.createElement("svg", {
-    width: "8",
-    height: "14",
-    viewBox: "0 0 8 14",
+  }, month.photos.length, " \u4E2A\u9879\u76EE")), /*#__PURE__*/React.createElement("div", {
     style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      background: 'rgba(120,120,128,0.10)',
       flexShrink: 0
     }
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: "8",
+    height: "14",
+    viewBox: "0 0 8 14"
   }, /*#__PURE__*/React.createElement("path", {
     d: "M1 1l6 6-6 6",
-    stroke: "rgba(60,60,67,0.3)",
+    stroke: "rgba(60,60,67,0.45)",
     strokeWidth: "2",
     fill: "none",
     strokeLinecap: "round",
     strokeLinejoin: "round"
-  })));
+  }))));
 }
 Object.assign(window, {
   HomePage,

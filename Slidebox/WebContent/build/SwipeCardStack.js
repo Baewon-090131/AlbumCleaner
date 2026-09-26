@@ -1,9 +1,15 @@
-// 照片卡片组件 - v2.3：原生相册式完整显示 + 点击全屏/LIVE标识
+// 照片卡片组件 - v2.5：原生相册式完整显示 + 点击全屏 + Live/视频自动播放
 function PhotoCard({
   photo,
-  onTap
+  onTap,
+  autoPlayLive = true,
+  autoPlayVideo = true
 }) {
   const hasRealImage = photo.thumbnailUrl && (photo.thumbnailUrl.startsWith('photo://') || photo.thumbnailUrl.startsWith('data:'));
+  const isNative = !!(window.NativeBridge && window.NativeBridge.isNative());
+  // v2.5：真机内嵌自动播放（视频 → video:// 数据流；Live Photo → 配对视频数据流）
+  const autoPlayMedia = photo.isVideo && autoPlayVideo || photo.isLivePhoto && autoPlayLive;
+  const videoSrc = autoPlayMedia && isNative && photo.id && !photo.id.startsWith('mock_') ? 'video://' + photo.id : null;
 
   // v2.3.2：图片加载完成前保持透明，加载完成后 0.18s 淡入。
   // 删除/切换照片时新图就绪前不再长时间露出纯黑（配合原生 PNG 缓存秒显）
@@ -15,6 +21,10 @@ function PhotoCard({
     // 已加载完成（如缓存命中）直接显示，不闪不淡
     if (img && img.complete && img.naturalWidth > 0) setImgLoaded(true);
   }, [photo.id]);
+
+  // 模拟器（无真实媒体文件）：Live 用 Ken Burns 微动模拟动态；视频用进度扫描模拟播放
+  const mockLiveAnim = !isNative && photo.isLivePhoto && autoPlayLive;
+  const mockVideoAnim = !isNative && photo.isVideo && autoPlayVideo;
   return /*#__PURE__*/React.createElement("div", {
     onClick: e => {
       e.stopPropagation();
@@ -30,7 +40,25 @@ function PhotoCard({
       overflow: 'hidden',
       cursor: 'pointer'
     }
-  }, hasRealImage ? /*#__PURE__*/React.createElement("img", {
+  }, hasRealImage ? videoSrc ?
+  /*#__PURE__*/
+  // 真机内嵌自动播放：<video> 播放 video:// 数据流，poster 用缩略图即时占位
+  React.createElement("video", {
+    key: photo.id,
+    src: videoSrc,
+    poster: photo.thumbnailUrl,
+    muted: true,
+    autoPlay: true,
+    playsInline: true,
+    loop: true,
+    style: {
+      width: '100%',
+      height: '100%',
+      objectFit: 'contain',
+      display: 'block',
+      pointerEvents: 'none'
+    }
+  }) : /*#__PURE__*/React.createElement("img", {
     ref: imgRef,
     src: photo.thumbnailUrl,
     alt: "",
@@ -46,7 +74,9 @@ function PhotoCard({
       display: 'block',
       pointerEvents: 'none',
       opacity: imgLoaded ? 1 : 0,
-      transition: 'opacity 0.18s ease'
+      transition: 'opacity 0.18s ease',
+      // 模拟器 Live 自动播放：Ken Burns 微动模拟动态（对 data:/photo: 图同样生效）
+      animation: mockLiveAnim ? 'liveKenBurns 4.5s ease-in-out infinite alternate' : undefined
     }
   }) :
   /*#__PURE__*/
@@ -59,7 +89,9 @@ function PhotoCard({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      pointerEvents: 'none'
+      pointerEvents: 'none',
+      animation: mockLiveAnim ? 'liveKenBurns 4.5s ease-in-out infinite alternate' : undefined,
+      overflow: 'hidden'
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
@@ -68,7 +100,50 @@ function PhotoCard({
       filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.3))',
       userSelect: 'none'
     }
-  }, "\uD83D\uDDBC\uFE0F")), photo.isVideo && /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDDBC\uFE0F")), mockVideoAnim && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: 14,
+      zIndex: 2,
+      background: 'rgba(0,0,0,0.45)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: '100%',
+      background: 'rgba(255,255,255,0.85)',
+      animation: 'progressScan 3.2s linear infinite'
+    }
+  })), mockVideoAnim && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      top: 14,
+      left: 14,
+      zIndex: 2,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6,
+      background: 'rgba(0,0,0,0.5)',
+      padding: '5px 10px',
+      borderRadius: 18
+    }
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: "9",
+    height: "11",
+    viewBox: "0 0 10 12"
+  }, /*#__PURE__*/React.createElement("polygon", {
+    points: "0,0 10,6 0,12",
+    fill: "#fff"
+  })), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: '#fff',
+      fontSize: 11,
+      fontWeight: 600,
+      fontFamily: '-apple-system, "SF Pro", system-ui'
+    }
+  }, "\u81EA\u52A8\u64AD\u653E")), photo.isVideo && /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
       bottom: 16,
@@ -209,7 +284,9 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
   onSwipeUp,
   onSwipeLeft,
   onSwipeRight,
-  onSwipeDown
+  onSwipeDown,
+  autoPlayLive = true,
+  autoPlayVideo = true
 }, ref) {
   const cardRef = React.useRef(null);
   const animatingRef = React.useRef(false);
@@ -503,7 +580,9 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
     }
   }, /*#__PURE__*/React.createElement(PhotoCard, {
     photo: currentPhoto,
-    onTap: handlePhotoTap
+    onTap: handlePhotoTap,
+    autoPlayLive: autoPlayLive,
+    autoPlayVideo: autoPlayVideo
   })), nextPhoto && nextPhoto.thumbnailUrl && /*#__PURE__*/React.createElement("img", {
     src: nextPhoto.thumbnailUrl,
     alt: "",

@@ -15,6 +15,33 @@ function App() {
   const [addedFeedback, setAddedFeedback] = React.useState(null);
   const [toastMessage, setToastMessage] = React.useState(null);
 
+  // v2.5：Live 图 / 视频 自动播放开关（localStorage 持久化，默认开启）
+  const [autoPlayLive, setAutoPlayLive] = React.useState(true);
+  const [autoPlayVideo, setAutoPlayVideo] = React.useState(true);
+
+  // 读取持久化开关
+  React.useEffect(() => {
+    try {
+      const s = window.localStorage;
+      if (s) {
+        setAutoPlayLive(s.getItem('ac_autoLive') !== '0');
+        setAutoPlayVideo(s.getItem('ac_autoVideo') !== '0');
+      }
+    } catch (e) {}
+  }, []);
+  const handleAutoLiveChange = v => {
+    setAutoPlayLive(v);
+    try {
+      window.localStorage.setItem('ac_autoLive', v ? '1' : '0');
+    } catch (e) {}
+  };
+  const handleAutoVideoChange = v => {
+    setAutoPlayVideo(v);
+    try {
+      window.localStorage.setItem('ac_autoVideo', v ? '1' : '0');
+    } catch (e) {}
+  };
+
   // 加载数据
   React.useEffect(() => {
     if (window.DataLoader) {
@@ -263,6 +290,8 @@ function App() {
           addedFeedback: addedFeedback,
           toastMessage: toastMessage,
           albums: albumsData,
+          autoPlayLive: autoPlayLive,
+          autoPlayVideo: autoPlayVideo,
           onBack: goBack,
           onTrashClick: () => navigateTo('trash'),
           onAlbumAdd: handleAlbumAdd,
@@ -286,6 +315,10 @@ function App() {
       case 'settings':
         return /*#__PURE__*/React.createElement(SettingsPage, {
           themeColor: themeColor,
+          autoPlayLive: autoPlayLive,
+          autoPlayVideo: autoPlayVideo,
+          onAutoLiveChange: handleAutoLiveChange,
+          onAutoVideoChange: handleAutoVideoChange,
           onThemeChange: handleThemeChange,
           onBack: goBack
         });

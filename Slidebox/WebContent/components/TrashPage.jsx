@@ -8,8 +8,8 @@ function TrashPage({ trashPhotos, onBack, onRestore, onDelete, onDeleteAll, them
   const handleDeleteOne = () => { if (selectedPhoto) onDelete(selectedPhoto.id); setShowActionSheet(false); setSelectedPhoto(null); };
 
   return (
-    <div style={{ height: '100%', background: '#F2F2F7', display: 'flex', flexDirection: 'column' }}>
-      {/* v2.4 iOS 26 Liquid Glass：独立悬浮玻璃胶囊导航条 */}
+    <div style={{ height: '100%', background: 'transparent', display: 'flex', flexDirection: 'column' }}>
+      {/* v2.5 iOS 26 Liquid Glass：独立悬浮玻璃胶囊导航条 */}
       <div style={{
         position: 'relative', zIndex: 100,
         padding: 'var(--ios-safe-top) 12px 6px',
@@ -17,11 +17,11 @@ function TrashPage({ trashPhotos, onBack, onRestore, onDelete, onDeleteAll, them
         <div style={{
           position: 'relative', height: 50,
           borderRadius: 25,
-          background: 'rgba(255,255,255,0.58)',
-          backdropFilter: 'blur(35px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(35px) saturate(180%)',
+          background: 'rgba(255,255,255,0.50)',
+          backdropFilter: 'blur(35px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(35px) saturate(200%)',
           border: '0.5px solid rgba(255,255,255,0.8)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 6px 20px rgba(0,0,0,0.06)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
           display: 'flex', alignItems: 'center',
           justifyContent: 'space-between', padding: '0 8px',
         }}>
@@ -52,16 +52,36 @@ function TrashPage({ trashPhotos, onBack, onRestore, onDelete, onDeleteAll, them
       </div>
 
       <div style={{
-        padding: '14px 20px', fontSize: 13,
-        color: 'rgba(60,60,67,0.6)',
+        padding: '14px 24px', fontSize: 13,
+        color: 'rgba(60,60,67,0.65)',
         fontFamily: '-apple-system, "SF Pro", system-ui', textAlign: 'center',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        {trashPhotos.length > 0 ? `共 ${trashPhotos.length} 张照片将在 30 天后删除` : '回收站为空'}
+        <span style={{
+          background: 'rgba(255,255,255,0.42)',
+          backdropFilter: 'blur(20px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(200%)',
+          border: '0.5px solid rgba(255,255,255,0.7)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85)',
+          borderRadius: 14, padding: '7px 16px',
+        }}>
+          {trashPhotos.length > 0 ? `共 ${trashPhotos.length} 张照片将在 30 天后自动删除` : '回收站为空'}
+        </span>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 2px', WebkitOverflowScrolling: 'touch' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 10px', WebkitOverflowScrolling: 'touch' }}>
         {trashPhotos.length > 0 ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
+          <div style={{
+            borderRadius: 20,
+            background: 'rgba(255,255,255,0.42)',
+            backdropFilter: 'blur(20px) saturate(200%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(200%)',
+            border: '0.5px solid rgba(255,255,255,0.7)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), 0 4px 16px rgba(30,40,90,0.06)',
+            padding: 4,
+            overflow: 'hidden',
+          }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
             {trashPhotos.map((photo, idx) => (
               <div key={photo.id} onClick={() => handlePhotoClick(photo)} style={{
                 aspectRatio: '1',
@@ -92,30 +112,45 @@ function TrashPage({ trashPhotos, onBack, onRestore, onDelete, onDeleteAll, them
                 )}
               </div>
             ))}
+            </div>
           </div>
         ) : (
           <div style={{
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
-            padding: '60px 20px', gap: 10,
+            padding: '60px 20px', gap: 14,
             animation: 'fadeIn 0.4s ease',
           }}>
-            <div style={{ fontSize: 48, opacity: 0.3 }}>🗑</div>
-            <div style={{ fontSize: 16, color: 'rgba(60,60,67,0.5)', fontFamily: '-apple-system, "SF Pro", system-ui' }}>回收站没有照片</div>
+            <div style={{
+              width: 88, height: 88, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.45)',
+              backdropFilter: 'blur(25px) saturate(200%)',
+              WebkitBackdropFilter: 'blur(25px) saturate(200%)',
+              border: '0.5px solid rgba(255,255,255,0.8)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 10px 30px rgba(30,40,90,0.12)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+                <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"
+                  stroke="rgba(60,60,67,0.35)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div style={{ fontSize: 16, color: 'rgba(60,60,67,0.6)', fontFamily: '-apple-system, "SF Pro", system-ui', fontWeight: 500 }}>回收站没有照片</div>
+            <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.4)', fontFamily: '-apple-system, "SF Pro", system-ui' }}>删除的照片会先暂存在这里</div>
           </div>
         )}
         <div style={{ height: 80 }} />
       </div>
 
-      {/* v2.4：浮动玻璃胶囊 + 红色玻璃删除按钮 */}
+      {/* v2.5：浮动玻璃胶囊 + 红色玻璃删除按钮 */}
       <div style={{ padding: '0 12px calc(12px + var(--ios-safe-bottom))' }}>
         <div style={{
           borderRadius: 26,
-          background: 'rgba(255,255,255,0.55)',
-          backdropFilter: 'blur(35px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(35px) saturate(180%)',
+          background: 'rgba(255,255,255,0.48)',
+          backdropFilter: 'blur(35px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(35px) saturate(200%)',
           border: '0.5px solid rgba(255,255,255,0.8)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 6px 22px rgba(0,0,0,0.07)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
           padding: '8px',
           animation: 'slideUpBar 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
         }}>

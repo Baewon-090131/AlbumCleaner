@@ -12,13 +12,13 @@ function SortBottomBar({
     return (
       <div style={{ padding: '0 14px calc(14px + var(--ios-safe-bottom))' }}>
         <div style={{
-          // v2.3 液态玻璃面板
-          background: 'rgba(255,255,255,0.62)',
+          // v2.5 液态玻璃面板（透出壁纸）
+          background: 'rgba(255,255,255,0.48)',
           backdropFilter: 'blur(35px) saturate(200%)',
           WebkitBackdropFilter: 'blur(35px) saturate(200%)',
           borderRadius: 26,
-          border: '0.5px solid rgba(255,255,255,0.7)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 8px 28px rgba(0,0,0,0.08)',
+          border: '0.5px solid rgba(255,255,255,0.75)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 8px 30px rgba(30,40,90,0.10)',
           padding: '10px 0 12px',
           animation: 'slideUpBar 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
         }}>
@@ -75,13 +75,13 @@ function SortBottomBar({
   return (
     <div style={{ padding: '0 14px calc(14px + var(--ios-safe-bottom))' }}>
       <div style={{
-        // v2.3 液态玻璃浮动胶囊（iOS 26 风格）
-        background: 'rgba(255,255,255,0.62)',
+        // v2.5 液态玻璃浮动胶囊（iOS 26 风格，透出壁纸）
+        background: 'rgba(255,255,255,0.48)',
         backdropFilter: 'blur(35px) saturate(200%)',
         WebkitBackdropFilter: 'blur(35px) saturate(200%)',
         borderRadius: 28,
-        border: '0.5px solid rgba(255,255,255,0.7)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 8px 28px rgba(0,0,0,0.08)',
+        border: '0.5px solid rgba(255,255,255,0.75)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 8px 30px rgba(30,40,90,0.10)',
         padding: '10px 16px',
         display: 'flex', justifyContent: 'space-around', alignItems: 'center',
         animation: 'slideUpBar 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
@@ -107,14 +107,14 @@ function SortBottomBar({
             onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
           >
-            {/* v2.4：每个按钮带独立玻璃圆片（iOS 26 Liquid Glass 控件） */}
+            {/* v2.5：每个按钮带独立玻璃圆片（透出壁纸） */}
             <div style={{
               width: 46, height: 46, borderRadius: 16,
-              background: 'rgba(255,255,255,0.6)',
-              backdropFilter: 'blur(16px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+              background: 'rgba(255,255,255,0.42)',
+              backdropFilter: 'blur(16px) saturate(200%)',
+              WebkitBackdropFilter: 'blur(16px) saturate(200%)',
               border: '0.5px solid rgba(255,255,255,0.85)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 10px rgba(0,0,0,0.06)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 2px 12px rgba(30,40,90,0.08)',
               color: btn.color,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'transform 0.15s cubic-bezier(0.32, 0.72, 0, 1)',

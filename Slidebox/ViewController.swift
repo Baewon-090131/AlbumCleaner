@@ -11,8 +11,9 @@ class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKSc
     override func loadView() {
         let config = WKWebViewConfiguration()
 
-        // 注册自定义URLScheme用于加载照片缩略图
+        // 注册自定义URLScheme：photo 加载缩略图，video 加载视频/Live 数据流（v2.5 自动播放）
         config.setURLSchemeHandler(self, forURLScheme: "photo")
+        config.setURLSchemeHandler(self, forURLScheme: "video")
 
         config.preferences.javaScriptEnabled = true
         config.preferences.javaScriptCanOpenWindowsAutomatically = true
@@ -178,14 +179,28 @@ class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKSc
         let taskID = ObjectIdentifier(urlSchemeTask)
         guard !cancelledTasks.contains(taskID) else { return }
 
-        guard let url = urlSchemeTask.request.url,
-              url.scheme == "photo" else {
-            urlSchemeTask.didFailWithError(NSError(domain: "PhotoScheme", code: -1, userInfo: nil))
+        guard let url = urlSchemeTask.request.url else {
+            urlSchemeTask.didFailWithError(NSError(domain: "Scheme", code: -1, userInfo: nil))
             return
         }
 
-        let identifier = url.host ?? url.absoluteString.replacingOccurrences(of: "photo://", with: "")
+        // 完整 identifier 提取（localIdentifier 形如 "UUID/L0/001" 含斜杠，
+        // 必须用 absoluteString 保留全量，host 会截断）
+        let identifier = url.absoluteString
+            .replacingOccurrences(of: "photo://", with: "")
+            .replacingOccurrences(of: "video://", with: "")
+            .removingPercentEncoding ?? ""
 
+        if url.scheme == "photo" {
+            handlePhotoScheme(urlSchemeTask, url: url, identifier: identifier, taskID: taskID)
+        } else if url.scheme == "video" {
+            handleVideoScheme(urlSchemeTask, url: url, identifier: identifier, taskID: taskID)
+        } else {
+            urlSchemeTask.didFailWithError(NSError(domain: "Scheme", code: -1, userInfo: nil))
+        }
+    }
+
+    private func handlePhotoScheme(_ urlSchemeTask: WKURLSchemeTask, url: URL, identifier: String, taskID: ObjectIdentifier) {
         guard let asset = photoManager.asset(for: identifier) else {
             // 返回占位图
             if let placeholderData = UIImage(systemName: "photo")?.pngData() {
@@ -230,6 +245,25 @@ class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKSc
             let response = URLResponse(url: url, mimeType: "image/png", expectedContentLength: pngData.count, textEncodingName: nil)
             urlSchemeTask.didReceive(response)
             urlSchemeTask.didReceive(pngData)
+            urlSchemeTask.didFinish()
+        }
+    }
+
+    // v2.5：video:// 数据流（视频 / Live 自动播放）
+    private func handleVideoScheme(_ urlSchemeTask: WKURLSchemeTask, url: URL, identifier: String, taskID: ObjectIdentifier) {
+        photoManager.requestVideoData(for: identifier) { [weak self] data, mime in
+            guard let self = self else { return }
+            guard !self.cancelledTasks.contains(taskID) else {
+                self.cancelledTasks.remove(taskID)
+                return
+            }
+            guard let data = data, let mime = mime, !data.isEmpty else {
+                urlSchemeTask.didFailWithError(NSError(domain: "VideoScheme", code: -3, userInfo: nil))
+                return
+            }
+            let response = URLResponse(url: url, mimeType: mime, expectedContentLength: data.count, textEncodingName: nil)
+            urlSchemeTask.didReceive(response)
+            urlSchemeTask.didReceive(data)
             urlSchemeTask.didFinish()
         }
     }

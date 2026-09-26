@@ -50,12 +50,16 @@ const THEME_COLORS = [{
 function SettingsPage({
   themeColor,
   onThemeChange,
-  onBack
+  onBack,
+  autoPlayLive = true,
+  autoPlayVideo = true,
+  onAutoLiveChange,
+  onAutoVideoChange
 }) {
   return /*#__PURE__*/React.createElement("div", {
     style: {
       height: '100%',
-      background: '#F2F2F7',
+      background: 'transparent',
       display: 'flex',
       flexDirection: 'column'
     }
@@ -70,11 +74,11 @@ function SettingsPage({
       position: 'relative',
       height: 50,
       borderRadius: 25,
-      background: 'rgba(255,255,255,0.58)',
-      backdropFilter: 'blur(35px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(35px) saturate(180%)',
+      background: 'rgba(255,255,255,0.50)',
+      backdropFilter: 'blur(35px) saturate(200%)',
+      WebkitBackdropFilter: 'blur(35px) saturate(200%)',
       border: '0.5px solid rgba(255,255,255,0.8)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 6px 20px rgba(0,0,0,0.06)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -153,11 +157,11 @@ function SettingsPage({
     }
   }, "\u4E3B\u9898\u989C\u8272"), /*#__PURE__*/React.createElement("div", {
     style: {
-      background: 'rgba(255,255,255,0.62)',
-      backdropFilter: 'blur(20px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-      border: '0.5px solid rgba(255,255,255,0.7)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(0,0,0,0.05)',
+      background: 'rgba(255,255,255,0.45)',
+      backdropFilter: 'blur(20px) saturate(200%)',
+      WebkitBackdropFilter: 'blur(20px) saturate(200%)',
+      border: '0.5px solid rgba(255,255,255,0.75)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 4px 18px rgba(30,40,90,0.07)',
       borderRadius: 20,
       margin: '0 16px',
       padding: '16px 20px'
@@ -217,11 +221,11 @@ function SettingsPage({
     }
   }, "\u901A\u7528"), /*#__PURE__*/React.createElement("div", {
     style: {
-      background: 'rgba(255,255,255,0.62)',
-      backdropFilter: 'blur(20px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-      border: '0.5px solid rgba(255,255,255,0.7)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(0,0,0,0.05)',
+      background: 'rgba(255,255,255,0.45)',
+      backdropFilter: 'blur(20px) saturate(200%)',
+      WebkitBackdropFilter: 'blur(20px) saturate(200%)',
+      border: '0.5px solid rgba(255,255,255,0.75)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 4px 18px rgba(30,40,90,0.07)',
       borderRadius: 18,
       margin: '0 16px',
       overflow: 'hidden'
@@ -229,7 +233,7 @@ function SettingsPage({
   }, /*#__PURE__*/React.createElement(SettingRow, {
     iconColor: themeColor,
     title: "\u5173\u4E8E",
-    detail: "Album Cleaner 2.4"
+    detail: "Album Cleaner 2.5"
   }), /*#__PURE__*/React.createElement(SettingRow, {
     iconColor: themeColor,
     title: "\u64CD\u4F5C\u6307\u5F15",
@@ -255,16 +259,24 @@ function SettingsPage({
     }
   }, "\u6574\u7406\u504F\u597D"), /*#__PURE__*/React.createElement("div", {
     style: {
-      background: 'rgba(255,255,255,0.62)',
-      backdropFilter: 'blur(20px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-      border: '0.5px solid rgba(255,255,255,0.7)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(0,0,0,0.05)',
+      background: 'rgba(255,255,255,0.45)',
+      backdropFilter: 'blur(20px) saturate(200%)',
+      WebkitBackdropFilter: 'blur(20px) saturate(200%)',
+      border: '0.5px solid rgba(255,255,255,0.75)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 4px 18px rgba(30,40,90,0.07)',
       borderRadius: 18,
       margin: '0 16px',
       overflow: 'hidden'
     }
-  }, /*#__PURE__*/React.createElement(SettingRow, {
+  }, /*#__PURE__*/React.createElement(SettingSwitchRow, {
+    title: "Live \u56FE\u81EA\u52A8\u64AD\u653E",
+    value: autoPlayLive,
+    onChange: onAutoLiveChange
+  }), /*#__PURE__*/React.createElement(SettingSwitchRow, {
+    title: "\u89C6\u9891\u81EA\u52A8\u64AD\u653E",
+    value: autoPlayVideo,
+    onChange: onAutoVideoChange
+  }), /*#__PURE__*/React.createElement(SettingRow, {
     iconColor: themeColor,
     title: "\u6574\u7406\u987A\u5E8F",
     detail: "\u4ECE\u65B0\u5230\u65E7"
@@ -278,6 +290,70 @@ function SettingsPage({
       height: 'var(--ios-safe-bottom)'
     }
   })));
+}
+
+// v2.5：iOS 原生风格开关行（UISwitch 样式：绿开 / 灰关 + 白色滑块）
+function SettingSwitchRow({
+  title,
+  value,
+  onChange
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      minHeight: 44,
+      padding: '0 16px',
+      position: 'relative',
+      fontFamily: '-apple-system, "SF Pro", system-ui',
+      fontSize: 16,
+      color: '#000',
+      letterSpacing: -0.3
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, title), /*#__PURE__*/React.createElement("button", {
+    "aria-pressed": !!value,
+    onClick: e => {
+      e.stopPropagation();
+      if (onChange) onChange(!value);
+    },
+    style: {
+      width: 51,
+      height: 31,
+      borderRadius: 16,
+      border: 'none',
+      cursor: 'pointer',
+      background: value ? '#34C759' : 'rgba(120,120,128,0.32)',
+      position: 'relative',
+      flexShrink: 0,
+      transition: 'background 0.22s cubic-bezier(0.32, 0.72, 0, 1)',
+      padding: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      top: 2,
+      left: value ? 22 : 2,
+      width: 27,
+      height: 27,
+      borderRadius: '50%',
+      background: '#fff',
+      boxShadow: '0 1px 4px rgba(0,0,0,0.28)',
+      transition: 'left 0.22s cubic-bezier(0.32, 0.72, 0, 1)'
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      bottom: 0,
+      right: 0,
+      left: 16,
+      height: 0.5,
+      background: 'rgba(60,60,67,0.09)'
+    }
+  }));
 }
 function SettingRow({
   iconColor,

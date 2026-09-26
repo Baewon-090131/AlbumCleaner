@@ -210,6 +210,7 @@ function MediaFullscreenOverlay({ mode, photo, themeColor, onClose }) {
 function SortPage({
   month, photos, currentIndex, totalCount, processedCount,
   themeColor = '#007AFF', albums = null,
+  autoPlayLive = true, autoPlayVideo = true,
   onBack, onTrashClick, onAlbumAdd,
   onSwipeUp, onSwipeLeft, onSwipeRight, onSwipeDown,
   onUndo, onDeleteButton, onKeepButton,
@@ -267,10 +268,10 @@ function SortPage({
 
   return (
     <div style={{
-      height: '100%', background: '#F2F2F7',
+      height: '100%', background: 'transparent',
       display: 'flex', flexDirection: 'column', position: 'relative',
     }}>
-      {/* v2.4 iOS 26 Liquid Glass：独立悬浮玻璃胶囊导航条 */}
+      {/* v2.5 iOS 26 Liquid Glass：独立悬浮玻璃胶囊导航条 */}
       <div style={{
         position: 'relative', zIndex: 100,
         paddingTop: 'var(--ios-safe-top)',
@@ -279,11 +280,11 @@ function SortPage({
         <div style={{
           position: 'relative', height: 50,
           borderRadius: 25,
-          background: 'rgba(255,255,255,0.58)',
-          backdropFilter: 'blur(35px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(35px) saturate(180%)',
+          background: 'rgba(255,255,255,0.50)',
+          backdropFilter: 'blur(35px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(35px) saturate(200%)',
           border: '0.5px solid rgba(255,255,255,0.8)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 6px 20px rgba(0,0,0,0.06)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0 8px',
         }}>
@@ -329,6 +330,7 @@ function SortPage({
       <SwipeCardStack
         ref={stackRef}
         photos={photos} currentIndex={currentIndex} themeColor={themeColor}
+        autoPlayLive={autoPlayLive} autoPlayVideo={autoPlayVideo}
         onPhotoTap={handlePhotoTap}
         onSwipeUp={onSwipeUp} onSwipeLeft={onSwipeLeft}
         onSwipeRight={onSwipeRight} onSwipeDown={onSwipeDown}
@@ -384,11 +386,11 @@ function SortPage({
       <div style={{ padding: '0 12px 8px' }}>
         <div style={{
           borderRadius: 18,
-          background: 'rgba(255,255,255,0.5)',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+          background: 'rgba(255,255,255,0.45)',
+          backdropFilter: 'blur(20px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(200%)',
           border: '0.5px solid rgba(255,255,255,0.7)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 10px rgba(0,0,0,0.04)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 2px 12px rgba(30,40,90,0.06)',
           padding: '8px 14px 10px',
         }}>
           <div style={{

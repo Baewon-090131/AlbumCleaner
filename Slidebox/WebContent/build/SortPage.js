@@ -299,6 +299,8 @@ function SortPage({
   processedCount,
   themeColor = '#007AFF',
   albums = null,
+  autoPlayLive = true,
+  autoPlayVideo = true,
   onBack,
   onTrashClick,
   onAlbumAdd,
@@ -380,7 +382,7 @@ function SortPage({
   return /*#__PURE__*/React.createElement("div", {
     style: {
       height: '100%',
-      background: '#F2F2F7',
+      background: 'transparent',
       display: 'flex',
       flexDirection: 'column',
       position: 'relative'
@@ -397,11 +399,11 @@ function SortPage({
       position: 'relative',
       height: 50,
       borderRadius: 25,
-      background: 'rgba(255,255,255,0.58)',
-      backdropFilter: 'blur(35px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(35px) saturate(180%)',
+      background: 'rgba(255,255,255,0.50)',
+      backdropFilter: 'blur(35px) saturate(200%)',
+      WebkitBackdropFilter: 'blur(35px) saturate(200%)',
       border: '0.5px solid rgba(255,255,255,0.8)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 6px 20px rgba(0,0,0,0.06)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -492,6 +494,8 @@ function SortPage({
     photos: photos,
     currentIndex: currentIndex,
     themeColor: themeColor,
+    autoPlayLive: autoPlayLive,
+    autoPlayVideo: autoPlayVideo,
     onPhotoTap: handlePhotoTap,
     onSwipeUp: onSwipeUp,
     onSwipeLeft: onSwipeLeft,
@@ -589,11 +593,11 @@ function SortPage({
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       borderRadius: 18,
-      background: 'rgba(255,255,255,0.5)',
-      backdropFilter: 'blur(20px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+      background: 'rgba(255,255,255,0.45)',
+      backdropFilter: 'blur(20px) saturate(200%)',
+      WebkitBackdropFilter: 'blur(20px) saturate(200%)',
       border: '0.5px solid rgba(255,255,255,0.7)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 10px rgba(0,0,0,0.04)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 2px 12px rgba(30,40,90,0.06)',
       padding: '8px 14px 10px'
     }
   }, /*#__PURE__*/React.createElement("div", {

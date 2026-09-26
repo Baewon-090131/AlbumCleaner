@@ -13,10 +13,12 @@ const THEME_COLORS = [
   { id: 'graphite', name: '石墨', color: '#636366' },
 ];
 
-function SettingsPage({ themeColor, onThemeChange, onBack }) {
+function SettingsPage({ themeColor, onThemeChange, onBack,
+  autoPlayLive = true, autoPlayVideo = true,
+  onAutoLiveChange, onAutoVideoChange }) {
   return (
-    <div style={{ height: '100%', background: '#F2F2F7', display: 'flex', flexDirection: 'column' }}>
-      {/* v2.4 iOS 26 Liquid Glass：独立悬浮玻璃胶囊导航条 */}
+    <div style={{ height: '100%', background: 'transparent', display: 'flex', flexDirection: 'column' }}>
+      {/* v2.5 iOS 26 Liquid Glass：独立悬浮玻璃胶囊导航条 */}
       <div style={{
         position: 'relative', zIndex: 100,
         padding: 'var(--ios-safe-top) 12px 6px',
@@ -24,11 +26,11 @@ function SettingsPage({ themeColor, onThemeChange, onBack }) {
         <div style={{
           position: 'relative', height: 50,
           borderRadius: 25,
-          background: 'rgba(255,255,255,0.58)',
-          backdropFilter: 'blur(35px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(35px) saturate(180%)',
+          background: 'rgba(255,255,255,0.50)',
+          backdropFilter: 'blur(35px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(35px) saturate(200%)',
           border: '0.5px solid rgba(255,255,255,0.8)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 6px 20px rgba(0,0,0,0.06)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0 8px',
         }}>
@@ -67,11 +69,11 @@ function SettingsPage({ themeColor, onThemeChange, onBack }) {
             padding: '0 32px 6px',
           }}>主题颜色</div>
           <div style={{
-            background: 'rgba(255,255,255,0.62)',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-            border: '0.5px solid rgba(255,255,255,0.7)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(0,0,0,0.05)',
+            background: 'rgba(255,255,255,0.45)',
+            backdropFilter: 'blur(20px) saturate(200%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(200%)',
+            border: '0.5px solid rgba(255,255,255,0.75)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 4px 18px rgba(30,40,90,0.07)',
             borderRadius: 20,
             margin: '0 16px', padding: '16px 20px',
           }}>
@@ -112,15 +114,15 @@ function SettingsPage({ themeColor, onThemeChange, onBack }) {
             padding: '0 32px 6px',
           }}>通用</div>
           <div style={{
-            background: 'rgba(255,255,255,0.62)',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-            border: '0.5px solid rgba(255,255,255,0.7)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(0,0,0,0.05)',
+            background: 'rgba(255,255,255,0.45)',
+            backdropFilter: 'blur(20px) saturate(200%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(200%)',
+            border: '0.5px solid rgba(255,255,255,0.75)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 4px 18px rgba(30,40,90,0.07)',
             borderRadius: 18,
             margin: '0 16px', overflow: 'hidden',
           }}>
-            <SettingRow iconColor={themeColor} title="关于" detail="Album Cleaner 2.4" />
+            <SettingRow iconColor={themeColor} title="关于" detail="Album Cleaner 2.5" />
             <SettingRow iconColor={themeColor} title="操作指引" detail="" />
             <SettingRow iconColor={themeColor} title="清理缓存" detail="0 KB" isLast />
           </div>
@@ -134,14 +136,16 @@ function SettingsPage({ themeColor, onThemeChange, onBack }) {
             padding: '0 32px 6px',
           }}>整理偏好</div>
           <div style={{
-            background: 'rgba(255,255,255,0.62)',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-            border: '0.5px solid rgba(255,255,255,0.7)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(0,0,0,0.05)',
+            background: 'rgba(255,255,255,0.45)',
+            backdropFilter: 'blur(20px) saturate(200%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(200%)',
+            border: '0.5px solid rgba(255,255,255,0.75)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 4px 18px rgba(30,40,90,0.07)',
             borderRadius: 18,
             margin: '0 16px', overflow: 'hidden',
           }}>
+            <SettingSwitchRow title="Live 图自动播放" value={autoPlayLive} onChange={onAutoLiveChange} />
+            <SettingSwitchRow title="视频自动播放" value={autoPlayVideo} onChange={onAutoVideoChange} />
             <SettingRow iconColor={themeColor} title="整理顺序" detail="从新到旧" />
             <SettingRow iconColor={themeColor} title="显示视频时长" detail="开启" isLast />
           </div>
@@ -149,6 +153,44 @@ function SettingsPage({ themeColor, onThemeChange, onBack }) {
 
         <div style={{ height: 'var(--ios-safe-bottom)' }} />
       </div>
+    </div>
+  );
+}
+
+// v2.5：iOS 原生风格开关行（UISwitch 样式：绿开 / 灰关 + 白色滑块）
+function SettingSwitchRow({ title, value, onChange }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', minHeight: 44,
+      padding: '0 16px', position: 'relative',
+      fontFamily: '-apple-system, "SF Pro", system-ui',
+      fontSize: 16, color: '#000', letterSpacing: -0.3,
+    }}>
+      <div style={{ flex: 1 }}>{title}</div>
+      <button
+        aria-pressed={!!value}
+        onClick={(e) => { e.stopPropagation(); if (onChange) onChange(!value); }}
+        style={{
+          width: 51, height: 31, borderRadius: 16, border: 'none', cursor: 'pointer',
+          background: value ? '#34C759' : 'rgba(120,120,128,0.32)',
+          position: 'relative', flexShrink: 0,
+          transition: 'background 0.22s cubic-bezier(0.32, 0.72, 0, 1)',
+          padding: 0,
+        }}
+      >
+        <div style={{
+          position: 'absolute', top: 2,
+          left: value ? 22 : 2,
+          width: 27, height: 27, borderRadius: '50%',
+          background: '#fff',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.28)',
+          transition: 'left 0.22s cubic-bezier(0.32, 0.72, 0, 1)',
+        }} />
+      </button>
+      <div style={{
+        position: 'absolute', bottom: 0, right: 0, left: 16,
+        height: 0.5, background: 'rgba(60,60,67,0.09)',
+      }} />
     </div>
   );
 }

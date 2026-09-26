@@ -60,6 +60,17 @@ const globalAnimations = `
     from { opacity: 0; transform: translateY(8px) scale(0.985); }
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
+  /* v2.5：Live 图自动播放模拟（缓慢推拉，模拟 Live Photo 动态） */
+  @keyframes liveKenBurns {
+    0% { transform: scale(1) translate(0, 0); }
+    50% { transform: scale(1.07) translate(-1.5%, -1%); }
+    100% { transform: scale(1.03) translate(1%, 1%); }
+  }
+  /* v2.5：视频自动播放模拟（进度扫描条） */
+  @keyframes progressScan {
+    from { width: 0%; }
+    to { width: 100%; }
+  }
   ::-webkit-scrollbar { display: none; }
   * { -webkit-tap-highlight-color: transparent; }
 `;
@@ -118,7 +129,7 @@ function RootApp() {
       position: 'relative',
       '--ios-safe-top': 'env(safe-area-inset-top, 47px)',
       '--ios-safe-bottom': 'env(safe-area-inset-bottom, 34px)',
-      background: '#F2F2F7',
+      background: 'transparent',
       overflow: 'hidden',
     }}>
       <ErrorBoundary>

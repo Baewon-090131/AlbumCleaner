@@ -259,6 +259,52 @@ class PhotoLibraryManager: NSObject {
         }
     }
 
+    // MARK: - 视频 / Live 数据流（v2.5 自动播放）
+
+    // 获取视频数据：视频 → AVURLAsset 读文件；Live Photo → pairedVideo 资源
+    // 供 WKURLSchemeHandler(video://) 内嵌自动播放使用
+    // completion 保证在主线程回调
+    func requestVideoData(for identifier: String, completion: @escaping (Data?, String?) -> Void) {
+        guard let asset = asset(for: identifier) else {
+            DispatchQueue.main.async { completion(nil, nil) }
+            return
+        }
+
+        if asset.mediaType == .video {
+            let options = PHVideoRequestOptions()
+            options.isNetworkAccessAllowed = true
+            options.deliveryMode = .highQualityFormat
+            imageManager.requestAVAsset(for: asset, options: options) { avAsset, _, _ in
+                guard let urlAsset = avAsset as? AVURLAsset else {
+                    DispatchQueue.main.async { completion(nil, nil) }
+                    return
+                }
+                let data = try? Data(contentsOf: urlAsset.url)
+                let ext = urlAsset.url.pathExtension.lowercased()
+                let mime = ext == "mov" ? "video/quicktime" : "video/mp4"
+                DispatchQueue.main.async { completion(data, mime) }
+            }
+        } else if asset.mediaSubtypes.contains(.photoLive) {
+            // Live Photo：取配对视频资源（pairedVideo / video）
+            let resources = PHAssetResource.assetResources(for: asset)
+            guard let videoRes = resources.first(where: { $0.type == .pairedVideo || $0.type == .video }) else {
+                DispatchQueue.main.async { completion(nil, nil) }
+                return
+            }
+            let options = PHAssetResourceRequestOptions()
+            options.isNetworkAccessAllowed = true
+            var chunks: [Data] = []
+            PHAssetResourceManager.default().requestData(for: videoRes, options: options, dataHandler: { data in
+                chunks.append(data)
+            }, completionHandler: { _ in
+                let joined = chunks.reduce(Data(), +)
+                DispatchQueue.main.async { completion(joined, "video/quicktime") }
+            })
+        } else {
+            DispatchQueue.main.async { completion(nil, nil) }
+        }
+    }
+
     // 找到当前可 present 的顶层控制器
     private func topViewController() -> UIViewController? {
         var topVC: UIViewController?
