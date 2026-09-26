@@ -15,7 +15,7 @@ class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKSc
         config.setURLSchemeHandler(self, forURLScheme: "photo")
         config.setURLSchemeHandler(self, forURLScheme: "video")
 
-        config.preferences.javaScriptEnabled = true
+        // 移除 javaScriptEnabled（iOS 14+ deprecated，默认开启；内容脚本由 allowsContentJavaScript 控制）
         config.preferences.javaScriptCanOpenWindowsAutomatically = true
         if #available(iOS 14.0, *) {
             config.defaultWebpagePreferences.allowsContentJavaScript = true

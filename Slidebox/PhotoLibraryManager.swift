@@ -274,7 +274,8 @@ class PhotoLibraryManager: NSObject {
             let options = PHVideoRequestOptions()
             options.isNetworkAccessAllowed = true
             options.deliveryMode = .highQualityFormat
-            imageManager.requestAVAsset(for: asset, options: options) { avAsset, _, _ in
+            // iOS 26 SDK：requestAVAsset 更名为 requestVideo(forVideo:)
+            imageManager.requestVideo(forVideo: asset, options: options) { avAsset, _, _ in
                 guard let urlAsset = avAsset as? AVURLAsset else {
                     DispatchQueue.main.async { completion(nil, nil) }
                     return
@@ -294,7 +295,8 @@ class PhotoLibraryManager: NSObject {
             let options = PHAssetResourceRequestOptions()
             options.isNetworkAccessAllowed = true
             var chunks: [Data] = []
-            PHAssetResourceManager.default().requestData(for: videoRes, options: options, dataHandler: { data in
+            // iOS 26 SDK：dataHandler 更名为 dataReceivedHandler
+            PHAssetResourceManager.default().requestData(for: videoRes, options: options, dataReceivedHandler: { data in
                 chunks.append(data)
             }, completionHandler: { _ in
                 let joined = chunks.reduce(Data(), +)
@@ -353,7 +355,7 @@ class PhotoLibraryManager: NSObject {
     // 添加到相簿
     func addToAlbum(_ assetIdentifier: String, albumIdentifier: String, completion: @escaping (Bool) -> Void) {
         guard let asset = asset(for: assetIdentifier),
-              let album = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [albumIdentifier], options: nil).firstObject as? PHAssetCollection else {
+              let album = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [albumIdentifier], options: nil).firstObject else {
             completion(false)
             return
         }
