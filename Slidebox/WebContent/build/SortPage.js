@@ -202,8 +202,7 @@ function MediaFullscreenOverlay({
       justifyContent: 'center',
       animation: 'fullscreenIn 0.22s ease',
       overflow: 'hidden',
-      touchAction: 'none',
-      willChange: 'transform, opacity'
+      touchAction: 'none'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -470,9 +469,9 @@ function SortPage({
       position: 'relative',
       height: 50,
       borderRadius: 25,
-      background: 'rgba(255,255,255,0.50)',
-      backdropFilter: 'blur(35px) saturate(200%)',
-      WebkitBackdropFilter: 'blur(35px) saturate(200%)',
+      background: 'rgba(255,255,255,0.58)',
+      backdropFilter: 'blur(20px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
       border: '0.5px solid rgba(255,255,255,0.8)',
       boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
       display: 'flex',
@@ -585,9 +584,7 @@ function SortPage({
       top: 'calc(var(--ios-safe-top) + 62px)',
       left: '50%',
       transform: 'translateX(-50%)',
-      background: 'rgba(28,28,30,0.82)',
-      backdropFilter: 'blur(20px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+      background: 'rgba(28,28,30,0.88)',
       color: '#fff',
       padding: '10px 18px',
       borderRadius: 18,
@@ -630,9 +627,7 @@ function SortPage({
       top: 'calc(var(--ios-safe-top) + 62px)',
       left: '50%',
       transform: 'translateX(-50%)',
-      background: 'rgba(28,28,30,0.82)',
-      backdropFilter: 'blur(20px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+      background: 'rgba(28,28,30,0.88)',
       color: '#fff',
       padding: '10px 18px',
       borderRadius: 18,
@@ -676,9 +671,7 @@ function SortPage({
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       borderRadius: 16,
-      background: 'rgba(255,255,255,0.40)',
-      backdropFilter: 'blur(18px) saturate(200%)',
-      WebkitBackdropFilter: 'blur(18px) saturate(200%)',
+      background: 'rgba(255,255,255,0.62)',
       border: '0.5px solid rgba(255,255,255,0.7)',
       boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85)',
       padding: '6px 12px 8px'

@@ -111,6 +111,7 @@ function PhotoCard({ photo, onTap, autoPlayLive = true, autoPlayVideo = true }) 
           <div style={{
             height: '100%',
             background: 'rgba(255,255,255,0.85)',
+            transformOrigin: 'left center',
             animation: 'progressScan 3.2s linear infinite',
           }} />
         </div>
@@ -134,8 +135,7 @@ function PhotoCard({ photo, onTap, autoPlayLive = true, autoPlayVideo = true }) 
           position: 'absolute',
           bottom: 16, right: 16,
           display: 'flex', alignItems: 'center', gap: 5,
-          background: 'rgba(0,0,0,0.5)',
-          backdropFilter: 'blur(4px)',
+          background: 'rgba(0,0,0,0.55)',
           padding: '4px 10px', borderRadius: 9,
           pointerEvents: 'none',
         }}>
@@ -155,8 +155,7 @@ function PhotoCard({ photo, onTap, autoPlayLive = true, autoPlayVideo = true }) 
           position: 'absolute',
           bottom: 16, right: 16,
           display: 'flex', alignItems: 'center',
-          background: 'rgba(0,0,0,0.5)',
-          backdropFilter: 'blur(4px)',
+          background: 'rgba(0,0,0,0.55)',
           padding: '4px 10px', borderRadius: 9,
           pointerEvents: 'none',
         }}>
@@ -201,8 +200,7 @@ function SwipeHint({ photo }) {
       zIndex: 30,
       padding: '10px 18px',
       borderRadius: 14,
-      backdropFilter: 'blur(12px)',
-      WebkitBackdropFilter: 'blur(12px)',
+      background: 'rgba(28,28,30,0.45)',
       fontSize: 14, fontWeight: 600,
       fontFamily: '-apple-system, "SF Pro", system-ui',
       letterSpacing: 0.5,
@@ -442,34 +440,7 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
       overflow: 'hidden',
       touchAction: 'none',
     }}>
-      {/* v2.6 右缘下一页预览条（iOS 相册翻页提示：露出下一张一窄条 + 渐变遮罩） */}
-      {nextPhoto && (
-        <div style={{
-          position: 'absolute', top: 0, bottom: 0, right: 0, width: 18, zIndex: 1,
-          overflow: 'hidden',
-        }}>
-          <div style={{
-            position: 'absolute', inset: 0, width: 120,
-            left: -102, // 从预览条左侧开始显示（cover 右缘）
-          }}>
-            {nextPhoto.thumbnailUrl && nextPhoto.thumbnailUrl.startsWith('photo://') ? (
-              <img src={nextPhoto.thumbnailUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} draggable={false} />
-            ) : (
-              <div style={{ width: '100%', height: '100%', background: nextPhoto.gradient || '#333' }} />
-            )}
-          </div>
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(to left, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0) 60%)',
-          }} />
-          <div style={{
-            position: 'absolute', left: 0, top: 0, bottom: 0, width: 0.5,
-            background: 'rgba(255,255,255,0.28)',
-          }} />
-        </div>
-      )}
-
-      {/* 当前卡（key 变化强制重建 DOM，清空动画残留样式） */}
+      {/* 当前卡（key 变化强制重建 DOM，清空动画残留样式；willChange 仅手势时动态开启，避免常驻占合成层） */}
       <div
         key={currentPhoto.id}
         ref={cardRef}
@@ -481,7 +452,6 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
         style={{
           position: 'absolute',
           inset: 0,
-          willChange: 'transform, opacity',
           cursor: 'grab',
         }}
       >

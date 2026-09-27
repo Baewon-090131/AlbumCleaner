@@ -21,9 +21,9 @@ function SortBottomBar({
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
-        background: 'rgba(255,255,255,0.48)',
-        backdropFilter: 'blur(35px) saturate(200%)',
-        WebkitBackdropFilter: 'blur(35px) saturate(200%)',
+        background: 'rgba(255,255,255,0.55)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
         borderRadius: 26,
         border: '0.5px solid rgba(255,255,255,0.75)',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 8px 30px rgba(30,40,90,0.10)',
@@ -186,9 +186,9 @@ function SortBottomBar({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      background: 'rgba(255,255,255,0.48)',
-      backdropFilter: 'blur(35px) saturate(200%)',
-      WebkitBackdropFilter: 'blur(35px) saturate(200%)',
+      background: 'rgba(255,255,255,0.55)',
+      backdropFilter: 'blur(20px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
       borderRadius: 28,
       border: '0.5px solid rgba(255,255,255,0.75)',
       boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 8px 30px rgba(30,40,90,0.10)',
@@ -224,9 +224,7 @@ function SortBottomBar({
       width: 46,
       height: 46,
       borderRadius: 16,
-      background: 'rgba(255,255,255,0.42)',
-      backdropFilter: 'blur(16px) saturate(200%)',
-      WebkitBackdropFilter: 'blur(16px) saturate(200%)',
+      background: 'rgba(255,255,255,0.5)',
       border: '0.5px solid rgba(255,255,255,0.85)',
       boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 2px 12px rgba(30,40,90,0.08)',
       color: btn.color,

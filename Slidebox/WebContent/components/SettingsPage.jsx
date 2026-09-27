@@ -15,9 +15,7 @@ const THEME_COLORS = [
 ];
 
 const GROUP_GLASS = {
-  background: 'rgba(255,255,255,0.45)',
-  backdropFilter: 'blur(20px) saturate(200%)',
-  WebkitBackdropFilter: 'blur(20px) saturate(200%)',
+  background: 'rgba(255,255,255,0.6)',
   border: '0.5px solid rgba(255,255,255,0.75)',
   boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 4px 18px rgba(30,40,90,0.07)',
   borderRadius: 18,
@@ -37,9 +35,9 @@ function SettingsPage({ themeColor, onThemeChange, onBack,
         <div style={{
           position: 'relative', height: 50,
           borderRadius: 25,
-          background: 'rgba(255,255,255,0.50)',
-          backdropFilter: 'blur(35px) saturate(200%)',
-          WebkitBackdropFilter: 'blur(35px) saturate(200%)',
+          background: 'rgba(255,255,255,0.58)',
+          backdropFilter: 'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
           border: '0.5px solid rgba(255,255,255,0.8)',
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',

@@ -71,15 +71,12 @@ function MonthCard({ month, themeColor, onClick, index = 0 }) {
         marginBottom: 10,
         borderRadius: 22,
         cursor: 'pointer',
-        background: 'rgba(255,255,255,0.42)',
-        backdropFilter: 'blur(30px) saturate(200%)',
-        WebkitBackdropFilter: 'blur(30px) saturate(200%)',
+        background: 'rgba(255,255,255,0.55)',
         border: '0.5px solid rgba(255,255,255,0.75)',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), 0 4px 18px rgba(30,40,90,0.07)',
         transition: 'transform 0.16s var(--ease-out), background-color 0.15s ease, box-shadow 0.16s ease',
         transform: 'scale(1)',
         animation: `cardIn 0.4s var(--ease-out) ${Math.min(index * 0.045, 0.5)}s both`,
-        willChange: 'transform',
       }}
       onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.975)'; }}
       onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
@@ -158,9 +155,7 @@ function GlassIconButton({ icon, onClick, themeColor = '#007AFF', badge = 0 }) {
       style={{
         width: 44, height: 44, borderRadius: '50%',
         cursor: 'pointer', position: 'relative',
-        background: 'rgba(255,255,255,0.48)',
-        backdropFilter: 'blur(30px) saturate(200%)',
-        WebkitBackdropFilter: 'blur(30px) saturate(200%)',
+        background: 'rgba(255,255,255,0.55)',
         border: '0.5px solid rgba(255,255,255,0.85)',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 4px 16px rgba(30,40,90,0.10)',
         color: themeColor,

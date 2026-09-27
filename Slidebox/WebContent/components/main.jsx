@@ -93,10 +93,10 @@ const globalAnimations = `
     50% { transform: scale(1.07) translate(-1.5%, -1%); }
     100% { transform: scale(1.03) translate(1%, 1%); }
   }
-  /* 视频自动播放模拟（进度扫描条） */
+  /* 视频自动播放模拟（进度扫描条：scaleX 合成层动画，避免 width 每帧 layout） */
   @keyframes progressScan {
-    from { width: 0%; }
-    to { width: 100%; }
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
   }
   /* 加载进度圈 */
   @keyframes spin {

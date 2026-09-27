@@ -177,7 +177,6 @@ function MediaFullscreenOverlay({ mode, photo, themeColor, onClose }) {
         animation: 'fullscreenIn 0.22s ease',
         overflow: 'hidden',
         touchAction: 'none',
-        willChange: 'transform, opacity',
       }}>
       {/* 媒体主体（contain 完整显示，支持缩放/平移/下滑退出） */}
       <div style={{
@@ -350,9 +349,9 @@ function SortPage({
         <div style={{
           position: 'relative', height: 50,
           borderRadius: 25,
-          background: 'rgba(255,255,255,0.50)',
-          backdropFilter: 'blur(35px) saturate(200%)',
-          WebkitBackdropFilter: 'blur(35px) saturate(200%)',
+          background: 'rgba(255,255,255,0.58)',
+          backdropFilter: 'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
           border: '0.5px solid rgba(255,255,255,0.8)',
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -422,9 +421,7 @@ function SortPage({
         <div style={{
           position: 'absolute', top: 'calc(var(--ios-safe-top) + 62px)',
           left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(28,28,30,0.82)',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+          background: 'rgba(28,28,30,0.88)',
           color: '#fff', padding: '10px 18px', borderRadius: 18,
           fontSize: 14, fontFamily: '-apple-system, "SF Pro", system-ui',
           fontWeight: 500, zIndex: 200,
@@ -446,9 +443,7 @@ function SortPage({
         <div style={{
           position: 'absolute', top: 'calc(var(--ios-safe-top) + 62px)',
           left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(28,28,30,0.82)',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+          background: 'rgba(28,28,30,0.88)',
           color: '#fff', padding: '10px 18px', borderRadius: 18,
           fontSize: 14, fontFamily: '-apple-system, "SF Pro", system-ui',
           fontWeight: 500, zIndex: 200,
@@ -466,13 +461,11 @@ function SortPage({
         </div>
       )}
 
-      {/* 进度行（v2.6：与底部操作区贴合，细进度线） */}
+      {/* 进度行（v2.6：与底部操作区贴合，细进度线；实色玻璃替代高成本 blur） */}
       <div style={{ padding: '4px 12px 2px' }}>
         <div style={{
           borderRadius: 16,
-          background: 'rgba(255,255,255,0.40)',
-          backdropFilter: 'blur(18px) saturate(200%)',
-          WebkitBackdropFilter: 'blur(18px) saturate(200%)',
+          background: 'rgba(255,255,255,0.62)',
           border: '0.5px solid rgba(255,255,255,0.7)',
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85)',
           padding: '6px 12px 8px',

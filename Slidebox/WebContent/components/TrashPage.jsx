@@ -18,9 +18,9 @@ function TrashPage({ trashPhotos, onBack, onRestore, onDelete, onDeleteAll, them
         <div style={{
           position: 'relative', height: 50,
           borderRadius: 25,
-          background: 'rgba(255,255,255,0.50)',
-          backdropFilter: 'blur(35px) saturate(200%)',
-          WebkitBackdropFilter: 'blur(35px) saturate(200%)',
+          background: 'rgba(255,255,255,0.58)',
+          backdropFilter: 'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
           border: '0.5px solid rgba(255,255,255,0.8)',
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
           display: 'flex', alignItems: 'center',
@@ -56,9 +56,7 @@ function TrashPage({ trashPhotos, onBack, onRestore, onDelete, onDeleteAll, them
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <span style={{
-          background: 'rgba(255,255,255,0.42)',
-          backdropFilter: 'blur(20px) saturate(200%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(200%)',
+          background: 'rgba(255,255,255,0.62)',
           border: '0.5px solid rgba(255,255,255,0.7)',
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85)',
           borderRadius: 14, padding: '7px 16px',
@@ -72,9 +70,7 @@ function TrashPage({ trashPhotos, onBack, onRestore, onDelete, onDeleteAll, them
         {trashPhotos.length > 0 ? (
           <div style={{
             borderRadius: 20,
-            background: 'rgba(255,255,255,0.42)',
-            backdropFilter: 'blur(20px) saturate(200%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(200%)',
+            background: 'rgba(255,255,255,0.62)',
             border: '0.5px solid rgba(255,255,255,0.7)',
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), 0 4px 16px rgba(30,40,90,0.06)',
             padding: 4,
@@ -117,9 +113,7 @@ function TrashPage({ trashPhotos, onBack, onRestore, onDelete, onDeleteAll, them
           }}>
             <div style={{
               width: 88, height: 88, borderRadius: '50%',
-              background: 'rgba(255,255,255,0.45)',
-              backdropFilter: 'blur(25px) saturate(200%)',
-              WebkitBackdropFilter: 'blur(25px) saturate(200%)',
+              background: 'rgba(255,255,255,0.55)',
               border: '0.5px solid rgba(255,255,255,0.8)',
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 10px 30px rgba(30,40,90,0.12)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -140,9 +134,9 @@ function TrashPage({ trashPhotos, onBack, onRestore, onDelete, onDeleteAll, them
       <div style={{ padding: '0 12px calc(12px + var(--ios-safe-bottom))' }}>
         <div style={{
           borderRadius: 26,
-          background: 'rgba(255,255,255,0.48)',
-          backdropFilter: 'blur(35px) saturate(200%)',
-          WebkitBackdropFilter: 'blur(35px) saturate(200%)',
+          background: 'rgba(255,255,255,0.58)',
+          backdropFilter: 'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
           border: '0.5px solid rgba(255,255,255,0.8)',
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
           padding: '8px',
