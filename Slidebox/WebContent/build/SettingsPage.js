@@ -1,3 +1,4 @@
+// v2.6 设置页：iOS inset grouped 分组列表 + 主题色 + 自动播放开关
 const THEME_COLORS = [{
   id: 'blue',
   name: '蓝色',
@@ -47,6 +48,16 @@ const THEME_COLORS = [{
   name: '石墨',
   color: '#636366'
 }];
+const GROUP_GLASS = {
+  background: 'rgba(255,255,255,0.45)',
+  backdropFilter: 'blur(20px) saturate(200%)',
+  WebkitBackdropFilter: 'blur(20px) saturate(200%)',
+  border: '0.5px solid rgba(255,255,255,0.75)',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 4px 18px rgba(30,40,90,0.07)',
+  borderRadius: 18,
+  margin: '0 16px',
+  overflow: 'hidden'
+};
 function SettingsPage({
   themeColor,
   onThemeChange,
@@ -82,10 +93,12 @@ function SettingsPage({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 8px'
+      padding: '0 8px',
+      animation: 'slideDownBar 0.3s var(--ease-drawer)'
     }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: onBack,
+    className: "ios-btn",
     style: {
       display: 'flex',
       alignItems: 'center',
@@ -97,17 +110,7 @@ function SettingsPage({
       color: themeColor,
       fontSize: 17,
       fontFamily: '-apple-system, "SF Pro", system-ui',
-      fontWeight: 400,
-      transition: 'transform 0.16s cubic-bezier(0.32, 0.72, 0, 1)'
-    },
-    onMouseDown: e => {
-      e.currentTarget.style.transform = 'scale(0.9)';
-    },
-    onMouseUp: e => {
-      e.currentTarget.style.transform = 'scale(1)';
-    },
-    onMouseLeave: e => {
-      e.currentTarget.style.transform = 'scale(1)';
+      fontWeight: 400
     }
   }, /*#__PURE__*/React.createElement("svg", {
     width: "12",
@@ -139,46 +142,33 @@ function SettingsPage({
   }))), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
-      overflowY: 'auto'
+      overflowY: 'auto',
+      WebkitOverflowScrolling: 'touch'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: '28px 0 10px'
+      padding: '26px 0 8px',
+      animation: 'glassIn 0.32s var(--ease-out)'
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 13,
-      color: 'rgba(60,60,67,0.6)',
-      fontFamily: '-apple-system, "SF Pro", system-ui',
-      textTransform: 'uppercase',
-      letterSpacing: -0.08,
-      fontWeight: 500,
-      padding: '0 32px 6px'
-    }
-  }, "\u4E3B\u9898\u989C\u8272"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: 'rgba(255,255,255,0.45)',
-      backdropFilter: 'blur(20px) saturate(200%)',
-      WebkitBackdropFilter: 'blur(20px) saturate(200%)',
-      border: '0.5px solid rgba(255,255,255,0.75)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 4px 18px rgba(30,40,90,0.07)',
-      borderRadius: 20,
-      margin: '0 16px',
-      padding: '16px 20px'
-    }
+  }, /*#__PURE__*/React.createElement(GroupHeader, {
+    title: "\u4E3B\u9898\u989C\u8272"
+  }), /*#__PURE__*/React.createElement("div", {
+    style: GROUP_GLASS
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
       flexWrap: 'wrap',
-      gap: 12
+      gap: 12,
+      padding: '16px 20px'
     }
   }, THEME_COLORS.map(t => {
     const isSelected = t.color === themeColor;
     return /*#__PURE__*/React.createElement("button", {
       key: t.id,
       onClick: () => onThemeChange(t.color),
+      className: "ios-btn",
       style: {
         width: 44,
         height: 44,
@@ -190,8 +180,7 @@ function SettingsPage({
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
-        boxShadow: isSelected ? `0 0 0 3px #fff, 0 0 0 5.5px ${t.color}, 0 0 0 7px rgba(255,255,255,0.9)` : 'inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 3px rgba(0,0,0,0.15)',
-        transition: 'all 0.2s ease'
+        boxShadow: isSelected ? `0 0 0 3px #fff, 0 0 0 5.5px ${t.color}, 0 0 0 7px rgba(255,255,255,0.9)` : 'inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 3px rgba(0,0,0,0.15)'
       }
     }, isSelected && /*#__PURE__*/React.createElement("svg", {
       width: "20",
@@ -207,33 +196,17 @@ function SettingsPage({
     })));
   })))), /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: '20px 0 10px'
+      padding: '18px 0 8px',
+      animation: 'glassIn 0.32s var(--ease-out) 0.05s both'
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 13,
-      color: 'rgba(60,60,67,0.6)',
-      fontFamily: '-apple-system, "SF Pro", system-ui',
-      textTransform: 'uppercase',
-      letterSpacing: -0.08,
-      fontWeight: 500,
-      padding: '0 32px 6px'
-    }
-  }, "\u901A\u7528"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: 'rgba(255,255,255,0.45)',
-      backdropFilter: 'blur(20px) saturate(200%)',
-      WebkitBackdropFilter: 'blur(20px) saturate(200%)',
-      border: '0.5px solid rgba(255,255,255,0.75)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 4px 18px rgba(30,40,90,0.07)',
-      borderRadius: 18,
-      margin: '0 16px',
-      overflow: 'hidden'
-    }
+  }, /*#__PURE__*/React.createElement(GroupHeader, {
+    title: "\u901A\u7528"
+  }), /*#__PURE__*/React.createElement("div", {
+    style: GROUP_GLASS
   }, /*#__PURE__*/React.createElement(SettingRow, {
     iconColor: themeColor,
     title: "\u5173\u4E8E",
-    detail: "Album Cleaner 2.5"
+    detail: "Album Cleaner 2.6"
   }), /*#__PURE__*/React.createElement(SettingRow, {
     iconColor: themeColor,
     title: "\u64CD\u4F5C\u6307\u5F15",
@@ -245,29 +218,13 @@ function SettingsPage({
     isLast: true
   }))), /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: '20px 0 24px'
+      padding: '18px 0 24px',
+      animation: 'glassIn 0.32s var(--ease-out) 0.1s both'
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 13,
-      color: 'rgba(60,60,67,0.6)',
-      fontFamily: '-apple-system, "SF Pro", system-ui',
-      textTransform: 'uppercase',
-      letterSpacing: -0.08,
-      fontWeight: 500,
-      padding: '0 32px 6px'
-    }
-  }, "\u6574\u7406\u504F\u597D"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: 'rgba(255,255,255,0.45)',
-      backdropFilter: 'blur(20px) saturate(200%)',
-      WebkitBackdropFilter: 'blur(20px) saturate(200%)',
-      border: '0.5px solid rgba(255,255,255,0.75)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 4px 18px rgba(30,40,90,0.07)',
-      borderRadius: 18,
-      margin: '0 16px',
-      overflow: 'hidden'
-    }
+  }, /*#__PURE__*/React.createElement(GroupHeader, {
+    title: "\u6574\u7406\u504F\u597D"
+  }), /*#__PURE__*/React.createElement("div", {
+    style: GROUP_GLASS
   }, /*#__PURE__*/React.createElement(SettingSwitchRow, {
     title: "Live \u56FE\u81EA\u52A8\u64AD\u653E",
     value: autoPlayLive,
@@ -291,14 +248,30 @@ function SettingsPage({
     }
   })));
 }
+function GroupHeader({
+  title
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: 'rgba(60,60,67,0.6)',
+      fontFamily: '-apple-system, "SF Pro", system-ui',
+      textTransform: 'uppercase',
+      letterSpacing: -0.08,
+      fontWeight: 500,
+      padding: '0 32px 6px'
+    }
+  }, title);
+}
 
-// v2.5：iOS 原生风格开关行（UISwitch 样式：绿开 / 灰关 + 白色滑块）
+// iOS 原生开关行（UISwitch：绿开 / 灰关 + 白色滑块，0.22s drawer 曲线）
 function SettingSwitchRow({
   title,
   value,
   onChange
 }) {
   return /*#__PURE__*/React.createElement("div", {
+    className: "ios-row",
     style: {
       display: 'flex',
       alignItems: 'center',
@@ -308,7 +281,8 @@ function SettingSwitchRow({
       fontFamily: '-apple-system, "SF Pro", system-ui',
       fontSize: 16,
       color: '#000',
-      letterSpacing: -0.3
+      letterSpacing: -0.3,
+      cursor: 'pointer'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -329,7 +303,7 @@ function SettingSwitchRow({
       background: value ? '#34C759' : 'rgba(120,120,128,0.32)',
       position: 'relative',
       flexShrink: 0,
-      transition: 'background 0.22s cubic-bezier(0.32, 0.72, 0, 1)',
+      transition: 'background 0.22s var(--ease-drawer)',
       padding: 0
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -342,7 +316,7 @@ function SettingSwitchRow({
       borderRadius: '50%',
       background: '#fff',
       boxShadow: '0 1px 4px rgba(0,0,0,0.28)',
-      transition: 'left 0.22s cubic-bezier(0.32, 0.72, 0, 1)'
+      transition: 'left 0.22s var(--ease-drawer)'
     }
   })), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -362,6 +336,7 @@ function SettingRow({
   isLast = false
 }) {
   return /*#__PURE__*/React.createElement("div", {
+    className: "ios-row",
     style: {
       display: 'flex',
       alignItems: 'center',
@@ -371,7 +346,8 @@ function SettingRow({
       fontFamily: '-apple-system, "SF Pro", system-ui',
       fontSize: 16,
       color: '#000',
-      letterSpacing: -0.3
+      letterSpacing: -0.3,
+      cursor: 'pointer'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {

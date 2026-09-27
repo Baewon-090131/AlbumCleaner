@@ -1,3 +1,4 @@
+// v2.6 回收站：网格 + iOS 弹窗/操作表
 function TrashPage({
   trashPhotos,
   onBack,
@@ -49,10 +50,12 @@ function TrashPage({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 8px'
+      padding: '0 8px',
+      animation: 'slideDownBar 0.3s var(--ease-drawer)'
     }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: onBack,
+    className: "ios-btn",
     style: {
       display: 'flex',
       alignItems: 'center',
@@ -64,17 +67,7 @@ function TrashPage({
       color: themeColor,
       fontSize: 17,
       fontFamily: '-apple-system, "SF Pro", system-ui',
-      fontWeight: 400,
-      transition: 'transform 0.16s cubic-bezier(0.32, 0.72, 0, 1)'
-    },
-    onMouseDown: e => {
-      e.currentTarget.style.transform = 'scale(0.9)';
-    },
-    onMouseUp: e => {
-      e.currentTarget.style.transform = 'scale(1)';
-    },
-    onMouseLeave: e => {
-      e.currentTarget.style.transform = 'scale(1)';
+      fontWeight: 400
     }
   }, /*#__PURE__*/React.createElement("svg", {
     width: "12",
@@ -87,7 +80,7 @@ function TrashPage({
     fill: "none",
     strokeLinecap: "round",
     strokeLinejoin: "round"
-  })), /*#__PURE__*/React.createElement("span", null, "\u8FD4\u56DE")), /*#__PURE__*/React.createElement("div", {
+  })), /*#__PURE__*/React.createElement("span", null, "\u7167\u7247")), /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
       left: '50%',
@@ -122,7 +115,8 @@ function TrashPage({
       border: '0.5px solid rgba(255,255,255,0.7)',
       boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85)',
       borderRadius: 14,
-      padding: '7px 16px'
+      padding: '7px 16px',
+      animation: 'glassIn 0.3s var(--ease-out)'
     }
   }, trashPhotos.length > 0 ? `共 ${trashPhotos.length} 张照片将在 30 天后自动删除` : '回收站为空')), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -151,23 +145,14 @@ function TrashPage({
   }, trashPhotos.map((photo, idx) => /*#__PURE__*/React.createElement("div", {
     key: photo.id,
     onClick: () => handlePhotoClick(photo),
+    className: "ios-btn",
     style: {
       aspectRatio: '1',
-      background: photo.thumbnailUrl ? '#1c1c1e' : photo.gradient,
+      background: photo.thumbnailUrl && photo.thumbnailUrl.startsWith('photo://') ? '#1c1c1e' : photo.gradient,
       position: 'relative',
       cursor: 'pointer',
       overflow: 'hidden',
-      animation: `cardIn 0.3s ease ${idx * 0.02}s both`,
-      transition: 'transform 0.15s ease'
-    },
-    onMouseDown: e => {
-      e.currentTarget.style.transform = 'scale(0.95)';
-    },
-    onMouseUp: e => {
-      e.currentTarget.style.transform = 'scale(1)';
-    },
-    onMouseLeave: e => {
-      e.currentTarget.style.transform = 'scale(1)';
+      animation: `cardIn 0.3s var(--ease-out) ${idx * 0.02}s both`
     }
   }, photo.thumbnailUrl && photo.thumbnailUrl.startsWith('photo://') && /*#__PURE__*/React.createElement("img", {
     src: photo.thumbnailUrl,
@@ -211,7 +196,7 @@ function TrashPage({
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '60px 20px',
+      padding: '70px 20px',
       gap: 14,
       animation: 'fadeIn 0.4s ease'
     }
@@ -270,11 +255,12 @@ function TrashPage({
       border: '0.5px solid rgba(255,255,255,0.8)',
       boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
       padding: '8px',
-      animation: 'slideUpBar 0.3s cubic-bezier(0.32, 0.72, 0, 1)'
+      animation: 'slideUpBar 0.3s var(--ease-drawer)'
     }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => trashPhotos.length > 0 && setShowAlert(true),
     disabled: trashPhotos.length === 0,
+    className: "ios-btn",
     style: {
       width: '100%',
       padding: '14px 20px',
@@ -287,19 +273,7 @@ function TrashPage({
       fontFamily: '-apple-system, "SF Pro", system-ui',
       cursor: trashPhotos.length === 0 ? 'not-allowed' : 'pointer',
       letterSpacing: -0.4,
-      boxShadow: trashPhotos.length === 0 ? 'none' : '0 4px 14px rgba(255,59,48,0.35)',
-      transition: 'transform 0.15s cubic-bezier(0.32, 0.72, 0, 1), background 0.15s ease'
-    },
-    onMouseDown: e => {
-      if (trashPhotos.length > 0) {
-        e.currentTarget.style.transform = 'scale(0.97)';
-      }
-    },
-    onMouseUp: e => {
-      e.currentTarget.style.transform = 'scale(1)';
-    },
-    onMouseLeave: e => {
-      e.currentTarget.style.transform = 'scale(1)';
+      boxShadow: trashPhotos.length === 0 ? 'none' : '0 4px 14px rgba(255,59,48,0.35)'
     }
   }, "\u5220\u9664\u5168\u90E8"))), showAlert && /*#__PURE__*/React.createElement(IOSAlert, {
     title: "\u5220\u9664\u7167\u7247\uFF1F",
@@ -334,6 +308,8 @@ function TrashPage({
     }
   }));
 }
+
+// iOS 风格 Alert（居中缩放弹窗）
 function IOSAlert({
   title,
   message,
@@ -360,7 +336,7 @@ function IOSAlert({
       width: '100%',
       maxWidth: 270,
       overflow: 'hidden',
-      animation: 'alertScaleIn 0.25s cubic-bezier(0.32, 0.72, 0, 1)'
+      animation: 'alertScaleIn 0.28s var(--ease-drawer)'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -392,6 +368,7 @@ function IOSAlert({
   }, actions.map((action, i) => /*#__PURE__*/React.createElement("button", {
     key: i,
     onClick: action.onClick,
+    className: "ios-btn",
     style: {
       flex: 1,
       padding: '12px 16px',
@@ -404,20 +381,12 @@ function IOSAlert({
       fontFamily: '-apple-system, "SF Pro", system-ui',
       fontWeight: action.style === 'cancel' ? 600 : 400,
       cursor: 'pointer',
-      letterSpacing: -0.4,
-      transition: 'background 0.15s ease'
-    },
-    onMouseDown: e => {
-      e.currentTarget.style.background = 'rgba(0,0,0,0.05)';
-    },
-    onMouseUp: e => {
-      e.currentTarget.style.background = 'transparent';
-    },
-    onMouseLeave: e => {
-      e.currentTarget.style.background = 'transparent';
+      letterSpacing: -0.4
     }
   }, action.label)))));
 }
+
+// iOS 风格 Action Sheet（底部滑入）
 function IOSActionSheet({
   title,
   message,
@@ -440,7 +409,7 @@ function IOSActionSheet({
     onClick: e => e.stopPropagation(),
     style: {
       padding: '8px 10px calc(8px + var(--ios-safe-bottom))',
-      animation: 'slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1)'
+      animation: 'sheetSlideUp 0.32s var(--ease-drawer)'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -473,6 +442,7 @@ function IOSActionSheet({
   }, message)), actions.map((action, i) => /*#__PURE__*/React.createElement("button", {
     key: i,
     onClick: action.onClick,
+    className: "ios-btn",
     style: {
       width: '100%',
       padding: '16px 20px',
@@ -485,20 +455,11 @@ function IOSActionSheet({
       fontWeight: 400,
       cursor: 'pointer',
       letterSpacing: -0.4,
-      textAlign: 'center',
-      transition: 'background 0.15s ease'
-    },
-    onMouseDown: e => {
-      e.currentTarget.style.background = 'rgba(0,0,0,0.05)';
-    },
-    onMouseUp: e => {
-      e.currentTarget.style.background = 'transparent';
-    },
-    onMouseLeave: e => {
-      e.currentTarget.style.background = 'transparent';
+      textAlign: 'center'
     }
   }, action.label))), /*#__PURE__*/React.createElement("button", {
     onClick: onCancel,
+    className: "ios-btn",
     style: {
       width: '100%',
       padding: '16px 20px',
@@ -512,17 +473,7 @@ function IOSActionSheet({
       fontFamily: '-apple-system, "SF Pro", system-ui',
       fontWeight: 600,
       cursor: 'pointer',
-      letterSpacing: -0.4,
-      transition: 'background 0.15s ease'
-    },
-    onMouseDown: e => {
-      e.currentTarget.style.background = 'rgba(0,0,0,0.05)';
-    },
-    onMouseUp: e => {
-      e.currentTarget.style.background = 'rgba(255,255,255,0.95)';
-    },
-    onMouseLeave: e => {
-      e.currentTarget.style.background = 'rgba(255,255,255,0.95)';
+      letterSpacing: -0.4
     }
   }, "\u53D6\u6D88")));
 }

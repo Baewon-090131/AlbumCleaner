@@ -1,78 +1,136 @@
-// 全局动画样式 + 错误边界 + 主入口（预编译版本）
+// v2.6 全局动画样式 + 错误边界 + 主入口（预编译版本）
+// 依据 apple-design / animate 规范：iOS 转场曲线、系统色、材质分层
 
 const globalAnimations = `
-  @keyframes pageSlideLeft {
+  :root {
+    /* iOS 系统色（Apple HIG） */
+    --ac-blue: #007AFF;
+    --ac-green: #34C759;
+    --ac-red: #FF3B30;
+    --ac-orange: #FF9500;
+    --ac-yellow: #FFCC00;
+    --ac-indigo: #5856D6;
+    --ac-teal: #30B0C7;
+    --ac-purple: #AF52DE;
+    --ac-pink: #FF2D92;
+    --ac-gray: #8E8E93;
+    --ac-gray2: #AEAEB2;
+    --ac-gray3: #C7C7CC;
+    --ac-gray4: #D1D1D6;
+    --ac-gray5: #E5E5EA;
+    --ac-gray6: #F2F2F7;
+    --ac-label: #000000;
+    --ac-label-2: rgba(60,60,67,0.6);
+    --ac-label-3: rgba(60,60,67,0.3);
+    --ac-sep: rgba(60,60,67,0.09);
+    /* 动画曲线 tokens（animate skill 规范值） */
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --press-ms: 110ms;
+    --page-transition-ms: 360ms;
+  }
+
+  /* ===== 页面转场（iOS push/pop，双页同框由 App.jsx 状态机驱动） ===== */
+  @keyframes pagePushEnter {
     from { transform: translateX(100%); }
     to { transform: translateX(0); }
   }
-  @keyframes pageSlideRight {
-    from { transform: translateX(-30%); opacity: 0.7; }
-    to { transform: translateX(0); opacity: 1; }
+  @keyframes pagePopLeave {
+    from { transform: translateX(0); }
+    to { transform: translateX(100%); }
   }
+
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
   }
   @keyframes fadeInScale {
-    from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.88); }
     to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   }
+  /* iOS 模态缩放：从 1.1 收拢到 1（alert） */
   @keyframes alertScaleIn {
-    from { transform: scale(1.1); opacity: 0; }
+    from { transform: scale(1.12); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
   }
-  @keyframes slideUp {
+  /* iOS action sheet 底部滑入 */
+  @keyframes sheetSlideUp {
     from { transform: translateY(100%); }
     to { transform: translateY(0); }
   }
   @keyframes slideUpBar {
-    from { transform: translateY(20px); opacity: 0; }
+    from { transform: translateY(24px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
-  }
-  @keyframes slideDownBar {
-    from { transform: translateY(-20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-  }
-  @keyframes buttonPress {
-    0% { transform: scale(1); }
-    50% { transform: scale(0.9); }
-    100% { transform: scale(1); }
   }
   @keyframes cardIn {
-    from { opacity: 0; transform: scale(0.9) translateY(20px); }
+    from { opacity: 0; transform: scale(0.94) translateY(14px); }
     to { opacity: 1; transform: scale(1) translateY(0); }
   }
-  @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
-  }
-  /* v2.4 Liquid Glass：照片切换原生淡入淡出（轻微上移+缩放） */
-  @keyframes fadeSlideIn {
-    from { opacity: 0; transform: translateY(10px) scale(0.985); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
-  /* v2.4：玻璃面板浮现 */
-  @keyframes glassIn {
+  /* 照片切换：原生 iOS 相册式淡入（轻微上移+缩放，0.22s 内完成） */
+  @keyframes photoFadeIn {
     from { opacity: 0; transform: translateY(8px) scale(0.985); }
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
-  /* v2.5：Live 图自动播放模拟（缓慢推拉，模拟 Live Photo 动态） */
+  /* 玻璃面板浮现 */
+  @keyframes glassIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  /* 全屏观看层进入（iOS 相册：暗场淡入） */
+  @keyframes fullscreenIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  /* 顶部横幅 toast（iOS banner） */
+  @keyframes toastBanner {
+    from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  /* Live 图自动播放模拟（缓慢推拉） */
   @keyframes liveKenBurns {
     0% { transform: scale(1) translate(0, 0); }
     50% { transform: scale(1.07) translate(-1.5%, -1%); }
     100% { transform: scale(1.03) translate(1%, 1%); }
   }
-  /* v2.5：视频自动播放模拟（进度扫描条） */
+  /* 视频自动播放模拟（进度扫描条） */
   @keyframes progressScan {
     from { width: 0%; }
     to { width: 100%; }
   }
+  /* 加载进度圈 */
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
   ::-webkit-scrollbar { display: none; }
   * { -webkit-tap-highlight-color: transparent; }
+
+  /* iOS 列表按压高亮（transition 驱动，pointer 触发） */
+  .ios-row {
+    transition: background-color 0.15s ease;
+  }
+  .ios-row:active {
+    background-color: rgba(0,0,0,0.06);
+  }
+  /* iOS 按钮按压反馈：110ms 缩放 */
+  .ios-btn {
+    transition: transform var(--press-ms) var(--ease-out), opacity 0.15s ease, background-color 0.15s ease;
+  }
+  .ios-btn:active {
+    transform: scale(0.96);
+  }
+  /* 大标题（SF Pro Display 风格：负字距 + 紧凑行高） */
+  .sf-title {
+    font-family: -apple-system, "SF Pro Display", "SF Pro", system-ui, sans-serif;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+  }
+  .sf-body {
+    font-family: -apple-system, "SF Pro", system-ui, sans-serif;
+    letter-spacing: -0.01em;
+  }
 `;
 
 const styleEl = document.createElement('style');

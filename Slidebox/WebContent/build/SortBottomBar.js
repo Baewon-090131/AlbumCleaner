@@ -1,4 +1,4 @@
-// 整理页面底部操作区 - 优化动效
+// v2.6 整理页底部操作区（按钮/相簿双模式，iOS 玻璃质感）
 function SortBottomBar({
   themeColor = '#007AFF',
   mode = 'buttons',
@@ -21,7 +21,6 @@ function SortBottomBar({
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
-        // v2.5 液态玻璃面板（透出壁纸）
         background: 'rgba(255,255,255,0.48)',
         backdropFilter: 'blur(35px) saturate(200%)',
         WebkitBackdropFilter: 'blur(35px) saturate(200%)',
@@ -29,7 +28,7 @@ function SortBottomBar({
         border: '0.5px solid rgba(255,255,255,0.75)',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 8px 30px rgba(30,40,90,0.10)',
         padding: '10px 0 12px',
-        animation: 'slideUpBar 0.3s cubic-bezier(0.32, 0.72, 0, 1)'
+        animation: 'slideUpBar 0.3s var(--ease-drawer)'
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
@@ -40,31 +39,19 @@ function SortBottomBar({
       }
     }, /*#__PURE__*/React.createElement("button", {
       onClick: onBackToButtons,
+      className: "ios-btn",
       style: {
         display: 'flex',
         alignItems: 'center',
         gap: 3,
         background: 'none',
         border: 'none',
-        padding: 4,
+        padding: 6,
         cursor: 'pointer',
         color: themeColor,
         fontSize: 15,
         fontFamily: '-apple-system, "SF Pro", system-ui',
-        fontWeight: 500,
-        transition: 'transform 0.15s ease, opacity 0.15s ease'
-      },
-      onMouseDown: e => {
-        e.currentTarget.style.transform = 'scale(0.9)';
-        e.currentTarget.style.opacity = '0.6';
-      },
-      onMouseUp: e => {
-        e.currentTarget.style.transform = 'scale(1)';
-        e.currentTarget.style.opacity = '1';
-      },
-      onMouseLeave: e => {
-        e.currentTarget.style.transform = 'scale(1)';
-        e.currentTarget.style.opacity = '1';
+        fontWeight: 500
       }
     }, /*#__PURE__*/React.createElement("svg", {
       width: "14",
@@ -100,7 +87,7 @@ function SortBottomBar({
     }, albumList.map((album, idx) => /*#__PURE__*/React.createElement("div", {
       key: album.id,
       style: {
-        animation: `cardIn 0.3s ease ${idx * 0.04}s both`,
+        animation: `cardIn 0.3s var(--ease-out) ${idx * 0.04}s both`,
         flexShrink: 0
       }
     }, /*#__PURE__*/React.createElement(AlbumChip, {
@@ -199,7 +186,6 @@ function SortBottomBar({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      // v2.5 液态玻璃浮动胶囊（iOS 26 风格，透出壁纸）
       background: 'rgba(255,255,255,0.48)',
       backdropFilter: 'blur(35px) saturate(200%)',
       WebkitBackdropFilter: 'blur(35px) saturate(200%)',
@@ -210,12 +196,13 @@ function SortBottomBar({
       display: 'flex',
       justifyContent: 'space-around',
       alignItems: 'center',
-      animation: 'slideUpBar 0.3s cubic-bezier(0.32, 0.72, 0, 1)'
+      animation: 'slideUpBar 0.3s var(--ease-drawer)'
     }
   }, buttons.map((btn, idx) => /*#__PURE__*/React.createElement("button", {
     key: btn.id,
     onClick: btn.enabled ? btn.onClick : undefined,
     disabled: !btn.enabled,
+    className: "ios-btn",
     style: {
       width: 74,
       height: 62,
@@ -227,20 +214,10 @@ function SortBottomBar({
       justifyContent: 'center',
       cursor: btn.enabled ? 'pointer' : 'not-allowed',
       opacity: btn.enabled ? 1 : 0.35,
-      transition: 'transform 0.15s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.15s ease',
       color: btn.color,
       flexDirection: 'column',
       gap: 4,
-      animation: `cardIn 0.3s cubic-bezier(0.32, 0.72, 0, 1) ${idx * 0.05}s both`
-    },
-    onMouseDown: e => {
-      if (btn.enabled) e.currentTarget.style.transform = 'scale(0.86)';
-    },
-    onMouseUp: e => {
-      e.currentTarget.style.transform = 'scale(1)';
-    },
-    onMouseLeave: e => {
-      e.currentTarget.style.transform = 'scale(1)';
+      animation: `cardIn 0.3s var(--ease-out) ${idx * 0.05}s both`
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -255,8 +232,7 @@ function SortBottomBar({
       color: btn.color,
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'center',
-      transition: 'transform 0.15s cubic-bezier(0.32, 0.72, 0, 1)'
+      justifyContent: 'center'
     }
   }, React.cloneElement(btn.icon, {
     stroke: btn.color,
@@ -277,23 +253,14 @@ function AlbumChip({
 }) {
   return /*#__PURE__*/React.createElement("div", {
     onClick: onClick,
+    className: "ios-btn",
     style: {
       width: 72,
       cursor: 'pointer',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      gap: 6,
-      transition: 'transform 0.15s ease'
-    },
-    onMouseDown: e => {
-      e.currentTarget.style.transform = 'scale(0.9)';
-    },
-    onMouseUp: e => {
-      e.currentTarget.style.transform = 'scale(1)';
-    },
-    onMouseLeave: e => {
-      e.currentTarget.style.transform = 'scale(1)';
+      gap: 6
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -305,8 +272,7 @@ function AlbumChip({
       alignItems: 'center',
       justifyContent: 'center',
       fontSize: 24,
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-      transition: 'box-shadow 0.15s ease'
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
     }
   }, album.icon), /*#__PURE__*/React.createElement("span", {
     style: {

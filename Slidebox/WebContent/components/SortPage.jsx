@@ -1,8 +1,10 @@
-// 全屏观看层（v2.3：支持捏合缩放 / 双击放大 / 平移 / 单击退出）
-// mode: 'photo' 静态照片全屏 | 'video' 模拟视频播放 | 'live' 模拟 Live Photo
+// v2.6 整理页：iOS 导航胶囊 + 进度 + 全屏观看（含下滑退出）+ 底部操作区
+// 全屏观看层：捏合缩放 / 双击放大 / 平移 / 单击退出 / 下滑退出（iOS 相册式）
+
 function MediaFullscreenOverlay({ mode, photo, themeColor, onClose }) {
   const [playing, setPlaying] = React.useState(false);
   const imgRef = React.useRef(null);
+  const overlayRef = React.useRef(null);
   const touchRef = React.useRef({
     pointers: new Map(),
     startDist: 0,
@@ -13,6 +15,10 @@ function MediaFullscreenOverlay({ mode, photo, themeColor, onClose }) {
     lastTap: 0,
     zoom: 1,
     pan: { x: 0, y: 0 },
+    // v2.6 下滑退出跟踪
+    startY: 0,
+    overlayDy: 0,
+    exitDrag: false,
   });
 
   const applyTransform = () => {
@@ -22,18 +28,38 @@ function MediaFullscreenOverlay({ mode, photo, themeColor, onClose }) {
     img.style.transform = `translate(${t.pan.x}px, ${t.pan.y}px) scale(${t.zoom})`;
   };
 
+  const applyOverlay = (dy, restoring) => {
+    const ov = overlayRef.current;
+    if (!ov) return;
+    if (restoring) {
+      ov.style.transition = 'transform 0.28s var(--ease-drawer), opacity 0.24s ease';
+      ov.style.transform = 'translateY(0)';
+      ov.style.opacity = '1';
+      return;
+    }
+    ov.style.transition = 'none';
+    ov.style.transform = `translateY(${dy}px)`;
+    // 越往下拉越透明（iOS 相册下滑退出反馈）
+    ov.style.opacity = String(Math.max(0, 1 - dy / 620));
+  };
+
   const onPointerDown = (e) => {
     const t = touchRef.current;
     if (t.pointers.size === 0) {
       t.sx = e.clientX; t.sy = e.clientY;
       t.startPanX = t.pan.x; t.startPanY = t.pan.y;
+      t.startY = e.clientY;
       t.moved = false;
+      t.exitDrag = false;
     }
     t.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (t.pointers.size === 2) {
       const pts = [...t.pointers.values()];
       t.startDist = Math.max(1, Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y));
       t.startZoom = t.zoom;
+      // 双指出现时取消下滑退出
+      t.exitDrag = false;
+      applyOverlay(0, true);
     }
     if (imgRef.current) {
       imgRef.current.style.transition = 'none';
@@ -49,7 +75,6 @@ function MediaFullscreenOverlay({ mode, photo, themeColor, onClose }) {
     t.pointers.set(e.pointerId, cur);
 
     if (t.pointers.size === 2) {
-      // 双指捏合缩放（以屏幕中心为缩放原点）
       const pts = [...t.pointers.values()];
       const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
       let nextZoom = t.startZoom * (dist / t.startDist);
@@ -58,12 +83,24 @@ function MediaFullscreenOverlay({ mode, photo, themeColor, onClose }) {
       if (nextZoom <= 1) t.pan = { x: 0, y: 0 };
       applyTransform();
       t.moved = true;
-    } else if (t.pointers.size === 1 && t.zoom > 1) {
-      // 单指平移（仅放大状态下）
+    } else if (t.pointers.size === 1) {
       const p = t.pointers.get(e.pointerId);
-      t.pan = { x: t.startPanX + (p.x - t.sx), y: t.startPanY + (p.y - t.sy) };
-      applyTransform();
-      if (Math.abs(p.x - t.sx) > 8 || Math.abs(p.y - t.sy) > 8) t.moved = true;
+      if (t.zoom > 1) {
+        // 放大状态下：平移
+        t.pan = { x: t.startPanX + (p.x - t.sx), y: t.startPanY + (p.y - t.sy) };
+        applyTransform();
+        if (Math.abs(p.x - t.sx) > 8 || Math.abs(p.y - t.sy) > 8) t.moved = true;
+      } else {
+        // 未放大：下滑跟手退出（iOS 相册式），轻微上滑也跟手（阻尼 0.5）
+        const dy = p.y - t.startY;
+        if (dy > 0) {
+          t.exitDrag = true;
+          t.moved = true;
+          applyOverlay(dy * 0.55, false);
+        } else if (dy < 0) {
+          applyOverlay(dy * 0.18, false);
+        }
+      }
     }
   };
 
@@ -72,17 +109,37 @@ function MediaFullscreenOverlay({ mode, photo, themeColor, onClose }) {
     if (!t.pointers.has(e.pointerId)) return;
     t.pointers.delete(e.pointerId);
 
+    // v2.6：下滑退出（未放大且下滑超过阈值）
+    if (t.exitDrag && t.pointers.size === 0 && t.zoom <= 1) {
+      const dy = (t.pointers.size === 0) ? (touchRef.current.sy ? (t.overlayDy) : 0) : 0;
+      // 用最后一次记录的位移
+      const ov = overlayRef.current;
+      const lastDy = ov && ov.style.transform ? (parseFloat((ov.style.transform.match(/translateY\(([-0-9.]+)px\)/) || [0, 0])[1]) || 0) : 0;
+      if (lastDy > 110) {
+        // 超过阈值：滑出退出
+        ov.style.transition = 'transform 0.28s var(--ease-drawer), opacity 0.24s ease';
+        ov.style.transform = 'translateY(100%)';
+        ov.style.opacity = '0';
+        setTimeout(onClose, 250);
+        return;
+      }
+      // 未过阈值：回弹
+      t.exitDrag = false;
+      t.moved = false;
+      applyOverlay(0, true);
+      return;
+    }
+
     // 单击 / 双击判定（仅无位移时）
     if (!t.moved) {
       const now = Date.now();
       if (now - t.lastTap < 300) {
-        // 双击：切换放大/还原
         t.lastTap = 0;
         t.zoom = t.zoom > 1 ? 1 : 2.5;
         if (t.zoom <= 1) t.pan = { x: 0, y: 0 };
         const img = imgRef.current;
         if (img) {
-          img.style.transition = 'transform 0.22s cubic-bezier(0.32, 0.72, 0, 1)';
+          img.style.transition = 'transform 0.22s var(--ease-drawer)';
           applyTransform();
           setTimeout(function() { if (img) img.style.transition = 'none'; }, 240);
         }
@@ -91,26 +148,38 @@ function MediaFullscreenOverlay({ mode, photo, themeColor, onClose }) {
       t.lastTap = now;
       setTimeout(function() {
         if (t.lastTap === now) {
-          // 单击 → 退出全屏
           t.lastTap = 0;
           onClose();
         }
       }, 300);
     } else {
       t.moved = false;
+      // 非退出路径结束时，若未放大则复位 overlay
+      if (t.zoom <= 1 && t.pointers.size === 0) applyOverlay(0, true);
     }
   };
 
+  const onPointerCancel = (e) => {
+    const t = touchRef.current;
+    if (!t.pointers.has(e.pointerId)) return;
+    t.pointers.delete(e.pointerId);
+    t.exitDrag = false;
+    if (t.zoom <= 1) applyOverlay(0, true);
+  };
+
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 500,
-      background: '#000',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      animation: 'fadeIn 0.25s ease',
-      overflow: 'hidden',
-      touchAction: 'none',
-    }}>
-      {/* 媒体主体（contain 完整显示，支持缩放/平移） */}
+    <div
+      ref={overlayRef}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 500,
+        background: '#000',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        animation: 'fullscreenIn 0.22s ease',
+        overflow: 'hidden',
+        touchAction: 'none',
+        willChange: 'transform, opacity',
+      }}>
+      {/* 媒体主体（contain 完整显示，支持缩放/平移/下滑退出） */}
       <div style={{
         position: 'absolute', inset: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -119,7 +188,7 @@ function MediaFullscreenOverlay({ mode, photo, themeColor, onClose }) {
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        onPointerCancel={onPointerCancel}
       >
         <img
           ref={imgRef}
@@ -147,7 +216,11 @@ function MediaFullscreenOverlay({ mode, photo, themeColor, onClose }) {
               width: 44, height: 44, borderRadius: '50%',
               background: 'rgba(255,255,255,0.15)', border: 'none',
               display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-            }}>
+              transition: 'transform 0.12s ease, background-color 0.15s ease',
+            }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.88)'; }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+            >
               {playing ? (
                 <svg width="16" height="16" viewBox="0 0 16 16">
                   <rect x="2" y="2" width="4.5" height="12" rx="1" fill="#fff"/>
@@ -177,7 +250,7 @@ function MediaFullscreenOverlay({ mode, photo, themeColor, onClose }) {
         </div>
       )}
 
-      {/* LIVE 标识（Live Photo 演示） */}
+      {/* LIVE 标识 */}
       {mode === 'live' && (
         <div style={{
           position: 'absolute', top: 60,
@@ -199,7 +272,7 @@ function MediaFullscreenOverlay({ mode, photo, themeColor, onClose }) {
         fontFamily: '-apple-system, "SF Pro", system-ui',
         pointerEvents: 'none',
       }}>
-        {mode === 'video' ? '点击空白处退出' : '轻点退出全屏'}
+        {mode === 'video' ? '点击空白处退出 · 下滑也可退出' : '轻点或下滑退出全屏'}
       </div>
 
       <style>{`@keyframes livePulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }`}</style>
@@ -214,11 +287,11 @@ function SortPage({
   onBack, onTrashClick, onAlbumAdd,
   onSwipeUp, onSwipeLeft, onSwipeRight, onSwipeDown,
   onUndo, onDeleteButton, onKeepButton,
-  addedFeedback, toastMessage, historyLength,
+  addedFeedback, toastMessage, historyLength, trashCount = 0,
 }) {
   const [bottomMode, setBottomMode] = React.useState('buttons');
   const [animating, setAnimating] = React.useState(false);
-  const [fullscreen, setFullscreen] = React.useState(null); // {mode:'photo'|'video'|'live', photo}
+  const [fullscreen, setFullscreen] = React.useState(null);
   const stackRef = React.useRef(null);
   const total = totalCount || photos.length;
   const remaining = Math.max(0, total - processedCount);
@@ -238,7 +311,6 @@ function SortPage({
       fn();
     }
   };
-  // v2.4：撤回 = 当前卡片向右飞出 → 上一张从右侧滑回（与右滑手势一致的连贯动效，不再单卡横滑）
   const handleUndoClick = () => playThen('right', () => {
     if (onUndo) onUndo();
     setTimeout(function() {
@@ -251,8 +323,7 @@ function SortPage({
   const handleBackToButtons = () => setBottomMode('buttons');
   const handleAlbumAdd = (album) => playThen('down', () => { onAlbumAdd(album); setBottomMode('buttons'); });
 
-  // 点击媒体项目 → 全屏观看（v2.2.4）
-  // 照片：前端全屏纯净模式；视频/Live：真机走原生播放器，模拟器演示
+  // 点击媒体项目 → 全屏观看
   const handlePhotoTap = (photo) => {
     if (!photo || animating) return;
     if (photo.isVideo || photo.isLivePhoto) {
@@ -271,10 +342,9 @@ function SortPage({
       height: '100%', background: 'transparent',
       display: 'flex', flexDirection: 'column', position: 'relative',
     }}>
-      {/* v2.5 iOS 26 Liquid Glass：独立悬浮玻璃胶囊导航条 */}
+      {/* v2.6 悬浮玻璃导航胶囊 */}
       <div style={{
         position: 'relative', zIndex: 100,
-        paddingTop: 'var(--ios-safe-top)',
         padding: 'var(--ios-safe-top) 12px 6px',
       }}>
         <div style={{
@@ -287,18 +357,14 @@ function SortPage({
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0 8px',
+          animation: 'slideDownBar 0.3s var(--ease-drawer)',
         }}>
-          <button onClick={onBack} style={{
+          <button onClick={onBack} className="ios-btn" style={{
             display: 'flex', alignItems: 'center', gap: 4,
             background: 'none', border: 'none', padding: '6px 10px', cursor: 'pointer',
             color: themeColor, fontSize: 17,
             fontFamily: '-apple-system, "SF Pro", system-ui', fontWeight: 400,
-            transition: 'transform 0.16s cubic-bezier(0.32, 0.72, 0, 1)',
-          }}
-            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.9)'; }}
-            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-          >
+          }}>
             <svg width="12" height="20" viewBox="0 0 12 20">
               <path d="M10 2L2 10l8 8" stroke={themeColor} strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -310,19 +376,25 @@ function SortPage({
             fontSize: 17, fontWeight: 600, color: '#000',
             fontFamily: '-apple-system, "SF Pro", system-ui', letterSpacing: -0.4,
           }}>{month.title}</div>
-          <button onClick={onTrashClick} style={{
+          <button onClick={onTrashClick} className="ios-btn" style={{
             background: 'none', border: 'none', padding: 6, cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'transform 0.16s cubic-bezier(0.32, 0.72, 0, 1)',
-          }}
-            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.86)'; }}
-            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-          >
+            position: 'relative',
+          }}>
             <svg width="21" height="21" viewBox="0 0 24 24" fill="none">
               <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"
                 stroke={themeColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
+            {trashCount > 0 && (
+              <span style={{
+                position: 'absolute', top: -2, right: -2,
+                minWidth: 16, height: 16, borderRadius: 8,
+                background: '#FF3B30', color: '#fff', fontSize: 10, fontWeight: 600,
+                fontFamily: '-apple-system, "SF Pro", system-ui',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '0 3px',
+              }}>{trashCount > 99 ? '99+' : trashCount}</span>
+            )}
           </button>
         </div>
       </div>
@@ -345,20 +417,26 @@ function SortPage({
         />
       )}
 
+      {/* v2.6 iOS 顶部横幅 toast（导航胶囊下方） */}
       {toastMessage && (
         <div style={{
-          position: 'absolute', top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(10px)',
-          color: '#fff', padding: '14px 20px', borderRadius: 14,
-          fontSize: 15, fontFamily: '-apple-system, "SF Pro", system-ui',
+          position: 'absolute', top: 'calc(var(--ios-safe-top) + 62px)',
+          left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(28,28,30,0.82)',
+          backdropFilter: 'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+          color: '#fff', padding: '10px 18px', borderRadius: 18,
+          fontSize: 14, fontFamily: '-apple-system, "SF Pro", system-ui',
           fontWeight: 500, zIndex: 200,
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-          animation: 'fadeInScale 0.25s ease', pointerEvents: 'none',
+          display: 'flex', alignItems: 'center', gap: 8,
+          animation: 'toastBanner 0.28s var(--ease-out)',
+          pointerEvents: 'none',
+          boxShadow: '0 6px 22px rgba(0,0,0,0.22)',
+          whiteSpace: 'nowrap',
         }}>
-          <svg width="28" height="28" viewBox="0 0 28 28">
-            <circle cx="14" cy="14" r="12" fill="none" stroke="#34C759" strokeWidth="2.5"/>
-            <path d="M8 14l4 4 8-8" stroke="#34C759" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+          <svg width="17" height="17" viewBox="0 0 28 28" style={{ flexShrink: 0 }}>
+            <circle cx="14" cy="14" r="12" fill="none" stroke="#34C759" strokeWidth="3"/>
+            <path d="M8 14l4 4 8-8" stroke="#34C759" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
           <span>{toastMessage}</span>
         </div>
@@ -366,54 +444,58 @@ function SortPage({
 
       {addedFeedback && (
         <div style={{
-          position: 'absolute', top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(10px)',
-          color: '#fff', padding: '14px 20px', borderRadius: 14,
-          fontSize: 15, fontFamily: '-apple-system, "SF Pro", system-ui',
+          position: 'absolute', top: 'calc(var(--ios-safe-top) + 62px)',
+          left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(28,28,30,0.82)',
+          backdropFilter: 'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+          color: '#fff', padding: '10px 18px', borderRadius: 18,
+          fontSize: 14, fontFamily: '-apple-system, "SF Pro", system-ui',
           fontWeight: 500, zIndex: 200,
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-          animation: 'fadeInScale 0.25s ease', pointerEvents: 'none',
+          display: 'flex', alignItems: 'center', gap: 8,
+          animation: 'toastBanner 0.28s var(--ease-out)',
+          pointerEvents: 'none',
+          boxShadow: '0 6px 22px rgba(0,0,0,0.22)',
+          whiteSpace: 'nowrap',
         }}>
-          <svg width="28" height="28" viewBox="0 0 28 28">
-            <circle cx="14" cy="14" r="12" fill="none" stroke="#34C759" strokeWidth="2.5"/>
-            <path d="M8 14l4 4 8-8" stroke="#34C759" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+          <svg width="17" height="17" viewBox="0 0 28 28" style={{ flexShrink: 0 }}>
+            <circle cx="14" cy="14" r="12" fill="none" stroke="#34C759" strokeWidth="3"/>
+            <path d="M8 14l4 4 8-8" stroke="#34C759" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
           <span>已添加到「{addedFeedback}」</span>
         </div>
       )}
 
-      <div style={{ padding: '0 12px 8px' }}>
+      {/* 进度行（v2.6：与底部操作区贴合，细进度线） */}
+      <div style={{ padding: '4px 12px 2px' }}>
         <div style={{
-          borderRadius: 18,
-          background: 'rgba(255,255,255,0.45)',
-          backdropFilter: 'blur(20px) saturate(200%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(200%)',
+          borderRadius: 16,
+          background: 'rgba(255,255,255,0.40)',
+          backdropFilter: 'blur(18px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(18px) saturate(200%)',
           border: '0.5px solid rgba(255,255,255,0.7)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 2px 12px rgba(30,40,90,0.06)',
-          padding: '8px 14px 10px',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85)',
+          padding: '6px 12px 8px',
         }}>
           <div style={{
             display: 'flex', justifyContent: 'space-between',
-            alignItems: 'center', marginBottom: 6,
+            alignItems: 'center', marginBottom: 5,
           }}>
-            <span style={{
-              fontSize: 13, color: 'rgba(60,60,67,0.6)',
-              fontFamily: '-apple-system, "SF Pro", system-ui',
+            <span className="sf-body" style={{
+              fontSize: 12.5, color: 'rgba(60,60,67,0.55)', fontWeight: 500,
             }}>{Math.min(displayCurrent, total)} / {total}</span>
-            <span style={{
-              fontSize: 13, color: 'rgba(60,60,67,0.6)',
-              fontFamily: '-apple-system, "SF Pro", system-ui',
-            }}>剩余 {remaining} 张</span>
+            <span className="sf-body" style={{
+              fontSize: 12.5, color: 'rgba(60,60,67,0.55)', fontWeight: 500,
+            }}>剩余 {remaining}</span>
           </div>
           <div style={{
-            height: 4, background: 'rgba(60,60,67,0.12)',
+            height: 3.5, background: 'rgba(60,60,67,0.12)',
             borderRadius: 2, overflow: 'hidden',
           }}>
             <div style={{
               height: '100%', width: `${progress}%`,
               background: themeColor, borderRadius: 2,
-              transition: 'width 0.3s ease',
+              transition: 'width 0.35s var(--ease-out)',
             }} />
           </div>
         </div>
