@@ -1,6 +1,6 @@
 {
   "name": "album-cleaner-build",
-  "version": "2.3.2",
+  "version": "2.7",
   "private": true,
   "description": "JSX 预编译工具（不参与 IPA 打包）",
   "scripts": {

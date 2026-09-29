@@ -204,7 +204,7 @@ function SettingsPage({
   }, /*#__PURE__*/React.createElement(SettingRow, {
     iconColor: themeColor,
     title: "\u5173\u4E8E",
-    detail: "Album Cleaner 2.6"
+    detail: "Album Cleaner 2.7"
   }), /*#__PURE__*/React.createElement(SettingRow, {
     iconColor: themeColor,
     title: "\u64CD\u4F5C\u6307\u5F15",

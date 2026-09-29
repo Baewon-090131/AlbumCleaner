@@ -103,7 +103,7 @@ function SettingsPage({ themeColor, onThemeChange, onBack,
         <div style={{ padding: '18px 0 8px', animation: 'glassIn 0.32s var(--ease-out) 0.05s both' }}>
           <GroupHeader title="通用" />
           <div style={GROUP_GLASS}>
-            <SettingRow iconColor={themeColor} title="关于" detail="Album Cleaner 2.6" />
+            <SettingRow iconColor={themeColor} title="关于" detail="Album Cleaner 2.7" />
             <SettingRow iconColor={themeColor} title="操作指引" detail="" />
             <SettingRow iconColor={themeColor} title="清理缓存" detail="0 KB" isLast />
           </div>
