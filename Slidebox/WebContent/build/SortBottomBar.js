@@ -21,12 +21,11 @@ function SortBottomBar({
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
-        background: 'rgba(255,255,255,0.55)',
-        backdropFilter: 'blur(20px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-        borderRadius: 26,
-        border: '0.5px solid rgba(255,255,255,0.75)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 8px 30px rgba(30,40,90,0.10)',
+        background: 'var(--glass-float-strong)',
+        backdropFilter: 'var(--blur-float)',
+        WebkitBackdropFilter: 'var(--blur-float)',
+        borderRadius: 'var(--r-island)',
+        boxShadow: 'var(--edge-float)',
         padding: '10px 0 12px',
         animation: 'slideUpBar 0.3s var(--ease-drawer)'
       }
@@ -41,6 +40,8 @@ function SortBottomBar({
       onClick: onBackToButtons,
       className: "ios-btn",
       style: {
+        width: 78,
+        flex: '0 0 78px',
         display: 'flex',
         alignItems: 'center',
         gap: 3,
@@ -71,10 +72,14 @@ function SortBottomBar({
         fontSize: 14,
         color: 'rgba(60,60,67,0.7)',
         fontFamily: '-apple-system, "SF Pro", system-ui',
-        fontWeight: 500,
-        paddingRight: 50
+        fontWeight: 500
       }
-    }, "\u6DFB\u52A0\u5230\u76F8\u7C3F")), /*#__PURE__*/React.createElement("div", {
+    }, "\u6DFB\u52A0\u5230\u76F8\u7C3F"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 78,
+        flex: '0 0 78px'
+      }
+    })), /*#__PURE__*/React.createElement("div", {
       style: {
         display: 'flex',
         gap: 12,
@@ -186,12 +191,11 @@ function SortBottomBar({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      background: 'rgba(255,255,255,0.55)',
-      backdropFilter: 'blur(20px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-      borderRadius: 28,
-      border: '0.5px solid rgba(255,255,255,0.75)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 8px 30px rgba(30,40,90,0.10)',
+      background: 'var(--glass-float)',
+      backdropFilter: 'var(--blur-float)',
+      WebkitBackdropFilter: 'var(--blur-float)',
+      borderRadius: 'var(--r-island)',
+      boxShadow: 'var(--edge-float)',
       padding: '10px 16px',
       display: 'flex',
       justifyContent: 'space-around',
@@ -204,9 +208,9 @@ function SortBottomBar({
     disabled: !btn.enabled,
     className: "ios-btn",
     style: {
-      width: 74,
-      height: 62,
-      borderRadius: 20,
+      width: 76,
+      height: 66,
+      borderRadius: 22,
       background: 'transparent',
       border: 'none',
       display: 'flex',
@@ -221,12 +225,11 @@ function SortBottomBar({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 46,
-      height: 46,
-      borderRadius: 16,
-      background: 'rgba(255,255,255,0.5)',
-      border: '0.5px solid rgba(255,255,255,0.85)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 2px 12px rgba(30,40,90,0.08)',
+      width: 50,
+      height: 50,
+      borderRadius: 19,
+      background: 'var(--glass-inner)',
+      boxShadow: 'var(--edge-inner)',
       color: btn.color,
       display: 'flex',
       alignItems: 'center',
@@ -262,15 +265,15 @@ function AlbumChip({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 64,
-      height: 64,
-      borderRadius: 14,
+      width: 66,
+      height: 66,
+      borderRadius: 20,
       background: album.gradient,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      fontSize: 24,
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+      fontSize: 26,
+      boxShadow: '0 6px 18px rgba(22,32,72,0.16), inset 0 1px 0 rgba(255,255,255,0.35)'
     }
   }, album.icon), /*#__PURE__*/React.createElement("span", {
     style: {

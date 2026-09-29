@@ -1,8 +1,8 @@
 // v2.6 App：双页 iOS push/pop 转场状态机 + 全局状态
 // 转场规则（apple-design）：push 新页右滑入 + 旧页左移 28% 变暗；pop 反向对称
 function App() {
-  // 主题色：从 localStorage 读取（与开关持久化一致），默认 iOS 蓝
-  let initialTheme = '#007AFF';
+  // 主题色：从 localStorage 读取（与开关持久化一致），默认北洋蓝（iOS 27 强调色）
+  let initialTheme = '#002FA7';
   try {
     const st = window.localStorage.getItem('ac_theme');
     if (st) initialTheme = st;
@@ -294,11 +294,10 @@ function App() {
         width: 46,
         height: 46,
         borderRadius: '50%',
-        background: 'rgba(255,255,255,0.55)',
-        backdropFilter: 'blur(25px) saturate(200%)',
-        WebkitBackdropFilter: 'blur(25px) saturate(200%)',
-        border: '0.5px solid rgba(255,255,255,0.8)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 6px 20px rgba(30,40,90,0.10)',
+        background: 'var(--glass-panel)',
+        backdropFilter: 'var(--blur-panel)',
+        WebkitBackdropFilter: 'var(--blur-panel)',
+        boxShadow: 'var(--edge-panel-soft)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center'
@@ -307,8 +306,8 @@ function App() {
       style: {
         width: 22,
         height: 22,
-        border: '2.5px solid rgba(0,122,255,0.2)',
-        borderTopColor: '#007AFF',
+        border: '2.5px solid var(--accent-soft)',
+        borderTopColor: themeColor,
         borderRadius: '50%',
         animation: 'spin 0.8s linear infinite'
       }
@@ -385,8 +384,11 @@ function App() {
     }
   };
 
-  // 双页转场渲染：转场期间两层同框
+  // 双页转场渲染：转场期间两层同框。
+  // 每页两层：外层是「不透明壁纸背板 + 裁切揭示」，内层是页面内容（负责位移）。
+  // 只有外层不透明，旧页面才不会透过新页面显示（v2.7 修复切页重影）。
   const topIndex = renderStack.length - 1;
+  const transitioning = renderStack.length > 1;
   return /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'relative',
@@ -397,37 +399,64 @@ function App() {
     }
   }, renderStack.map((item, i) => {
     const isTop = i === topIndex;
-    const style = {
+    const layer = {
       position: 'absolute',
       inset: 0,
-      background: 'transparent'
+      background: 'var(--wall)'
     };
-    if (renderStack.length > 1) {
+    const content = {
+      position: 'absolute',
+      inset: 0
+    };
+    if (transitioning) {
       if (isTop) {
-        // 顶页：push 右滑入 / pop 右滑出（对称路径）
-        style.animation = dir === 'forward' ? 'pagePushEnter 0.36s var(--ease-drawer)' : 'pagePopLeave 0.36s var(--ease-drawer)';
-        style.zIndex = 2;
-        style.boxShadow = '-10px 0 28px rgba(0,0,0,0.10)';
-        style.willChange = 'transform, opacity';
+        // 顶页：push 从右揭示进来 / pop 向右揭示出去（外层裁切，内层同步位移）
+        layer.animation = dir === 'forward' ? 'pageRevealIn 0.36s var(--ease-drawer) both' : 'pageRevealOut 0.36s var(--ease-drawer) both';
+        content.animation = dir === 'forward' ? 'pageSlideIn 0.36s var(--ease-drawer) both' : 'pageSlideOut 0.36s var(--ease-drawer) both';
+        layer.zIndex = 2;
+        layer.willChange = 'clip-path';
+        content.willChange = 'transform';
       } else {
-        // 下层页：push 左移变暗 / pop 复位（transition 驱动）
-        const under = dir === 'forward' ? {
+        // 下层页：push 内容左移变暗 / pop 复位（transition 驱动；壁纸背板保持不动）
+        // 减弱动态效果时只做变暗/复位，不做位移与缩放
+        const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        const under = dir === 'forward' ? reduceMotion ? {
+          opacity: 0.82
+        } : {
           transform: 'translateX(-26%) scale(0.96)',
           opacity: 0.82
+        } : reduceMotion ? {
+          opacity: 1
         } : {
           transform: 'translateX(0) scale(1)',
           opacity: 1
         };
-        Object.assign(style, under);
-        style.transition = 'transform 0.36s var(--ease-drawer), opacity 0.36s ease';
-        style.zIndex = 1;
-        style.willChange = 'transform, opacity';
+        Object.assign(content, under);
+        content.transition = reduceMotion ? 'opacity 0.2s ease' : 'transform 0.36s var(--ease-drawer), opacity 0.36s ease';
+        layer.zIndex = 1;
+        content.willChange = 'transform, opacity';
       }
     }
     return /*#__PURE__*/React.createElement("div", {
       key: item.id,
-      style: style
-    }, renderPage(item.page));
+      style: layer
+    }, /*#__PURE__*/React.createElement("div", {
+      style: content
+    }, renderPage(item.page), transitioning && isTop &&
+    /*#__PURE__*/
+    /* 揭示边缘的投影：跟着内容层左缘走，视觉上等价于「新页压在旧页上」的投影 */
+    React.createElement("div", {
+      style: {
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        left: 0,
+        width: 26,
+        zIndex: 400,
+        background: 'linear-gradient(to right, rgba(22,32,72,0.16), rgba(22,32,72,0))',
+        pointerEvents: 'none'
+      }
+    })));
   }));
 }
 window.App = App;

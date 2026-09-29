@@ -40,13 +40,12 @@ function TrashPage({
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'relative',
-      height: 50,
-      borderRadius: 25,
-      background: 'rgba(255,255,255,0.58)',
-      backdropFilter: 'blur(20px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-      border: '0.5px solid rgba(255,255,255,0.8)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
+      height: 52,
+      borderRadius: 'var(--r-island)',
+      background: 'var(--glass-float)',
+      backdropFilter: 'var(--blur-float)',
+      WebkitBackdropFilter: 'var(--blur-float)',
+      boxShadow: 'var(--edge-float)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -109,11 +108,12 @@ function TrashPage({
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      background: 'rgba(255,255,255,0.62)',
-      border: '0.5px solid rgba(255,255,255,0.7)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85)',
-      borderRadius: 14,
-      padding: '7px 16px',
+      background: 'var(--glass-panel)',
+      backdropFilter: 'var(--blur-panel)',
+      WebkitBackdropFilter: 'var(--blur-panel)',
+      boxShadow: 'var(--edge-panel-soft)',
+      borderRadius: 16,
+      padding: '8px 17px',
       animation: 'glassIn 0.3s var(--ease-out)'
     }
   }, trashPhotos.length > 0 ? `共 ${trashPhotos.length} 张照片将在 30 天后自动删除` : '回收站为空')), /*#__PURE__*/React.createElement("div", {
@@ -125,18 +125,21 @@ function TrashPage({
     }
   }, trashPhotos.length > 0 ? /*#__PURE__*/React.createElement("div", {
     style: {
-      borderRadius: 20,
-      background: 'rgba(255,255,255,0.62)',
-      border: '0.5px solid rgba(255,255,255,0.7)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), 0 4px 16px rgba(30,40,90,0.06)',
-      padding: 4,
+      borderRadius: 'var(--r-panel)',
+      background: 'var(--glass-panel)',
+      backdropFilter: 'var(--blur-panel)',
+      WebkitBackdropFilter: 'var(--blur-panel)',
+      boxShadow: 'var(--edge-panel-soft)',
+      padding: 5,
       overflow: 'hidden'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'grid',
       gridTemplateColumns: 'repeat(3, 1fr)',
-      gap: 2
+      gap: 3,
+      borderRadius: 20,
+      overflow: 'hidden'
     }
   }, trashPhotos.map((photo, idx) => /*#__PURE__*/React.createElement("div", {
     key: photo.id,
@@ -201,9 +204,10 @@ function TrashPage({
       width: 88,
       height: 88,
       borderRadius: '50%',
-      background: 'rgba(255,255,255,0.55)',
-      border: '0.5px solid rgba(255,255,255,0.8)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 10px 30px rgba(30,40,90,0.12)',
+      background: 'var(--glass-panel)',
+      backdropFilter: 'var(--blur-panel)',
+      WebkitBackdropFilter: 'var(--blur-panel)',
+      boxShadow: 'var(--edge-panel-soft)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center'
@@ -242,12 +246,11 @@ function TrashPage({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      borderRadius: 26,
-      background: 'rgba(255,255,255,0.58)',
-      backdropFilter: 'blur(20px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-      border: '0.5px solid rgba(255,255,255,0.8)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
+      borderRadius: 'var(--r-island)',
+      background: 'var(--glass-float)',
+      backdropFilter: 'var(--blur-float)',
+      WebkitBackdropFilter: 'var(--blur-float)',
+      boxShadow: 'var(--edge-float)',
       padding: '8px',
       animation: 'slideUpBar 0.3s var(--ease-drawer)'
     }
@@ -272,6 +275,7 @@ function TrashPage({
   }, "\u5220\u9664\u5168\u90E8"))), showAlert && /*#__PURE__*/React.createElement(IOSAlert, {
     title: "\u5220\u9664\u7167\u7247\uFF1F",
     message: `将从回收站中永久删除 ${trashPhotos.length} 张照片，此操作不可撤销。`,
+    themeColor: themeColor,
     actions: [{
       label: '取消',
       style: 'cancel',
@@ -287,6 +291,7 @@ function TrashPage({
   }), showActionSheet && selectedPhoto && /*#__PURE__*/React.createElement(IOSActionSheet, {
     title: `#${selectedPhoto.id}`,
     message: "\u9009\u62E9\u64CD\u4F5C",
+    themeColor: themeColor,
     actions: [{
       label: '恢复',
       style: 'default',
@@ -307,7 +312,8 @@ function TrashPage({
 function IOSAlert({
   title,
   message,
-  actions
+  actions,
+  themeColor = '#002FA7'
 }) {
   return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -323,10 +329,11 @@ function IOSAlert({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      background: 'rgba(242,242,247,0.95)',
-      backdropFilter: 'blur(30px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(30px) saturate(180%)',
-      borderRadius: 14,
+      background: 'var(--glass-panel)',
+      backdropFilter: 'var(--blur-panel)',
+      WebkitBackdropFilter: 'var(--blur-panel)',
+      boxShadow: 'var(--edge-panel)',
+      borderRadius: 24,
       width: '100%',
       maxWidth: 270,
       overflow: 'hidden',
@@ -370,7 +377,7 @@ function IOSAlert({
       border: 'none',
       borderRight: actions.length === 2 && i === 0 ? '0.5px solid rgba(60,60,67,0.15)' : 'none',
       borderTop: i > 0 && actions.length !== 2 ? '0.5px solid rgba(60,60,67,0.15)' : 'none',
-      color: action.style === 'destructive' ? '#FF3B30' : '#007AFF',
+      color: action.style === 'destructive' ? '#FF3B30' : themeColor,
       fontSize: 17,
       fontFamily: '-apple-system, "SF Pro", system-ui',
       fontWeight: action.style === 'cancel' ? 600 : 400,
@@ -385,7 +392,8 @@ function IOSActionSheet({
   title,
   message,
   actions,
-  onCancel
+  onCancel,
+  themeColor = '#002FA7'
 }) {
   return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -407,12 +415,13 @@ function IOSActionSheet({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      background: 'rgba(242,242,247,0.95)',
-      backdropFilter: 'blur(30px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(30px) saturate(180%)',
-      borderRadius: 14,
+      background: 'var(--glass-panel)',
+      backdropFilter: 'var(--blur-panel)',
+      WebkitBackdropFilter: 'var(--blur-panel)',
+      boxShadow: 'var(--edge-panel)',
+      borderRadius: 'var(--r-island)',
       overflow: 'hidden',
-      marginBottom: 8
+      marginBottom: 9
     }
   }, title && /*#__PURE__*/React.createElement("div", {
     style: {
@@ -443,7 +452,7 @@ function IOSActionSheet({
       background: 'transparent',
       border: 'none',
       borderTop: i > 0 || title ? '0.5px solid rgba(60,60,67,0.12)' : 'none',
-      color: action.style === 'destructive' ? '#FF3B30' : '#007AFF',
+      color: action.style === 'destructive' ? '#FF3B30' : themeColor,
       fontSize: 17,
       fontFamily: '-apple-system, "SF Pro", system-ui',
       fontWeight: 400,
@@ -457,12 +466,13 @@ function IOSActionSheet({
     style: {
       width: '100%',
       padding: '16px 20px',
-      background: 'rgba(255,255,255,0.95)',
-      backdropFilter: 'blur(30px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(30px) saturate(180%)',
+      background: 'var(--glass-float-strong)',
+      backdropFilter: 'var(--blur-float)',
+      WebkitBackdropFilter: 'var(--blur-float)',
+      boxShadow: 'var(--edge-float)',
       border: 'none',
-      borderRadius: 14,
-      color: '#007AFF',
+      borderRadius: 'var(--r-island)',
+      color: themeColor,
       fontSize: 17,
       fontFamily: '-apple-system, "SF Pro", system-ui',
       fontWeight: 600,

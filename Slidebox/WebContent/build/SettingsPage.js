@@ -49,10 +49,11 @@ const THEME_COLORS = [{
   color: '#636366'
 }];
 const GROUP_GLASS = {
-  background: 'rgba(255,255,255,0.6)',
-  border: '0.5px solid rgba(255,255,255,0.75)',
-  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 4px 18px rgba(30,40,90,0.07)',
-  borderRadius: 18,
+  background: 'var(--glass-panel)',
+  backdropFilter: 'var(--blur-panel)',
+  WebkitBackdropFilter: 'var(--blur-panel)',
+  boxShadow: 'var(--edge-panel-soft)',
+  borderRadius: 22,
   margin: '0 16px',
   overflow: 'hidden'
 };
@@ -81,13 +82,12 @@ function SettingsPage({
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'relative',
-      height: 50,
-      borderRadius: 25,
-      background: 'rgba(255,255,255,0.58)',
-      backdropFilter: 'blur(20px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-      border: '0.5px solid rgba(255,255,255,0.8)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
+      height: 52,
+      borderRadius: 'var(--r-island)',
+      background: 'var(--glass-float)',
+      backdropFilter: 'var(--blur-float)',
+      WebkitBackdropFilter: 'var(--blur-float)',
+      boxShadow: 'var(--edge-float)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -273,7 +273,7 @@ function SettingSwitchRow({
     style: {
       display: 'flex',
       alignItems: 'center',
-      minHeight: 44,
+      minHeight: 48,
       padding: '0 16px',
       position: 'relative',
       fontFamily: '-apple-system, "SF Pro", system-ui',
@@ -293,8 +293,8 @@ function SettingSwitchRow({
       if (onChange) onChange(!value);
     },
     style: {
-      width: 51,
-      height: 31,
+      width: 53,
+      height: 32,
       borderRadius: 16,
       border: 'none',
       cursor: 'pointer',
@@ -308,9 +308,9 @@ function SettingSwitchRow({
     style: {
       position: 'absolute',
       top: 2,
-      left: value ? 22 : 2,
-      width: 27,
-      height: 27,
+      left: value ? 23 : 2,
+      width: 28,
+      height: 28,
       borderRadius: '50%',
       background: '#fff',
       boxShadow: '0 1px 4px rgba(0,0,0,0.28)',
@@ -320,7 +320,7 @@ function SettingSwitchRow({
     style: {
       position: 'absolute',
       bottom: 0,
-      right: 0,
+      right: 16,
       left: 16,
       height: 0.5,
       background: 'rgba(60,60,67,0.09)'
@@ -338,7 +338,7 @@ function SettingRow({
     style: {
       display: 'flex',
       alignItems: 'center',
-      minHeight: 44,
+      minHeight: 48,
       padding: '0 16px',
       position: 'relative',
       fontFamily: '-apple-system, "SF Pro", system-ui',
@@ -372,7 +372,7 @@ function SettingRow({
     style: {
       position: 'absolute',
       bottom: 0,
-      right: 0,
+      right: 16,
       left: 16,
       height: 0.5,
       background: 'rgba(60,60,67,0.09)'

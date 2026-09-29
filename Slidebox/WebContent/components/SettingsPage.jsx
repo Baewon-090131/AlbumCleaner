@@ -15,10 +15,11 @@ const THEME_COLORS = [
 ];
 
 const GROUP_GLASS = {
-  background: 'rgba(255,255,255,0.6)',
-  border: '0.5px solid rgba(255,255,255,0.75)',
-  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 4px 18px rgba(30,40,90,0.07)',
-  borderRadius: 18,
+  background: 'var(--glass-panel)',
+  backdropFilter: 'var(--blur-panel)',
+  WebkitBackdropFilter: 'var(--blur-panel)',
+  boxShadow: 'var(--edge-panel-soft)',
+  borderRadius: 22,
   margin: '0 16px', overflow: 'hidden',
 };
 
@@ -33,13 +34,12 @@ function SettingsPage({ themeColor, onThemeChange, onBack,
         padding: 'var(--ios-safe-top) 12px 6px',
       }}>
         <div style={{
-          position: 'relative', height: 50,
-          borderRadius: 25,
-          background: 'rgba(255,255,255,0.58)',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-          border: '0.5px solid rgba(255,255,255,0.8)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
+          position: 'relative', height: 52,
+          borderRadius: 'var(--r-island)',
+          background: 'var(--glass-float)',
+          backdropFilter: 'var(--blur-float)',
+          WebkitBackdropFilter: 'var(--blur-float)',
+          boxShadow: 'var(--edge-float)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0 8px',
           animation: 'slideDownBar 0.3s var(--ease-drawer)',
@@ -141,7 +141,7 @@ function GroupHeader({ title }) {
 function SettingSwitchRow({ title, value, onChange }) {
   return (
     <div className="ios-row" style={{
-      display: 'flex', alignItems: 'center', minHeight: 44,
+      display: 'flex', alignItems: 'center', minHeight: 48,
       padding: '0 16px', position: 'relative',
       fontFamily: '-apple-system, "SF Pro", system-ui',
       fontSize: 16, color: '#000', letterSpacing: -0.3,
@@ -152,7 +152,7 @@ function SettingSwitchRow({ title, value, onChange }) {
         aria-pressed={!!value}
         onClick={(e) => { e.stopPropagation(); if (onChange) onChange(!value); }}
         style={{
-          width: 51, height: 31, borderRadius: 16, border: 'none', cursor: 'pointer',
+          width: 53, height: 32, borderRadius: 16, border: 'none', cursor: 'pointer',
           background: value ? '#34C759' : 'rgba(120,120,128,0.32)',
           position: 'relative', flexShrink: 0,
           transition: 'background 0.22s var(--ease-drawer)',
@@ -161,15 +161,15 @@ function SettingSwitchRow({ title, value, onChange }) {
       >
         <div style={{
           position: 'absolute', top: 2,
-          left: value ? 22 : 2,
-          width: 27, height: 27, borderRadius: '50%',
+          left: value ? 23 : 2,
+          width: 28, height: 28, borderRadius: '50%',
           background: '#fff',
           boxShadow: '0 1px 4px rgba(0,0,0,0.28)',
           transition: 'left 0.22s var(--ease-drawer)',
         }} />
       </button>
       <div style={{
-        position: 'absolute', bottom: 0, right: 0, left: 16,
+        position: 'absolute', bottom: 0, right: 16, left: 16,
         height: 0.5, background: 'rgba(60,60,67,0.09)',
       }} />
     </div>
@@ -179,7 +179,7 @@ function SettingSwitchRow({ title, value, onChange }) {
 function SettingRow({ iconColor, title, detail, isLast = false }) {
   return (
     <div className="ios-row" style={{
-      display: 'flex', alignItems: 'center', minHeight: 44,
+      display: 'flex', alignItems: 'center', minHeight: 48,
       padding: '0 16px', position: 'relative',
       fontFamily: '-apple-system, "SF Pro", system-ui',
       fontSize: 16, color: '#000', letterSpacing: -0.3,
@@ -192,7 +192,7 @@ function SettingRow({ iconColor, title, detail, isLast = false }) {
       </svg>
       {!isLast && (
         <div style={{
-          position: 'absolute', bottom: 0, right: 0, left: 16,
+          position: 'absolute', bottom: 0, right: 16, left: 16,
           height: 0.5, background: 'rgba(60,60,67,0.09)',
         }} />
       )}

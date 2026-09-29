@@ -16,13 +16,12 @@ function TrashPage({ trashPhotos, onBack, onRestore, onDelete, onDeleteAll, them
         padding: 'var(--ios-safe-top) 12px 6px',
       }}>
         <div style={{
-          position: 'relative', height: 50,
-          borderRadius: 25,
-          background: 'rgba(255,255,255,0.58)',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-          border: '0.5px solid rgba(255,255,255,0.8)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
+          position: 'relative', height: 52,
+          borderRadius: 'var(--r-island)',
+          background: 'var(--glass-float)',
+          backdropFilter: 'var(--blur-float)',
+          WebkitBackdropFilter: 'var(--blur-float)',
+          boxShadow: 'var(--edge-float)',
           display: 'flex', alignItems: 'center',
           justifyContent: 'space-between', padding: '0 8px',
           animation: 'slideDownBar 0.3s var(--ease-drawer)',
@@ -56,10 +55,11 @@ function TrashPage({ trashPhotos, onBack, onRestore, onDelete, onDeleteAll, them
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <span style={{
-          background: 'rgba(255,255,255,0.62)',
-          border: '0.5px solid rgba(255,255,255,0.7)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85)',
-          borderRadius: 14, padding: '7px 16px',
+          background: 'var(--glass-panel)',
+          backdropFilter: 'var(--blur-panel)',
+          WebkitBackdropFilter: 'var(--blur-panel)',
+          boxShadow: 'var(--edge-panel-soft)',
+          borderRadius: 16, padding: '8px 17px',
           animation: 'glassIn 0.3s var(--ease-out)',
         }}>
           {trashPhotos.length > 0 ? `共 ${trashPhotos.length} 张照片将在 30 天后自动删除` : '回收站为空'}
@@ -69,14 +69,18 @@ function TrashPage({ trashPhotos, onBack, onRestore, onDelete, onDeleteAll, them
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 10px', WebkitOverflowScrolling: 'touch' }}>
         {trashPhotos.length > 0 ? (
           <div style={{
-            borderRadius: 20,
-            background: 'rgba(255,255,255,0.62)',
-            border: '0.5px solid rgba(255,255,255,0.7)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), 0 4px 16px rgba(30,40,90,0.06)',
-            padding: 4,
+            borderRadius: 'var(--r-panel)',
+            background: 'var(--glass-panel)',
+            backdropFilter: 'var(--blur-panel)',
+            WebkitBackdropFilter: 'var(--blur-panel)',
+            boxShadow: 'var(--edge-panel-soft)',
+            padding: 5,
             overflow: 'hidden',
           }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 3,
+              borderRadius: 20, overflow: 'hidden',
+            }}>
             {trashPhotos.map((photo, idx) => (
               <div key={photo.id} onClick={() => handlePhotoClick(photo)} className="ios-btn" style={{
                 aspectRatio: '1',
@@ -113,9 +117,10 @@ function TrashPage({ trashPhotos, onBack, onRestore, onDelete, onDeleteAll, them
           }}>
             <div style={{
               width: 88, height: 88, borderRadius: '50%',
-              background: 'rgba(255,255,255,0.55)',
-              border: '0.5px solid rgba(255,255,255,0.8)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 10px 30px rgba(30,40,90,0.12)',
+              background: 'var(--glass-panel)',
+              backdropFilter: 'var(--blur-panel)',
+              WebkitBackdropFilter: 'var(--blur-panel)',
+              boxShadow: 'var(--edge-panel-soft)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
@@ -133,12 +138,11 @@ function TrashPage({ trashPhotos, onBack, onRestore, onDelete, onDeleteAll, them
       {/* 浮动玻璃胶囊 + 红色删除按钮 */}
       <div style={{ padding: '0 12px calc(12px + var(--ios-safe-bottom))' }}>
         <div style={{
-          borderRadius: 26,
-          background: 'rgba(255,255,255,0.58)',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-          border: '0.5px solid rgba(255,255,255,0.8)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
+          borderRadius: 'var(--r-island)',
+          background: 'var(--glass-float)',
+          backdropFilter: 'var(--blur-float)',
+          WebkitBackdropFilter: 'var(--blur-float)',
+          boxShadow: 'var(--edge-float)',
           padding: '8px',
           animation: 'slideUpBar 0.3s var(--ease-drawer)',
         }}>
@@ -158,6 +162,7 @@ function TrashPage({ trashPhotos, onBack, onRestore, onDelete, onDeleteAll, them
         <IOSAlert
           title="删除照片？"
           message={`将从回收站中永久删除 ${trashPhotos.length} 张照片，此操作不可撤销。`}
+          themeColor={themeColor}
           actions={[
             { label: '取消', style: 'cancel', onClick: () => setShowAlert(false) },
             { label: '删除', style: 'destructive', onClick: () => { onDeleteAll(); setShowAlert(false); } },
@@ -169,6 +174,7 @@ function TrashPage({ trashPhotos, onBack, onRestore, onDelete, onDeleteAll, them
         <IOSActionSheet
           title={`#${selectedPhoto.id}`}
           message="选择操作"
+          themeColor={themeColor}
           actions={[
             { label: '恢复', style: 'default', onClick: handleRestore },
             { label: '彻底删除', style: 'destructive', onClick: handleDeleteOne },
@@ -181,7 +187,7 @@ function TrashPage({ trashPhotos, onBack, onRestore, onDelete, onDeleteAll, them
 }
 
 // iOS 风格 Alert（居中缩放弹窗）
-function IOSAlert({ title, message, actions }) {
+function IOSAlert({ title, message, actions, themeColor = '#002FA7' }) {
   return (
     <div style={{
       position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)',
@@ -189,10 +195,11 @@ function IOSAlert({ title, message, actions }) {
       zIndex: 1000, padding: '0 40px', animation: 'fadeIn 0.2s ease',
     }}>
       <div style={{
-        background: 'rgba(242,242,247,0.95)',
-        backdropFilter: 'blur(30px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(30px) saturate(180%)',
-        borderRadius: 14, width: '100%', maxWidth: 270, overflow: 'hidden',
+        background: 'var(--glass-panel)',
+        backdropFilter: 'var(--blur-panel)',
+        WebkitBackdropFilter: 'var(--blur-panel)',
+        boxShadow: 'var(--edge-panel)',
+        borderRadius: 24, width: '100%', maxWidth: 270, overflow: 'hidden',
         animation: 'alertScaleIn 0.28s var(--ease-drawer)',
       }}>
         <div style={{
@@ -208,7 +215,7 @@ function IOSAlert({ title, message, actions }) {
               flex: 1, padding: '12px 16px', background: 'transparent', border: 'none',
               borderRight: actions.length === 2 && i === 0 ? '0.5px solid rgba(60,60,67,0.15)' : 'none',
               borderTop: i > 0 && actions.length !== 2 ? '0.5px solid rgba(60,60,67,0.15)' : 'none',
-              color: action.style === 'destructive' ? '#FF3B30' : '#007AFF',
+              color: action.style === 'destructive' ? '#FF3B30' : themeColor,
               fontSize: 17, fontFamily: '-apple-system, "SF Pro", system-ui',
               fontWeight: action.style === 'cancel' ? 600 : 400, cursor: 'pointer', letterSpacing: -0.4,
             }}>{action.label}</button>
@@ -220,7 +227,7 @@ function IOSAlert({ title, message, actions }) {
 }
 
 // iOS 风格 Action Sheet（底部滑入）
-function IOSActionSheet({ title, message, actions, onCancel }) {
+function IOSActionSheet({ title, message, actions, onCancel, themeColor = '#002FA7' }) {
   return (
     <div style={{
       position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)',
@@ -232,10 +239,11 @@ function IOSActionSheet({ title, message, actions, onCancel }) {
         animation: 'sheetSlideUp 0.32s var(--ease-drawer)',
       }}>
         <div style={{
-          background: 'rgba(242,242,247,0.95)',
-          backdropFilter: 'blur(30px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(30px) saturate(180%)',
-          borderRadius: 14, overflow: 'hidden', marginBottom: 8,
+          background: 'var(--glass-panel)',
+          backdropFilter: 'var(--blur-panel)',
+          WebkitBackdropFilter: 'var(--blur-panel)',
+          boxShadow: 'var(--edge-panel)',
+          borderRadius: 'var(--r-island)', overflow: 'hidden', marginBottom: 9,
         }}>
           {title && (
             <div style={{
@@ -250,7 +258,7 @@ function IOSActionSheet({ title, message, actions, onCancel }) {
             <button key={i} onClick={action.onClick} className="ios-btn" style={{
               width: '100%', padding: '16px 20px', background: 'transparent', border: 'none',
               borderTop: i > 0 || title ? '0.5px solid rgba(60,60,67,0.12)' : 'none',
-              color: action.style === 'destructive' ? '#FF3B30' : '#007AFF',
+              color: action.style === 'destructive' ? '#FF3B30' : themeColor,
               fontSize: 17, fontFamily: '-apple-system, "SF Pro", system-ui',
               fontWeight: 400, cursor: 'pointer', letterSpacing: -0.4, textAlign: 'center',
             }}>{action.label}</button>
@@ -258,10 +266,11 @@ function IOSActionSheet({ title, message, actions, onCancel }) {
         </div>
         <button onClick={onCancel} className="ios-btn" style={{
           width: '100%', padding: '16px 20px',
-          background: 'rgba(255,255,255,0.95)',
-          backdropFilter: 'blur(30px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(30px) saturate(180%)',
-          border: 'none', borderRadius: 14, color: '#007AFF',
+          background: 'var(--glass-float-strong)',
+          backdropFilter: 'var(--blur-float)',
+          WebkitBackdropFilter: 'var(--blur-float)',
+          boxShadow: 'var(--edge-float)',
+          border: 'none', borderRadius: 'var(--r-island)', color: themeColor,
           fontSize: 17, fontFamily: '-apple-system, "SF Pro", system-ui',
           fontWeight: 600, cursor: 'pointer', letterSpacing: -0.4,
         }}>取消</button>

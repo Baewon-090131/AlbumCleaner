@@ -29,14 +29,60 @@ const globalAnimations = `
     --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
     --press-ms: 110ms;
     --page-transition-ms: 360ms;
+
+    /* ===== iOS 27「液态玻璃 2.0」分层材质令牌 =====
+       分层原则（apple-design §12 材质重量表达层级）：
+       浮动的操作层用轻玻璃，承载文字的卡片/分组用厚玻璃 */
+    --accent: #002FA7;
+    --accent-soft: rgba(0,47,167,.16);
+    --glass-float: rgba(255,255,255,.38);
+    --glass-float-strong: rgba(255,255,255,.50);
+    --glass-panel: rgba(255,255,255,.60);
+    --glass-inner: rgba(255,255,255,.30);
+    --blur-float: blur(14px) saturate(155%) brightness(1.02);
+    --blur-panel: blur(30px) saturate(190%) brightness(1.05);
+    --edge-float:
+      inset 0 1px 0 rgba(255,255,255,.66),
+      inset 0 0 0 .5px rgba(255,255,255,.30),
+      0 8px 22px rgba(22,32,72,.09),
+      0 1px 4px rgba(22,32,72,.05);
+    --edge-panel:
+      inset 0 1px 0 rgba(255,255,255,.95),
+      inset 0 0 0 .5px rgba(255,255,255,.55),
+      inset 0 -1px 0 rgba(255,255,255,.22),
+      0 12px 32px rgba(22,32,72,.12),
+      0 2px 8px rgba(22,32,72,.05);
+    --edge-panel-soft:
+      inset 0 1px 0 rgba(255,255,255,.88),
+      inset 0 0 0 .5px rgba(255,255,255,.40),
+      0 6px 20px rgba(22,32,72,.08);
+    --edge-inner:
+      inset 0 1px 0 rgba(255,255,255,.75),
+      inset 0 0 0 .5px rgba(255,255,255,.45),
+      0 4px 14px rgba(22,32,72,.10);
+    --r-island: 28px;
+    --r-panel: 28px;
+    --r-tile: 20px;
+    --r-plate: 34px;
   }
 
-  /* ===== 页面转场（iOS push/pop，双页同框由 App.jsx 状态机驱动） ===== */
-  @keyframes pagePushEnter {
+  /* ===== 页面转场（iOS push/pop，双页同框由 App.jsx 状态机驱动）=====
+     每个页面拆成两层：外层是「不透明壁纸背板 + 裁切揭示」，内层是页面内容（负责位移）。
+     外层不透明 → 旧页面不会透过新页面显示；两层同曲线同时长 → 观感仍是一次推入。
+     壁纸背板不做位移，才能与 body 的壁纸逐像素对齐。 */
+  @keyframes pageRevealIn {
+    from { clip-path: inset(0 0 0 100%); }
+    to { clip-path: inset(0 0 0 0); }
+  }
+  @keyframes pageSlideIn {
     from { transform: translateX(100%); }
     to { transform: translateX(0); }
   }
-  @keyframes pagePopLeave {
+  @keyframes pageRevealOut {
+    from { clip-path: inset(0 0 0 0); }
+    to { clip-path: inset(0 0 0 100%); }
+  }
+  @keyframes pageSlideOut {
     from { transform: translateX(0); }
     to { transform: translateX(100%); }
   }
@@ -61,6 +107,11 @@ const globalAnimations = `
   }
   @keyframes slideUpBar {
     from { transform: translateY(24px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  /* 顶部导航岛入场（此前被三个页面引用但没有定义，这里补上） */
+  @keyframes slideDownBar {
+    from { transform: translateY(-24px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
   }
   @keyframes cardIn {
@@ -102,6 +153,75 @@ const globalAnimations = `
   @keyframes spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+  }
+
+  /* ===== 无障碍：系统「减弱动态效果」（apple-design §14 / animate §7）=====
+     降级而非清零：保留淡入淡出与颜色变化，去掉位移、缩放与循环动效。
+     进度条（progressScan）与加载圈（spin）属于状态指示，保留。
+     JS 直驱的手势动效在 SwipeCardStack / App 内按同一条件降级。 */
+  @media (prefers-reduced-motion: reduce) {
+    @keyframes cardIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes fadeInScale {
+      from { opacity: 0; transform: translate(-50%, -50%); }
+      to { opacity: 1; transform: translate(-50%, -50%); }
+    }
+    @keyframes photoFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes glassIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideUpBar {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideDownBar {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes sheetSlideUp {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes toastBanner {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes alertScaleIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes pageRevealIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes pageRevealOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+    /* 内容层在减弱动态效果下不做位移 */
+    @keyframes pageSlideIn {
+      from { transform: none; }
+      to { transform: none; }
+    }
+    @keyframes pageSlideOut {
+      from { transform: none; }
+      to { transform: none; }
+    }
+    @keyframes fullscreenIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    /* 循环推拉（Ken Burns）在减弱动态效果下不播放 */
+    @keyframes liveKenBurns {
+      from { transform: none; }
+      to { transform: none; }
+    }
   }
 
   ::-webkit-scrollbar { display: none; }

@@ -3,3 +3,5 @@ node_modules/
 package-lock.json
 build.log
 .DS_Store
+# 设计预览图（本地留档，不进仓库）
+Previews/

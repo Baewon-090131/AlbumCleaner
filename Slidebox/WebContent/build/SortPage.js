@@ -467,13 +467,12 @@ function SortPage({
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'relative',
-      height: 50,
-      borderRadius: 25,
-      background: 'rgba(255,255,255,0.58)',
-      backdropFilter: 'blur(20px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-      border: '0.5px solid rgba(255,255,255,0.8)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
+      height: 52,
+      borderRadius: 'var(--r-island)',
+      background: 'var(--glass-float)',
+      backdropFilter: 'var(--blur-float)',
+      WebkitBackdropFilter: 'var(--blur-float)',
+      boxShadow: 'var(--edge-float)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -670,11 +669,12 @@ function SortPage({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      borderRadius: 16,
-      background: 'rgba(255,255,255,0.62)',
-      border: '0.5px solid rgba(255,255,255,0.7)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85)',
-      padding: '6px 12px 8px'
+      borderRadius: 22,
+      background: 'var(--glass-float)',
+      backdropFilter: 'var(--blur-float)',
+      WebkitBackdropFilter: 'var(--blur-float)',
+      boxShadow: 'var(--edge-float)',
+      padding: '8px 14px 9px'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -699,8 +699,8 @@ function SortPage({
     }
   }, "\u5269\u4F59 ", remaining)), /*#__PURE__*/React.createElement("div", {
     style: {
-      height: 3.5,
-      background: 'rgba(60,60,67,0.12)',
+      height: 4,
+      background: 'var(--accent-soft)',
       borderRadius: 2,
       overflow: 'hidden'
     }

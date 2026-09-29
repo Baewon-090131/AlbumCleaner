@@ -11,6 +11,17 @@
       padding: 0;
       box-sizing: border-box;
     }
+    :root {
+      /* v2.7「液态玻璃 2.0」壁纸：四层柔光斑 + 线性底。
+         这是壁纸的唯一定义处；body 与页面转场背板都引用它，
+         避免两处写法漂移导致转场接缝露出色差 */
+      --wall:
+        radial-gradient(120% 78% at 6% -8%, #6FA8FF 0%, rgba(255,255,255,0) 58%),
+        radial-gradient(104% 68% at 98% 4%, #C3A2FF 0%, rgba(255,255,255,0) 54%),
+        radial-gradient(90% 60% at 78% 62%, rgba(110,214,255,0.55) 0%, rgba(255,255,255,0) 62%),
+        radial-gradient(126% 92% at 46% 106%, #FFB0D8 0%, rgba(255,255,255,0) 58%),
+        linear-gradient(168deg, #E7F0FF 0%, #F1EBFF 46%, #FFF0F8 100%);
+    }
     html, body {
       width: 100%;
       height: 100%;
@@ -18,13 +29,7 @@
       font-family: -apple-system, "SF Pro", "SF Pro Display", system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-      /* v2.5 iOS 26 Liquid Glass：壁纸式柔和渐变背景。
-         多层径向光斑 + 线性渐变模拟系统壁纸，让玻璃面板真正“透”出液态质感 */
-      background:
-        radial-gradient(120% 90% at 12% 0%, rgba(140,182,255,0.62) 0%, rgba(255,255,255,0) 55%),
-        radial-gradient(110% 80% at 88% 12%, rgba(208,170,255,0.50) 0%, rgba(255,255,255,0) 50%),
-        radial-gradient(130% 100% at 55% 105%, rgba(255,186,224,0.42) 0%, rgba(255,255,255,0) 55%),
-        linear-gradient(168deg, #E9F1FF 0%, #F1EBFF 48%, #FFF0F7 100%);
+      background: var(--wall);
       background-attachment: fixed;
       overscroll-behavior: none;
       -webkit-user-select: none;
@@ -46,6 +51,8 @@
     button {
       font-family: inherit;
       -webkit-tap-highlight-color: transparent;
+      /* 消除 300ms 点击延迟（本页面自带手势，不需要双击缩放） */
+      touch-action: manipulation;
     }
   </style>
 </head>

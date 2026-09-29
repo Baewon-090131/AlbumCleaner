@@ -5,9 +5,14 @@
 // - playFly(type, onComplete)：按钮操作共用飞出/滑入动效
 // - onPhotoTap：点击进入全屏观看
 
+// 无障碍：尊重系统「减弱动态效果」。位移/缩放类动效降级为纯淡入淡出，而不是直接清零
+function prefersReducedMotion() {
+  return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
 function PhotoCard({
   photo,
   onTap,
+  themeColor = '#002FA7',
   autoPlayLive = true,
   autoPlayVideo = true
 }) {
@@ -28,6 +33,8 @@ function PhotoCard({
 
   // 模拟器（无真实媒体文件）：Live 用 Ken Burns 微动模拟；视频用进度扫描模拟
   const mockLiveAnim = !isNative && photo.isLivePhoto && autoPlayLive;
+  // 减弱动态效果时不做无限循环的推拉（Ken Burns）动效
+  const kenBurnsAnim = mockLiveAnim && !prefersReducedMotion();
   const mockVideoAnim = !isNative && photo.isVideo && autoPlayVideo;
   return /*#__PURE__*/React.createElement("div", {
     onClick: e => {
@@ -75,7 +82,7 @@ function PhotoCard({
       pointerEvents: 'none',
       opacity: imgLoaded ? 1 : 0,
       transition: 'opacity 0.18s ease',
-      animation: mockLiveAnim ? 'liveKenBurns 4.5s ease-in-out infinite alternate' : undefined
+      animation: kenBurnsAnim ? 'liveKenBurns 4.5s ease-in-out infinite alternate' : undefined
     }
   }) : /*#__PURE__*/React.createElement("div", {
     style: {
@@ -86,7 +93,7 @@ function PhotoCard({
       alignItems: 'center',
       justifyContent: 'center',
       pointerEvents: 'none',
-      animation: mockLiveAnim ? 'liveKenBurns 4.5s ease-in-out infinite alternate' : undefined,
+      animation: kenBurnsAnim ? 'liveKenBurns 4.5s ease-in-out infinite alternate' : undefined,
       overflow: 'hidden'
     }
   }, /*#__PURE__*/React.createElement("span", {
@@ -188,13 +195,15 @@ function PhotoCard({
       fontFamily: '-apple-system, "SF Pro", system-ui'
     }
   }, "LIVE")), /*#__PURE__*/React.createElement(SwipeHint, {
-    photo: photo
+    photo: photo,
+    themeColor: themeColor
   }));
 }
 
 // 拖拽时显示的操作方向提示（v2.6：iOS 系统色 + 玻璃质感）
 function SwipeHint({
-  photo
+  photo,
+  themeColor = '#002FA7'
 }) {
   const [hint, setHint] = React.useState(null);
   React.useEffect(() => {
@@ -240,9 +249,9 @@ function SwipeHint({
       bottom: '11%',
       left: '50%',
       transform: 'translateX(-50%)',
-      background: 'rgba(10,132,255,0.18)',
-      border: '1.5px solid rgba(10,132,255,0.8)',
-      color: '#0A84FF',
+      background: 'var(--accent-soft)',
+      border: `1.5px solid ${themeColor}`,
+      color: themeColor,
       text: '收藏'
     }
   }[hint];
@@ -271,6 +280,7 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
   onSwipeLeft,
   onSwipeRight,
   onSwipeDown,
+  themeColor = '#002FA7',
   autoPlayLive = true,
   autoPlayVideo = true
 }, ref) {
@@ -306,13 +316,14 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
     }
     const card = cardRef.current;
     if (!card) return;
+    const reduce = prefersReducedMotion();
     card.style.transition = 'none';
     card.style.opacity = '0.2';
-    card.style.transform = 'translateY(8px) scale(0.985)';
+    card.style.transform = reduce ? 'none' : 'translateY(8px) scale(0.985)';
     void card.offsetWidth;
-    card.style.transition = 'opacity 0.22s ease, transform 0.24s var(--ease-out)';
+    card.style.transition = reduce ? 'opacity 0.2s ease' : 'opacity 0.22s ease, transform 0.24s var(--ease-out)';
     card.style.opacity = '1';
-    card.style.transform = 'translateY(0) scale(1)';
+    card.style.transform = reduce ? 'none' : 'translateY(0) scale(1)';
     const tid = setTimeout(function () {
       card.style.transition = 'none';
     }, 300);
@@ -328,14 +339,15 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
     }
     animatingRef.current = true;
     const EASE = 'cubic-bezier(0.32, 0.72, 0, 1)';
+    const reduce = prefersReducedMotion();
     if (type === 'in') {
       enteringRef.current = true;
       card.style.transition = 'none';
-      card.style.transform = 'translateX(100%)';
+      card.style.transform = reduce ? 'none' : 'translateX(100%)';
       card.style.opacity = '0';
       void card.offsetWidth;
-      card.style.transition = `all 0.32s ${EASE}`;
-      card.style.transform = 'translateX(0)';
+      card.style.transition = reduce ? 'opacity 0.2s ease' : `transform 0.32s ${EASE}, opacity 0.32s ${EASE}`;
+      card.style.transform = reduce ? 'none' : 'translateX(0)';
       card.style.opacity = '1';
       setTimeout(function () {
         animatingRef.current = false;
@@ -348,8 +360,8 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
         right: 'translateX(108%) rotate(10deg)',
         down: 'translateY(108%) rotate(0deg)'
       };
-      card.style.transition = `all 0.3s ${EASE}`;
-      card.style.transform = transforms[type] || 'scale(0.7) rotate(0deg)';
+      card.style.transition = reduce ? 'opacity 0.2s ease' : `transform 0.3s ${EASE}, opacity 0.3s ${EASE}`;
+      card.style.transform = reduce ? 'none' : transforms[type] || 'scale(0.7) rotate(0deg)';
       card.style.opacity = '0';
       setTimeout(function () {
         animatingRef.current = false;
@@ -508,7 +520,12 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
     return /*#__PURE__*/React.createElement("div", {
       style: {
         flex: 1,
-        background: '#000',
+        margin: '2px 12px',
+        borderRadius: 'var(--r-plate)',
+        background: 'var(--glass-panel)',
+        backdropFilter: 'var(--blur-panel)',
+        WebkitBackdropFilter: 'var(--blur-panel)',
+        boxShadow: 'var(--edge-panel-soft)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -521,7 +538,8 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
         width: 72,
         height: 72,
         borderRadius: '50%',
-        background: 'rgba(255,255,255,0.1)',
+        background: 'var(--glass-inner)',
+        boxShadow: 'var(--edge-inner)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center'
@@ -533,8 +551,8 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
       fill: "none"
     }, /*#__PURE__*/React.createElement("path", {
       d: "M20 6L9 17l-5-5",
-      stroke: "rgba(255,255,255,0.85)",
-      strokeWidth: "2",
+      stroke: themeColor,
+      strokeWidth: "2.2",
       strokeLinecap: "round",
       strokeLinejoin: "round"
     }))), /*#__PURE__*/React.createElement("div", {
@@ -542,13 +560,13 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
         fontFamily: '-apple-system, "SF Pro", system-ui',
         fontSize: 18,
         fontWeight: 600,
-        color: 'rgba(255,255,255,0.9)'
+        color: '#000'
       }
     }, "\u672C\u6708\u9879\u76EE\u5DF2\u6574\u7406\u5B8C\u6BD5"), /*#__PURE__*/React.createElement("div", {
       style: {
         fontFamily: '-apple-system, "SF Pro", system-ui',
         fontSize: 13.5,
-        color: 'rgba(255,255,255,0.45)'
+        color: 'rgba(60,60,67,0.5)'
       }
     }, "\u5220\u9664\u7684\u7167\u7247\u5DF2\u79FB\u5165\u56DE\u6536\u7AD9"));
   }
@@ -556,8 +574,7 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
     style: {
       flex: 1,
       position: 'relative',
-      background: '#000',
-      overflow: 'hidden',
+      margin: '2px 12px',
       touchAction: 'none'
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -574,11 +591,16 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
     style: {
       position: 'absolute',
       inset: 0,
-      cursor: 'grab'
+      cursor: 'grab',
+      borderRadius: 'var(--r-plate)',
+      overflow: 'hidden',
+      background: '#0b0b0f',
+      boxShadow: '0 24px 60px rgba(12,18,48,0.38), inset 0 1px 0 rgba(255,255,255,0.18)'
     }
   }, /*#__PURE__*/React.createElement(PhotoCard, {
     photo: currentPhoto,
     onTap: handlePhotoTap,
+    themeColor: themeColor,
     autoPlayLive: autoPlayLive,
     autoPlayVideo: autoPlayVideo
   })), nextPhoto && nextPhoto.thumbnailUrl && /*#__PURE__*/React.createElement("img", {

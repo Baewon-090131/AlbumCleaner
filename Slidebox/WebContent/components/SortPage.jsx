@@ -347,13 +347,12 @@ function SortPage({
         padding: 'var(--ios-safe-top) 12px 6px',
       }}>
         <div style={{
-          position: 'relative', height: 50,
-          borderRadius: 25,
-          background: 'rgba(255,255,255,0.58)',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-          border: '0.5px solid rgba(255,255,255,0.8)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 6px 24px rgba(30,40,90,0.09)',
+          position: 'relative', height: 52,
+          borderRadius: 'var(--r-island)',
+          background: 'var(--glass-float)',
+          backdropFilter: 'var(--blur-float)',
+          WebkitBackdropFilter: 'var(--blur-float)',
+          boxShadow: 'var(--edge-float)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0 8px',
           animation: 'slideDownBar 0.3s var(--ease-drawer)',
@@ -464,11 +463,12 @@ function SortPage({
       {/* 进度行（v2.6：与底部操作区贴合，细进度线；实色玻璃替代高成本 blur） */}
       <div style={{ padding: '4px 12px 2px' }}>
         <div style={{
-          borderRadius: 16,
-          background: 'rgba(255,255,255,0.62)',
-          border: '0.5px solid rgba(255,255,255,0.7)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85)',
-          padding: '6px 12px 8px',
+          borderRadius: 22,
+          background: 'var(--glass-float)',
+          backdropFilter: 'var(--blur-float)',
+          WebkitBackdropFilter: 'var(--blur-float)',
+          boxShadow: 'var(--edge-float)',
+          padding: '8px 14px 9px',
         }}>
           <div style={{
             display: 'flex', justifyContent: 'space-between',
@@ -482,7 +482,7 @@ function SortPage({
             }}>剩余 {remaining}</span>
           </div>
           <div style={{
-            height: 3.5, background: 'rgba(60,60,67,0.12)',
+            height: 4, background: 'var(--accent-soft)',
             borderRadius: 2, overflow: 'hidden',
           }}>
             <div style={{

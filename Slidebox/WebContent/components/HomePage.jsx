@@ -18,11 +18,11 @@ function HomePage({ months, themeColor = '#007AFF', onMonthClick, onTrashClick, 
         <div style={{ flex: 1, paddingRight: 12 }}>
           <div className="sf-title" style={{
             fontSize: 34, color: '#000', lineHeight: 1.05,
-            letterSpacing: '-0.02em',
+            letterSpacing: '-1.2px',
           }}>Album Cleaner</div>
           <div className="sf-body" style={{
-            marginTop: 4, fontSize: 14, color: 'rgba(60,60,67,0.55)',
-            fontWeight: 400,
+            marginTop: 5, fontSize: 14, color: 'rgba(60,60,67,0.60)',
+            fontWeight: 500,
           }}>
             {months.length} 个月 · {totalPhotos} 个项目
           </div>
@@ -67,13 +67,14 @@ function MonthCard({ month, themeColor, onClick, index = 0 }) {
       className="ios-row"
       style={{
         display: 'flex', alignItems: 'center', gap: 14,
-        padding: '12px 14px',
+        padding: '11px 14px',
         marginBottom: 10,
-        borderRadius: 22,
+        borderRadius: 'var(--r-panel)',
         cursor: 'pointer',
-        background: 'rgba(255,255,255,0.55)',
-        border: '0.5px solid rgba(255,255,255,0.75)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), 0 4px 18px rgba(30,40,90,0.07)',
+        background: 'var(--glass-panel)',
+        backdropFilter: 'var(--blur-panel)',
+        WebkitBackdropFilter: 'var(--blur-panel)',
+        boxShadow: 'var(--edge-panel-soft)',
         transition: 'transform 0.16s var(--ease-out), background-color 0.15s ease, box-shadow 0.16s ease',
         transform: 'scale(1)',
         animation: `cardIn 0.4s var(--ease-out) ${Math.min(index * 0.045, 0.5)}s both`,
@@ -88,7 +89,7 @@ function MonthCard({ month, themeColor, onClick, index = 0 }) {
           <div key={'bk' + i} style={{
             position: 'absolute',
             top: 5 + i * 3, left: 6 + i * 3,
-            width: 56, height: 56, borderRadius: 12,
+            width: 56, height: 56, borderRadius: 18,
             overflow: 'hidden',
             background: p.thumbnailUrl && p.thumbnailUrl.startsWith('photo://') ? '#1c1c1e' : (p.gradient || '#eee'),
             border: '0.5px solid rgba(255,255,255,0.9)',
@@ -102,7 +103,7 @@ function MonthCard({ month, themeColor, onClick, index = 0 }) {
         ))}
         <div style={{
           position: 'absolute', top: 0, left: 0,
-          width: 62, height: 62, borderRadius: 14,
+          width: 62, height: 62, borderRadius: 18,
           overflow: 'hidden',
           background: coverPhotos[0] && coverPhotos[0].thumbnailUrl && coverPhotos[0].thumbnailUrl.startsWith('photo://')
             ? '#1c1c1e' : (coverPhotos[0] ? coverPhotos[0].gradient : 'linear-gradient(135deg,#d1d1d6,#e5e5ea)'),
@@ -155,9 +156,10 @@ function GlassIconButton({ icon, onClick, themeColor = '#007AFF', badge = 0 }) {
       style={{
         width: 44, height: 44, borderRadius: '50%',
         cursor: 'pointer', position: 'relative',
-        background: 'rgba(255,255,255,0.55)',
-        border: '0.5px solid rgba(255,255,255,0.85)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.3), 0 4px 16px rgba(30,40,90,0.10)',
+        background: 'var(--glass-float)',
+        backdropFilter: 'var(--blur-float)',
+        WebkitBackdropFilter: 'var(--blur-float)',
+        boxShadow: 'var(--edge-float)',
         color: themeColor,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}
