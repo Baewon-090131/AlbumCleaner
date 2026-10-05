@@ -144,6 +144,16 @@ class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKSc
                 photoManager.playMedia(identifier)
             }
 
+        case "getAlbumAssets":
+            // v3.0：相簿详情页按相簿拉取项目
+            if let albumId = body["albumIdentifier"] as? String {
+                pushJSONToJS("receiveAlbumAssets", payload: photoManager.fetchAlbumAssets(albumId))
+            }
+
+        case "getStorageInfo":
+            // v3.0：我的页存储数据卡
+            pushJSONToJS("receiveStorage", payload: photoManager.storageInfo())
+
         case "jsError":
             if let message = body["message"] as? String {
                 print("SLIDEBOX_JS: \(message)")
@@ -156,6 +166,16 @@ class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKSc
 
     private func callbackToJS(_ callback: String, success: Bool) {
         let js = "if (window.NativeBridge) { window.NativeBridge.\(callback)(\(success)); }"
+        DispatchQueue.main.async {
+            self.webView.evaluateJavaScript(js, completionHandler: nil)
+        }
+    }
+
+    // v3.0：把字典/数组回推给网页（相簿项目、存储信息）
+    private func pushJSONToJS(_ function: String, payload: Any) {
+        guard let data = try? JSONSerialization.data(withJSONObject: payload),
+              let json = String(data: data, encoding: .utf8) else { return }
+        let js = "if (window.NativeBridge) { window.NativeBridge.\(function)(\(json)); }"
         DispatchQueue.main.async {
             self.webView.evaluateJavaScript(js, completionHandler: nil)
         }

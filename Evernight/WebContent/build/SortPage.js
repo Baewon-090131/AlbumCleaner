@@ -374,6 +374,7 @@ function SortPage({
   autoPlayLive = true,
   autoPlayVideo = true,
   onBack,
+  backLabel,
   onTrashClick,
   onAlbumAdd,
   onSwipeUp,
@@ -386,7 +387,12 @@ function SortPage({
   addedFeedback,
   toastMessage,
   historyLength,
-  trashCount = 0
+  trashCount = 0,
+  months,
+  currentMonthId,
+  onMonthSelect,
+  actions,
+  withTabBar = true
 }) {
   const [bottomMode, setBottomMode] = React.useState('buttons');
   const [animating, setAnimating] = React.useState(false);
@@ -458,109 +464,74 @@ function SortPage({
       flexDirection: 'column',
       position: 'relative'
     }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(TopBar, {
+    monthLabel: backLabel ? undefined : month && month.title,
+    months: months,
+    currentMonthId: currentMonthId,
+    onMonthSelect: onMonthSelect,
+    backLabel: backLabel,
+    centerTitle: backLabel ? month && month.title : undefined,
+    onBack: onBack,
+    trashCount: trashCount,
+    onTrashClick: onTrashClick
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
-      position: 'relative',
-      zIndex: 100,
-      padding: 'var(--ios-safe-top) 12px 6px'
+      padding: '0 20px 10px'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      position: 'relative',
-      height: 52,
-      borderRadius: 'var(--r-island)',
+      height: 44,
+      borderRadius: 22,
       background: 'var(--glass-float)',
       backdropFilter: 'var(--blur-float)',
       WebkitBackdropFilter: 'var(--blur-float)',
       boxShadow: 'var(--edge-float)',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '0 8px',
-      animation: 'slideDownBar 0.3s var(--ease-drawer)'
+      padding: '0 16px',
+      gap: 14
     }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: onBack,
-    className: "ios-btn",
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: 4,
-      background: 'none',
-      border: 'none',
-      padding: '6px 10px',
-      cursor: 'pointer',
-      color: themeColor,
-      fontSize: 17,
-      fontFamily: '-apple-system, "SF Pro", system-ui',
-      fontWeight: 400
+      flex: 1,
+      position: 'relative',
+      height: 6,
+      borderRadius: 3,
+      background: 'var(--accent-soft)'
     }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: "12",
-    height: "20",
-    viewBox: "0 0 12 20"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M10 2L2 10l8 8",
-    stroke: themeColor,
-    strokeWidth: "2.5",
-    fill: "none",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  })), /*#__PURE__*/React.createElement("span", null, "\u7167\u7247")), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
-      left: '50%',
-      top: '50%',
-      transform: 'translate(-50%, -50%)',
-      fontSize: 17,
-      fontWeight: 600,
-      color: '#000',
-      fontFamily: '-apple-system, "SF Pro", system-ui',
-      letterSpacing: -0.4
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: `${progress}%`,
+      background: themeColor,
+      borderRadius: 3,
+      transition: 'width 0.35s var(--ease-out)'
     }
-  }, month.title), /*#__PURE__*/React.createElement("button", {
-    onClick: onTrashClick,
-    className: "ios-btn",
-    style: {
-      background: 'none',
-      border: 'none',
-      padding: 6,
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'relative'
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: "21",
-    height: "21",
-    viewBox: "0 0 24 24",
-    fill: "none"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z",
-    stroke: themeColor,
-    strokeWidth: "2",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  })), trashCount > 0 && /*#__PURE__*/React.createElement("span", {
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
-      top: -2,
-      right: -2,
-      minWidth: 16,
+      left: `calc(${progress}% - 8px)`,
+      top: -5,
+      width: 16,
       height: 16,
-      borderRadius: 8,
-      background: '#FF3B30',
-      color: '#fff',
-      fontSize: 10,
-      fontWeight: 600,
-      fontFamily: '-apple-system, "SF Pro", system-ui',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '0 3px'
+      borderRadius: '50%',
+      background: '#fff',
+      boxShadow: '0 1px 4px rgba(0,0,0,0.18)',
+      transition: 'left 0.35s var(--ease-out)'
     }
-  }, trashCount > 99 ? '99+' : trashCount)))), /*#__PURE__*/React.createElement(SwipeCardStack, {
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 17,
+      fontWeight: 700,
+      color: '#34C759',
+      fontFamily: '-apple-system, "SF Pro", system-ui',
+      minWidth: 28,
+      textAlign: 'right'
+    }
+  }, remaining))), /*#__PURE__*/React.createElement(SwipeCardStack, {
     ref: stackRef,
     photos: photos,
     currentIndex: currentIndex,
@@ -580,7 +551,7 @@ function SortPage({
   }), toastMessage && /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
-      top: 'calc(var(--ios-safe-top) + 62px)',
+      top: 'calc(var(--ios-safe-top) + 122px)',
       left: '50%',
       transform: 'translateX(-50%)',
       background: 'rgba(28,28,30,0.88)',
@@ -623,7 +594,7 @@ function SortPage({
   })), /*#__PURE__*/React.createElement("span", null, toastMessage)), addedFeedback && /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
-      top: 'calc(var(--ios-safe-top) + 62px)',
+      top: 'calc(var(--ios-safe-top) + 122px)',
       left: '50%',
       transform: 'translateX(-50%)',
       background: 'rgba(28,28,30,0.88)',
@@ -663,62 +634,14 @@ function SortPage({
     fill: "none",
     strokeLinecap: "round",
     strokeLinejoin: "round"
-  })), /*#__PURE__*/React.createElement("span", null, "\u5DF2\u6DFB\u52A0\u5230\u300C", addedFeedback, "\u300D")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: '4px 12px 2px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      borderRadius: 22,
-      background: 'var(--glass-float)',
-      backdropFilter: 'var(--blur-float)',
-      WebkitBackdropFilter: 'var(--blur-float)',
-      boxShadow: 'var(--edge-float)',
-      padding: '8px 14px 9px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 5
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "sf-body",
-    style: {
-      fontSize: 12.5,
-      color: 'rgba(60,60,67,0.55)',
-      fontWeight: 500
-    }
-  }, Math.min(displayCurrent, total), " / ", total), /*#__PURE__*/React.createElement("span", {
-    className: "sf-body",
-    style: {
-      fontSize: 12.5,
-      color: 'rgba(60,60,67,0.55)',
-      fontWeight: 500
-    }
-  }, "\u5269\u4F59 ", remaining)), /*#__PURE__*/React.createElement("div", {
-    style: {
-      height: 4,
-      background: 'var(--accent-soft)',
-      borderRadius: 2,
-      overflow: 'hidden'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      height: '100%',
-      width: `${progress}%`,
-      background: themeColor,
-      borderRadius: 2,
-      transition: 'width 0.35s var(--ease-out)'
-    }
-  })))), /*#__PURE__*/React.createElement(SortBottomBar, {
-    themeColor: themeColor,
+  })), /*#__PURE__*/React.createElement("span", null, "\u5DF2\u6DFB\u52A0\u5230\u300C", addedFeedback, "\u300D")), /*#__PURE__*/React.createElement(SortBottomBar, {
     mode: bottomMode,
     albums: albums,
+    actions: actions || ['undo', 'delete', 'next', 'album'],
     canUndo: historyLength > 0,
     hasPhoto: hasPhoto,
     animating: animating,
+    withTabBar: withTabBar,
     onUndo: handleUndoClick,
     onDelete: handleDeleteClick,
     onNext: handleKeepClick,

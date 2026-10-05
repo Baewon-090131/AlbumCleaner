@@ -67,21 +67,7 @@ class PhotoLibraryManager: NSObject {
         var result: [[String: Any]] = []
         for key in order {
             guard let monthAssets = groups[key], let firstDate = monthAssets.first?.creationDate else { continue }
-            let photos: [[String: Any]] = monthAssets.map { asset in
-                // 宽高比用于前端自适应多种尺寸媒体（横图/竖图/全景/Live Photo）
-                let ratio: Double = asset.pixelWidth > 0 && asset.pixelHeight > 0
-                    ? Double(asset.pixelWidth) / Double(asset.pixelHeight)
-                    : 0.75
-                return [
-                    "id": asset.localIdentifier,
-                    "isVideo": asset.mediaType == .video,
-                    "isLivePhoto": asset.mediaSubtypes.contains(.photoLive),
-                    "duration": asset.mediaType == .video ? formatDuration(asset.duration) : NSNull(),
-                    "thumbnailUrl": "photo://\(asset.localIdentifier)",
-                    "favorite": asset.isFavorite,
-                    "ratio": ratio
-                ]
-            }
+            let photos: [[String: Any]] = monthAssets.map { self.photoPayload(for: $0) }
             result.append([
                 "id": key,
                 "year": Calendar.current.component(.year, from: firstDate),
@@ -94,36 +80,108 @@ class PhotoLibraryManager: NSObject {
         return result
     }
 
+    // v3.0：照片描述统一出口（月份与相簿共用），补上卡片角标需要的日期与体积
+    private let creationDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy/M/d"
+        return formatter
+    }()
+
+    private var fileSizeCache: [String: Int64] = [:]
+
+    func photoPayload(for asset: PHAsset) -> [String: Any] {
+        // 宽高比用于前端自适应多种尺寸媒体（横图/竖图/全景/Live Photo）
+        let ratio: Double = asset.pixelWidth > 0 && asset.pixelHeight > 0
+            ? Double(asset.pixelWidth) / Double(asset.pixelHeight)
+            : 0.75
+        return [
+            "id": asset.localIdentifier,
+            "isVideo": asset.mediaType == .video,
+            "isLivePhoto": asset.mediaSubtypes.contains(.photoLive),
+            "duration": asset.mediaType == .video ? formatDuration(asset.duration) : NSNull(),
+            "thumbnailUrl": "photo://\(asset.localIdentifier)",
+            "favorite": asset.isFavorite,
+            "ratio": ratio,
+            "creationDate": asset.creationDate.map { creationDateFormatter.string(from: $0) } ?? "",
+            "fileSize": fileSize(for: asset)
+        ]
+    }
+
+    // PHAsset 没有公开的文件大小属性，逐张读资源的 fileSize 并缓存。
+    // 相册数量很大时这里会慢，后续要优化就改成后台索引 + 落盘缓存。
+    func fileSize(for asset: PHAsset) -> Int64 {
+        let key = asset.localIdentifier
+        if let cached = fileSizeCache[key] { return cached }
+        var total: Int64 = 0
+        for resource in PHAssetResource.assetResources(for: asset) {
+            if let size = resource.value(forKey: "fileSize") as? Int64 {
+                total += size
+            }
+        }
+        fileSizeCache[key] = total
+        return total
+    }
+
+    // 读取某个相簿内的全部项目（相簿详情页用）
+    func fetchAlbumAssets(_ albumIdentifier: String) -> [[String: Any]] {
+        let collections = PHAssetCollection.fetchAssetCollections(
+            withLocalIdentifiers: [albumIdentifier], options: nil)
+        guard let collection = collections.firstObject else { return [] }
+        let options = PHFetchOptions()
+        options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        let assets = PHAsset.fetchAssets(in: collection, options: options)
+        var result: [[String: Any]] = []
+        assets.enumerateObjects { asset, _, _ in
+            result.append(self.photoPayload(for: asset))
+        }
+        return result
+    }
+
+    // 机身存储占用（我的页数据卡）
+    func storageInfo() -> [String: Any] {
+        let url = URL(fileURLWithPath: NSHomeDirectory())
+        var total: Int64 = 0
+        var free: Int64 = 0
+        if let values = try? url.resourceValues(
+            forKeys: [.volumeTotalCapacityKey, .volumeAvailableCapacityForImportantUsageKey]) {
+            total = Int64(values.volumeTotalCapacity ?? 0)
+            free = values.volumeAvailableCapacityForImportantUsage ?? 0
+        }
+        return ["total": total, "free": free, "used": max(0, total - free)]
+    }
+
     // 获取相簿列表
     func fetchAlbums() -> [[String: Any]] {
         var albums: [[String: Any]] = []
 
-        // 智能相簿（个人收藏、最近项目等）
-        let smartAlbums = PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .any, options: nil)
-        smartAlbums.enumerateObjects { collection, _, _ in
-            guard let title = collection.localizedTitle else { return }
+        let coverOptions = PHFetchOptions()
+        coverOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        coverOptions.fetchLimit = 1
+
+        func payload(_ collection: PHAssetCollection, _ type: String) -> [String: Any]? {
+            guard let title = collection.localizedTitle else { return nil }
             let count = PHAsset.fetchAssets(in: collection, options: nil).count
-            albums.append([
+            let coverAsset = PHAsset.fetchAssets(in: collection, options: coverOptions).firstObject
+            return [
                 "id": collection.localIdentifier,
                 "name": title,
                 "count": count,
-                "type": "smart",
-                "gradient": self.gradientForAlbum(title)
-            ])
+                "type": type,
+                "gradient": self.gradientForAlbum(title),
+                "cover": coverAsset.map { "photo://\($0.localIdentifier)" } ?? ""
+            ]
+        }
+
+        // 智能相簿（个人收藏、最近项目等）
+        let smartAlbums = PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .any, options: nil)
+        smartAlbums.enumerateObjects { collection, _, _ in
+            if let item = payload(collection, "smart") { albums.append(item) }
         }
 
         // 用户创建的相簿
         let userAlbums = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .albumRegular, options: nil)
         userAlbums.enumerateObjects { collection, _, _ in
-            guard let title = collection.localizedTitle else { return }
-            let count = PHAsset.fetchAssets(in: collection, options: nil).count
-            albums.append([
-                "id": collection.localIdentifier,
-                "name": title,
-                "count": count,
-                "type": "user",
-                "gradient": self.gradientForAlbum(title)
-            ])
+            if let item = payload(collection, "user") { albums.append(item) }
         }
 
         return albums

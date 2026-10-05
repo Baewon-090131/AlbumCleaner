@@ -1,5 +1,7 @@
-// v2.6 App：双页 iOS push/pop 转场状态机 + 全局状态
-// 转场规则（apple-design）：push 新页右滑入 + 旧页左移 28% 变暗；pop 反向对称
+// v3.0 App：三 tab（整理 / 相簿 / 我的）+ 页内推入（回收站、相簿详情）
+// tab 之间淡入淡出；页内推入沿用 v2.6 的双层揭示转场
+const GIGABYTE = 1024 * 1024 * 1024;
+const TAB_PAGES = ['sort', 'albums', 'mine'];
 function App() {
   // 主题色：从 localStorage 读取（与开关持久化一致），默认北洋蓝（iOS 27 强调色）
   let initialTheme = '#002FA7';
@@ -8,21 +10,33 @@ function App() {
     if (st) initialTheme = st;
   } catch (e) {}
   const [themeColor, setThemeColor] = React.useState(initialTheme);
-  const [stack, setStack] = React.useState(['home']);
-  // 渲染栈：转场期间保留两层，平时一层
+
+  // 允许用 #sort / #albums / #mine 直接落到某个 tab（预览与截图用）
+  const initialTab = (() => {
+    try {
+      const hash = (window.location.hash || '').replace('#', '');
+      return ['sort', 'albums', 'mine'].indexOf(hash) >= 0 ? hash : 'sort';
+    } catch (e) {
+      return 'sort';
+    }
+  })();
+  const [stack, setStack] = React.useState([initialTab]);
   const [renderStack, setRenderStack] = React.useState([{
-    key: 'home',
-    page: 'home',
+    key: initialTab,
+    page: initialTab,
     id: 0
   }]);
   const [dir, setDir] = React.useState('forward');
   const page = stack[stack.length - 1];
   const [currentMonth, setCurrentMonth] = React.useState(null);
+  const [currentAlbum, setCurrentAlbum] = React.useState(null);
+  const [albumPhotos, setAlbumPhotos] = React.useState([]);
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [initialPhotoCount, setInitialPhotoCount] = React.useState(0);
   const [processedCount, setProcessedCount] = React.useState(0);
   const [monthsData, setMonthsData] = React.useState([]);
   const [albumsData, setAlbumsData] = React.useState([]);
+  const [storage, setStorage] = React.useState(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [trashPhotos, setTrashPhotos] = React.useState([]);
   const [historyStack, setHistoryStack] = React.useState([]);
@@ -32,8 +46,6 @@ function App() {
   // v2.5：Live 图 / 视频 自动播放开关（localStorage 持久化，默认开启）
   const [autoPlayLive, setAutoPlayLive] = React.useState(true);
   const [autoPlayVideo, setAutoPlayVideo] = React.useState(true);
-
-  // 读取持久化开关
   React.useEffect(() => {
     try {
       const s = window.localStorage;
@@ -70,21 +82,31 @@ function App() {
       setIsLoading(false);
     }
   }, []);
-  const currentPhotos = currentMonth ? monthsData.find(m => m.id === currentMonth.id)?.photos || [] : [];
 
-  // ===== 双页转场（v2.6） =====
-  // push：新页入栈（渲染栈保留旧页同框），360ms 后裁剪回单层
-  const navigateTo = (target, data = {}) => {
-    if (data.month) {
-      setCurrentMonth(data.month);
-      setCurrentIndex(0);
-      setHistoryStack([]);
-      const monthData = monthsData.find(m => m.id === data.month.id);
-      setInitialPhotoCount(monthData ? monthData.photos.length : 0);
-      setProcessedCount(0);
+  // 机身存储（无原生桥时给一组示例值，方便浏览器里看布局）
+  React.useEffect(() => {
+    const bridge = window.NativeBridge;
+    if (bridge && bridge.isNative() && bridge.getStorageInfo) {
+      bridge.getStorageInfo(function (info) {
+        if (info) setStorage(info);
+      });
+    } else {
+      setStorage({
+        total: 256 * GIGABYTE,
+        free: 84 * GIGABYTE,
+        used: 172 * GIGABYTE
+      });
     }
-    const id = Date.now();
-    setDir('forward');
+  }, []);
+  const currentPhotos = currentMonth ? monthsData.find(m => m.id === currentMonth.id)?.photos || [] : [];
+  const isAlbumMode = page === 'album';
+  const activePhotos = isAlbumMode ? albumPhotos : currentPhotos;
+  const activeTotal = isAlbumMode ? albumPhotos.length : initialPhotoCount;
+  const activeProgress = activeTotal > 0 ? Math.min(1, processedCount / activeTotal) * 100 : 100;
+  const activeRemaining = Math.max(0, activeTotal - processedCount);
+
+  // ===== 导航：tab 切换淡入，页内推入走揭示转场 =====
+  const pushPage = (target, id, duration) => {
     setRenderStack(prev => {
       const top = prev[prev.length - 1];
       return [top, {
@@ -96,10 +118,26 @@ function App() {
     setTimeout(() => {
       setStack(prev => [...prev, target]);
       setRenderStack(prev => prev.slice(-1));
-    }, 380);
+    }, duration);
   };
-
-  // pop：顶页右滑出，下页复位，360ms 后移除顶页
+  const switchTab = target => {
+    if (target === page) return;
+    setDir('fade');
+    const id = Date.now();
+    setRenderStack(prev => [prev[prev.length - 1], {
+      key: target,
+      page: target,
+      id
+    }]);
+    setTimeout(() => {
+      setStack([target]);
+      setRenderStack(prev => prev.slice(-1));
+    }, 280);
+  };
+  const navigateTo = target => {
+    setDir('forward');
+    pushPage(target, Date.now(), 380);
+  };
   const goBack = () => {
     if (stack.length <= 1) return;
     const prevPage = stack[stack.length - 2];
@@ -114,7 +152,6 @@ function App() {
     });
     setTimeout(() => {
       setStack(prev => prev.slice(0, -1));
-      // 保留栈底页（home），而不是栈顶（要被移除的页）
       setRenderStack(prev => [prev[0]]);
     }, 380);
   };
@@ -122,32 +159,89 @@ function App() {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 1300);
   };
+
+  // 打开某个月份（从顶部胶囊切换）
+  const openMonth = month => {
+    if (!month) return;
+    setCurrentMonth(month);
+    setCurrentIndex(0);
+    setHistoryStack([]);
+    const monthData = monthsData.find(m => m.id === month.id);
+    setInitialPhotoCount(monthData ? monthData.photos.length : 0);
+    setProcessedCount(0);
+  };
+
+  // 打开某个相簿 → 推入相簿整理页
+  const openAlbum = album => {
+    setCurrentAlbum(album);
+    setCurrentIndex(0);
+    setHistoryStack([]);
+    setProcessedCount(0);
+    const bridge = window.NativeBridge;
+    if (bridge && bridge.isNative() && bridge.getAlbumAssets) {
+      setAlbumPhotos([]);
+      navigateTo('album');
+      bridge.getAlbumAssets(album.id, function (list) {
+        setAlbumPhotos(list || []);
+      });
+    } else {
+      const pool = monthsData.flatMap(m => m.photos);
+      setAlbumPhotos(pool.slice(0, Math.min(album.count || 12, 24)));
+      navigateTo('album');
+    }
+  };
+  const contextKey = () => isAlbumMode ? {
+    type: 'album',
+    id: currentAlbum && currentAlbum.id
+  } : {
+    type: 'month',
+    id: currentMonth && currentMonth.id
+  };
+  const removeFromActive = photoId => {
+    if (isAlbumMode) {
+      setAlbumPhotos(prev => prev.filter(p => p.id !== photoId));
+    } else {
+      setMonthsData(prev => prev.map(m => m.id === currentMonth.id ? {
+        ...m,
+        photos: m.photos.filter(p => p.id !== photoId)
+      } : m));
+    }
+  };
+  const insertIntoContext = (context, photo) => {
+    if (context.type === 'album') {
+      setAlbumPhotos(prev => [photo, ...prev]);
+    } else {
+      setMonthsData(prev => prev.map(m => m.id === context.id ? {
+        ...m,
+        photos: [photo, ...m.photos]
+      } : m));
+    }
+  };
+
+  // 首次进入整理页时选最近的一个月
+  React.useEffect(() => {
+    if (!currentMonth && monthsData.length > 0) openMonth(monthsData[0]);
+  }, [monthsData]);
   const handleDelete = () => {
-    if (!currentMonth || currentIndex >= currentPhotos.length) return;
-    const photo = currentPhotos[currentIndex];
+    if (currentIndex >= activePhotos.length) return;
+    const photo = activePhotos[currentIndex];
     setHistoryStack(prev => [...prev, {
       action: 'delete',
       photo,
-      monthId: currentMonth.id
+      context: contextKey()
     }]);
-    setMonthsData(prev => prev.map(m => {
-      if (m.id !== currentMonth.id) return m;
-      return {
-        ...m,
-        photos: m.photos.filter(p => p.id !== photo.id)
-      };
-    }));
+    removeFromActive(photo.id);
     setTrashPhotos(prev => [photo, ...prev]);
     setProcessedCount(prev => prev + 1);
     showToast('已移到回收站');
   };
   const handleKeep = () => {
-    if (!currentMonth || currentIndex >= currentPhotos.length) return;
-    const photo = currentPhotos[currentIndex];
+    if (currentIndex >= activePhotos.length) return;
+    const photo = activePhotos[currentIndex];
     setHistoryStack(prev => [...prev, {
       action: 'keep',
       photo,
-      monthId: currentMonth.id
+      context: contextKey()
     }]);
     setCurrentIndex(prev => prev + 1);
     setProcessedCount(prev => prev + 1);
@@ -159,44 +253,20 @@ function App() {
     setProcessedCount(prev => Math.max(0, prev - 1));
     if (lastAction.action === 'delete') {
       setTrashPhotos(prev => prev.filter(p => p.id !== lastAction.photo.id));
-      setMonthsData(prev => prev.map(m => {
-        if (m.id !== lastAction.monthId) return m;
-        const newPhotos = [...m.photos];
-        newPhotos.splice(currentIndex, 0, lastAction.photo);
-        return {
-          ...m,
-          photos: newPhotos
-        };
-      }));
+      insertIntoContext(lastAction.context, lastAction.photo);
       showToast('已撤回删除');
     } else if (lastAction.action === 'keep') {
       setCurrentIndex(prev => Math.max(0, prev - 1));
     } else if (lastAction.action === 'favorite') {
-      setMonthsData(prev => prev.map(m => {
-        if (m.id !== lastAction.monthId) return m;
-        const newPhotos = [...m.photos];
-        newPhotos.splice(currentIndex, 0, lastAction.photo);
-        return {
-          ...m,
-          photos: newPhotos
-        };
-      }));
+      insertIntoContext(lastAction.context, lastAction.photo);
       showToast('已撤回收藏');
     } else if (lastAction.action === 'addAlbum') {
-      setMonthsData(prev => prev.map(m => {
-        if (m.id !== lastAction.monthId) return m;
-        const newPhotos = [...m.photos];
-        newPhotos.splice(currentIndex, 0, lastAction.photo);
-        return {
-          ...m,
-          photos: newPhotos
-        };
-      }));
+      insertIntoContext(lastAction.context, lastAction.photo);
     }
   };
   const handleFavorite = () => {
-    if (!currentMonth || currentIndex >= currentPhotos.length) return;
-    const photo = currentPhotos[currentIndex];
+    if (currentIndex >= activePhotos.length) return;
+    const photo = activePhotos[currentIndex];
     const favPhoto = {
       ...photo,
       favorite: true
@@ -204,42 +274,28 @@ function App() {
     setHistoryStack(prev => [...prev, {
       action: 'favorite',
       photo: favPhoto,
-      monthId: currentMonth.id
+      context: contextKey()
     }]);
-    setMonthsData(prev => prev.map(m => {
-      if (m.id !== currentMonth.id) return m;
-      return {
-        ...m,
-        photos: m.photos.filter(p => p.id !== photo.id)
-      };
-    }));
+    removeFromActive(photo.id);
     setProcessedCount(prev => prev + 1);
-    // 调用原生桥接收藏
     if (window.NativeBridge && window.NativeBridge.isNative() && !photo.id.startsWith('mock_')) {
       window.NativeBridge.setFavorite(photo.id, true);
     }
     showToast('已加入个人收藏');
   };
   const handleAlbumAdd = album => {
-    if (!currentMonth || currentIndex >= currentPhotos.length) return;
-    const photo = currentPhotos[currentIndex];
+    if (currentIndex >= activePhotos.length) return;
+    const photo = activePhotos[currentIndex];
     setHistoryStack(prev => [...prev, {
       action: 'addAlbum',
       photo,
-      monthId: currentMonth.id,
+      context: contextKey(),
       albumId: album.id
     }]);
-    setMonthsData(prev => prev.map(m => {
-      if (m.id !== currentMonth.id) return m;
-      return {
-        ...m,
-        photos: m.photos.filter(p => p.id !== photo.id)
-      };
-    }));
+    removeFromActive(photo.id);
     setAddedFeedback(album.name);
     setTimeout(() => setAddedFeedback(null), 1100);
     setProcessedCount(prev => prev + 1);
-    // 调用原生桥接添加到相簿
     if (window.NativeBridge && window.NativeBridge.isNative() && !photo.id.startsWith('mock_')) {
       window.NativeBridge.addToAlbum(photo.id, album.id);
     }
@@ -250,13 +306,12 @@ function App() {
     setTrashPhotos(prev => prev.filter(p => p.id !== photoId));
     setMonthsData(prev => prev.map((m, i) => i === 0 ? {
       ...m,
-      photos: [...m.photos, photo]
+      photos: [photo, ...m.photos]
     } : m));
   };
   const handleDeleteOne = photoId => {
     const photo = trashPhotos.find(p => p.id === photoId);
     setTrashPhotos(prev => prev.filter(p => p.id !== photoId));
-    // 调用原生桥接彻底删除
     if (photo && window.NativeBridge && window.NativeBridge.isNative() && !photo.id.startsWith('mock_')) {
       window.NativeBridge.deleteAssets([photo.id]);
     }
@@ -264,10 +319,12 @@ function App() {
   const handleDeleteAll = () => {
     const realIds = trashPhotos.filter(p => !p.id.startsWith('mock_')).map(p => p.id);
     setTrashPhotos([]);
-    // 调用原生桥接彻底删除
     if (realIds.length > 0 && window.NativeBridge && window.NativeBridge.isNative()) {
       window.NativeBridge.deleteAssets(realIds);
     }
+  };
+  const handleClearCache = () => {
+    showToast('缓存已清理');
   };
   const handleThemeChange = color => {
     setThemeColor(color);
@@ -321,25 +378,77 @@ function App() {
   }
   const renderPage = key => {
     switch (key) {
-      case 'home':
-        return /*#__PURE__*/React.createElement(HomePage, {
-          months: monthsData,
-          themeColor: themeColor,
-          onMonthClick: month => navigateTo('sort', {
-            month
-          }),
-          onTrashClick: () => navigateTo('trash'),
-          onSettingsClick: () => navigateTo('settings'),
-          trashCount: trashPhotos.length
-        });
       case 'sort':
         return /*#__PURE__*/React.createElement(SortPage, {
           month: currentMonth || {
             title: ''
           },
+          months: monthsData,
+          currentMonthId: currentMonth && currentMonth.id,
+          onMonthSelect: openMonth,
           photos: currentPhotos,
           currentIndex: currentIndex,
           totalCount: initialPhotoCount,
+          processedCount: processedCount,
+          themeColor: themeColor,
+          historyLength: historyStack.length,
+          addedFeedback: addedFeedback,
+          toastMessage: toastMessage,
+          albums: albumsData,
+          autoPlayLive: autoPlayLive,
+          autoPlayVideo: autoPlayVideo,
+          onTrashClick: () => navigateTo('trash'),
+          trashCount: trashPhotos.length,
+          onAlbumAdd: handleAlbumAdd,
+          onSwipeUp: handleDelete,
+          onSwipeLeft: handleKeep,
+          onSwipeRight: handleUndo,
+          onSwipeDown: handleFavorite,
+          onUndo: handleUndo,
+          onDeleteButton: handleDelete,
+          onKeepButton: handleKeep,
+          withTabBar: true
+        });
+      case 'albums':
+        return /*#__PURE__*/React.createElement(AlbumsPage, {
+          albums: albumsData,
+          themeColor: themeColor,
+          onAlbumClick: openAlbum,
+          trashCount: trashPhotos.length,
+          onTrashClick: () => navigateTo('trash')
+        });
+      case 'mine':
+        return /*#__PURE__*/React.createElement(MinePage, {
+          themeColor: themeColor,
+          onThemeChange: handleThemeChange,
+          autoPlayLive: autoPlayLive,
+          autoPlayVideo: autoPlayVideo,
+          onAutoLiveChange: handleAutoLiveChange,
+          onAutoVideoChange: handleAutoVideoChange,
+          trashPhotos: trashPhotos,
+          storage: storage,
+          onClearCache: handleClearCache,
+          trashCount: trashPhotos.length,
+          onTrashClick: () => navigateTo('trash')
+        });
+      case 'trash':
+        return /*#__PURE__*/React.createElement(TrashPage, {
+          trashPhotos: trashPhotos,
+          themeColor: themeColor,
+          onBack: goBack,
+          onRestore: handleRestore,
+          onDelete: handleDeleteOne,
+          onDeleteAll: handleDeleteAll
+        });
+      case 'album':
+        return /*#__PURE__*/React.createElement(SortPage, {
+          month: currentAlbum || {
+            title: ''
+          },
+          backLabel: "\u76F8\u7C3F",
+          photos: albumPhotos,
+          currentIndex: currentIndex,
+          totalCount: albumPhotos.length,
           processedCount: processedCount,
           themeColor: themeColor,
           historyLength: historyStack.length,
@@ -358,26 +467,9 @@ function App() {
           onSwipeDown: handleFavorite,
           onUndo: handleUndo,
           onDeleteButton: handleDelete,
-          onKeepButton: handleKeep
-        });
-      case 'trash':
-        return /*#__PURE__*/React.createElement(TrashPage, {
-          trashPhotos: trashPhotos,
-          themeColor: themeColor,
-          onBack: goBack,
-          onRestore: handleRestore,
-          onDelete: handleDeleteOne,
-          onDeleteAll: handleDeleteAll
-        });
-      case 'settings':
-        return /*#__PURE__*/React.createElement(SettingsPage, {
-          themeColor: themeColor,
-          autoPlayLive: autoPlayLive,
-          autoPlayVideo: autoPlayVideo,
-          onAutoLiveChange: handleAutoLiveChange,
-          onAutoVideoChange: handleAutoVideoChange,
-          onThemeChange: handleThemeChange,
-          onBack: goBack
+          onKeepButton: handleKeep,
+          actions: ['undo', 'delete', 'next'],
+          withTabBar: false
         });
       default:
         return null;
@@ -410,17 +502,22 @@ function App() {
     };
     if (transitioning) {
       if (isTop) {
-        // 顶页：push 从右揭示进来 / pop 向右揭示出去（外层裁切，内层同步位移）
-        layer.animation = dir === 'forward' ? 'pageRevealIn 0.36s var(--ease-drawer) both' : 'pageRevealOut 0.36s var(--ease-drawer) both';
-        content.animation = dir === 'forward' ? 'pageSlideIn 0.36s var(--ease-drawer) both' : 'pageSlideOut 0.36s var(--ease-drawer) both';
+        if (dir === 'fade') {
+          // tab 切换：只淡入，不做位移
+          layer.animation = 'fadeIn 0.28s var(--ease-out) both';
+        } else {
+          layer.animation = dir === 'forward' ? 'pageRevealIn 0.36s var(--ease-drawer) both' : 'pageRevealOut 0.36s var(--ease-drawer) both';
+          content.animation = dir === 'forward' ? 'pageSlideIn 0.36s var(--ease-drawer) both' : 'pageSlideOut 0.36s var(--ease-drawer) both';
+          content.willChange = 'transform';
+        }
         layer.zIndex = 2;
-        layer.willChange = 'clip-path';
-        content.willChange = 'transform';
+        if (dir !== 'fade') layer.willChange = 'clip-path';
       } else {
         // 下层页：push 内容左移变暗 / pop 复位（transition 驱动；壁纸背板保持不动）
-        // 减弱动态效果时只做变暗/复位，不做位移与缩放
         const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-        const under = dir === 'forward' ? reduceMotion ? {
+        const under = dir === 'fade' ? {
+          opacity: 1
+        } : dir === 'forward' ? reduceMotion ? {
           opacity: 0.82
         } : {
           transform: 'translateX(-26%) scale(0.96)',
@@ -434,15 +531,28 @@ function App() {
         Object.assign(content, under);
         content.transition = reduceMotion ? 'opacity 0.2s ease' : 'transform 0.36s var(--ease-drawer), opacity 0.36s ease';
         layer.zIndex = 1;
-        content.willChange = 'transform, opacity';
+        if (dir !== 'fade') content.willChange = 'transform, opacity';
       }
     }
     return /*#__PURE__*/React.createElement("div", {
       key: item.id,
       style: layer
     }, /*#__PURE__*/React.createElement("div", {
-      style: content
-    }, renderPage(item.page), transitioning && isTop &&
+      style: {
+        ...content,
+        display: 'flex',
+        flexDirection: 'column'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        minHeight: 0,
+        position: 'relative'
+      }
+    }, renderPage(item.page)), TAB_PAGES.indexOf(item.page) >= 0 && /*#__PURE__*/React.createElement(BottomTabBar, {
+      active: item.page,
+      onChange: switchTab
+    }), transitioning && isTop && dir !== 'fade' &&
     /*#__PURE__*/
     /* 揭示边缘的投影：跟着内容层左缘走，视觉上等价于「新页压在旧页上」的投影 */
     React.createElement("div", {

@@ -23,7 +23,7 @@
 AlbumCleaner/
 ├── .github/workflows/build.yml   # GitHub Actions 自动编译配置
 ├── project.yml                   # xcodegen 配置（CI 中自动生成 Xcode 项目）
-├── Slidebox/
+├── Evernight/
 │   ├── AppDelegate.swift          # 应用入口
 │   ├── ViewController.swift       # WKWebView 控制器 + photo:// 缩略图加载
 │   ├── PhotoLibraryManager.swift  # Photos framework 封装（权限/相册/缩略图缓存）
@@ -34,7 +34,7 @@ AlbumCleaner/
 │       ├── data.js                # 数据加载器（原生优先 + 模拟降级）
 │       ├── build/                 # 预编译组件（普通JS，无运行时Babel）
 │       ├── vendor/                # React（本地，离线可用）
-│       └── components/            # React 组件源码（JSX）
+│       └── components/            # React 组件源码（JSX，改这里）
 └── README.md
 ```
 

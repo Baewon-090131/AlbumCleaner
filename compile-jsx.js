@@ -4,8 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const { transformSync } = require('@babel/core');
 
-const componentsDir = path.join(__dirname, 'Slidebox', 'WebContent', 'components');
-const buildDir = path.join(__dirname, 'Slidebox', 'WebContent', 'build');
+const componentsDir = path.join(__dirname, 'Evernight', 'WebContent', 'components');
+const buildDir = path.join(__dirname, 'Evernight', 'WebContent', 'build');
 
 if (!fs.existsSync(buildDir)) fs.mkdirSync(buildDir, { recursive: true });
 

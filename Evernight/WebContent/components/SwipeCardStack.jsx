@@ -10,6 +10,15 @@ function prefersReducedMotion() {
   return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 }
 
+// 卡片角标：体积只显示到一位小数，够用就行
+function formatMediaSize(bytes) {
+  if (!bytes || bytes <= 0) return '';
+  const mb = bytes / (1024 * 1024);
+  if (mb >= 1024) return (mb / 1024).toFixed(1) + ' GB';
+  if (mb >= 1) return mb.toFixed(1) + ' MB';
+  return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+}
+
 function PhotoCard({ photo, onTap, themeColor = '#002FA7', autoPlayLive = true, autoPlayVideo = true }) {
   const hasRealImage = photo.thumbnailUrl && (
     photo.thumbnailUrl.startsWith('photo://') || photo.thumbnailUrl.startsWith('data:')
@@ -42,7 +51,7 @@ function PhotoCard({ photo, onTap, themeColor = '#002FA7', autoPlayLive = true, 
       style={{
         position: 'absolute',
         inset: 0,
-        background: '#000',
+        background: 'transparent',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -140,7 +149,7 @@ function PhotoCard({ photo, onTap, themeColor = '#002FA7', autoPlayLive = true, 
       {photo.isVideo && (
         <div style={{
           position: 'absolute',
-          bottom: 16, right: 16,
+          top: 14, right: 14,
           display: 'flex', alignItems: 'center', gap: 5,
           background: 'rgba(0,0,0,0.55)',
           padding: '4px 10px', borderRadius: 9,
@@ -160,7 +169,7 @@ function PhotoCard({ photo, onTap, themeColor = '#002FA7', autoPlayLive = true, 
       {photo.isLivePhoto && (
         <div style={{
           position: 'absolute',
-          bottom: 16, right: 16,
+          top: 14, right: 14,
           display: 'flex', alignItems: 'center',
           background: 'rgba(0,0,0,0.55)',
           padding: '4px 10px', borderRadius: 9,
@@ -171,6 +180,28 @@ function PhotoCard({ photo, onTap, themeColor = '#002FA7', autoPlayLive = true, 
             fontFamily: '-apple-system, "SF Pro", system-ui',
           }}>LIVE</span>
         </div>
+      )}
+
+      {/* 日期与体积角标（v3.0：贴在卡片下缘） */}
+      {photo.creationDate && (
+        <div style={{
+          position: 'absolute', left: 14, bottom: 14,
+          padding: '5px 11px', borderRadius: 12,
+          background: 'rgba(0,0,0,0.42)',
+          color: '#fff', fontSize: 12, fontWeight: 500,
+          fontFamily: '-apple-system, "SF Pro", system-ui',
+          pointerEvents: 'none',
+        }}>{photo.creationDate}</div>
+      )}
+      {formatMediaSize(photo.fileSize) && (
+        <div style={{
+          position: 'absolute', right: 14, bottom: 14,
+          padding: '5px 11px', borderRadius: 12,
+          background: 'rgba(0,0,0,0.42)',
+          color: '#fff', fontSize: 12, fontWeight: 500,
+          fontFamily: '-apple-system, "SF Pro", system-ui',
+          pointerEvents: 'none',
+        }}>{formatMediaSize(photo.fileSize)}</div>
       )}
 
       <SwipeHint photo={photo} themeColor={themeColor} />
@@ -266,7 +297,7 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
     if (type === 'in') {
       enteringRef.current = true;
       card.style.transition = 'none';
-      card.style.transform = reduce ? 'none' : 'translateX(100%)';
+      card.style.transform = reduce ? 'none' : 'translateX(120vw)';
       card.style.opacity = '0';
       void card.offsetWidth;
       card.style.transition = reduce
@@ -280,10 +311,10 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
       }, 300);
     } else {
       const transforms = {
-        up: 'translateY(-108%) rotate(0deg)',
-        left: 'translateX(-108%) rotate(-10deg)',
-        right: 'translateX(108%) rotate(10deg)',
-        down: 'translateY(108%) rotate(0deg)',
+        up: 'translateY(-120vh)',
+        left: 'translateX(-120vw)',
+        right: 'translateX(120vw)',
+        down: 'translateY(120vh)',
       };
       card.style.transition = reduce
         ? 'opacity 0.2s ease'
@@ -413,6 +444,11 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
     if (onPhotoTap) onPhotoTap(photo);
   };
 
+  // 按媒体比例把卡片塞进可用区域（比例夹在 0.32–3.2，避免超长图把卡片压成一条线）
+  const mediaRatio = Math.min(3.2, Math.max(0.32,
+    (currentPhoto && currentPhoto.ratio) || 1));
+  const isLandscape = mediaRatio >= 1;
+
   // v2.6 完成态：iOS 风格空态
   if (!currentPhoto) {
     return (
@@ -454,12 +490,17 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
   }
 
   return (
-    <div style={{
-      flex: 1,
-      position: 'relative',
-      margin: '2px 12px',
-      touchAction: 'none',
-    }}>
+    <div
+      style={{
+        flex: 1,
+        minHeight: 0,
+        position: 'relative',
+        margin: '2px 12px',
+        touchAction: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
       {/* 当前卡（key 变化强制重建 DOM，清空动画残留样式；willChange 仅手势时动态开启，避免常驻占合成层） */}
       <div
         key={currentPhoto.id}
@@ -470,13 +511,18 @@ const SwipeCardStack = React.forwardRef(function SwipeCardStack({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
         style={{
-          position: 'absolute',
-          inset: 0,
+          position: 'relative',
+          aspectRatio: String(mediaRatio),
+          maxWidth: '100%',
+          maxHeight: '100%',
+          width: isLandscape ? '100%' : 'auto',
+          height: isLandscape ? 'auto' : '100%',
+          flex: '0 1 auto',
           cursor: 'grab',
           borderRadius: 'var(--r-plate)',
           overflow: 'hidden',
-          background: '#0b0b0f',
-          boxShadow: '0 24px 60px rgba(12,18,48,0.38), inset 0 1px 0 rgba(255,255,255,0.18)',
+          background: 'var(--glass-solid)',
+          boxShadow: '0 18px 46px rgba(12,18,48,0.26), inset 0 1px 0 rgba(255,255,255,0.55)',
         }}
       >
         <PhotoCard photo={currentPhoto} onTap={handlePhotoTap}

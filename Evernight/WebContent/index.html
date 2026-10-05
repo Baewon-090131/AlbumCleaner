@@ -21,6 +21,8 @@
         radial-gradient(90% 60% at 78% 62%, rgba(110,214,255,0.55) 0%, rgba(255,255,255,0) 62%),
         radial-gradient(126% 92% at 46% 106%, #FFB0D8 0%, rgba(255,255,255,0) 58%),
         linear-gradient(168deg, #E7F0FF 0%, #F1EBFF 46%, #FFF0F8 100%);
+      /* v3.0 内容层材质：卡片与分组用更实的白色面板，Liquid Glass 只留给浮层 */
+      --glass-solid: rgba(255,255,255,0.72);
     }
     html, body {
       width: 100%;
@@ -101,6 +103,32 @@
           window.webkit.messageHandlers.photoApp.postMessage({ action: 'playMedia', identifier: identifier });
         }
       },
+      getAlbumAssets: function(albumIdentifier, callback) {
+        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.photoApp) {
+          window._albumAssetsCallback = callback;
+          window.webkit.messageHandlers.photoApp.postMessage({ action: 'getAlbumAssets', albumIdentifier: albumIdentifier });
+        } else if (callback) {
+          callback([]);
+        }
+      },
+      receiveAlbumAssets: function(list) {
+        var callback = window._albumAssetsCallback;
+        window._albumAssetsCallback = null;
+        if (callback) callback(list || []);
+      },
+      getStorageInfo: function(callback) {
+        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.photoApp) {
+          window._storageCallback = callback;
+          window.webkit.messageHandlers.photoApp.postMessage({ action: 'getStorageInfo' });
+        } else if (callback) {
+          callback(null);
+        }
+      },
+      receiveStorage: function(info) {
+        var callback = window._storageCallback;
+        window._storageCallback = null;
+        if (callback) callback(info || null);
+      },
       isNative: function() {
         return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.photoApp);
       }
@@ -111,12 +139,15 @@
   <script src="data.js"></script>
 
   <!-- 预编译组件（普通JS，无运行时Babel依赖） -->
+  <script src="build/Icons.js"></script>
+  <script src="build/TopBar.js"></script>
+  <script src="build/BottomTabBar.js"></script>
   <script src="build/SwipeCardStack.js"></script>
-  <script src="build/HomePage.js"></script>
   <script src="build/SortBottomBar.js"></script>
   <script src="build/SortPage.js"></script>
+  <script src="build/AlbumsPage.js"></script>
   <script src="build/TrashPage.js"></script>
-  <script src="build/SettingsPage.js"></script>
+  <script src="build/MinePage.js"></script>
   <script src="build/App.js"></script>
 
   <div id="root"></div>

@@ -10,42 +10,8 @@ function TrashPage({ trashPhotos, onBack, onRestore, onDelete, onDeleteAll, them
 
   return (
     <div style={{ height: '100%', background: 'transparent', display: 'flex', flexDirection: 'column' }}>
-      {/* v2.6 悬浮玻璃导航胶囊 */}
-      <div style={{
-        position: 'relative', zIndex: 100,
-        padding: 'var(--ios-safe-top) 12px 6px',
-      }}>
-        <div style={{
-          position: 'relative', height: 52,
-          borderRadius: 'var(--r-island)',
-          background: 'var(--glass-float)',
-          backdropFilter: 'var(--blur-float)',
-          WebkitBackdropFilter: 'var(--blur-float)',
-          boxShadow: 'var(--edge-float)',
-          display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between', padding: '0 8px',
-          animation: 'slideDownBar 0.3s var(--ease-drawer)',
-        }}>
-          <button onClick={onBack} className="ios-btn" style={{
-            display: 'flex', alignItems: 'center', gap: 4,
-            background: 'none', border: 'none', padding: '6px 10px', cursor: 'pointer',
-            color: themeColor, fontSize: 17,
-            fontFamily: '-apple-system, "SF Pro", system-ui', fontWeight: 400,
-          }}>
-            <svg width="12" height="20" viewBox="0 0 12 20">
-              <path d="M10 2L2 10l8 8" stroke={themeColor} strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <span>照片</span>
-          </button>
-          <div style={{
-            position: 'absolute', left: '50%', top: '50%',
-            transform: 'translate(-50%, -50%)',
-            fontSize: 17, fontWeight: 600, color: '#000',
-            fontFamily: '-apple-system, "SF Pro", system-ui', letterSpacing: -0.4,
-          }}>回收站</div>
-          <div style={{ width: 60 }} />
-        </div>
-      </div>
+      {/* v3.0 顶部栏（返回 + 标题） */}
+      <TopBar backLabel="返回" centerTitle="回收站" onBack={onBack} />
 
       {/* 状态提示 */}
       <div style={{

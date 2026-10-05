@@ -68,7 +68,7 @@ function rand(min, max) {
 }
 
 // 生成模拟照片（循环覆盖不同媒体尺寸比例；含视频与 Live Photo 示例）
-function generateMockPhotos(count, startId = 0) {
+function generateMockPhotos(count, startId = 0, year = 2025, month = 12) {
   const photos = [];
   for (let i = 0; i < count; i++) {
     const shape = MEDIA_SHAPES[(startId + i) % MEDIA_SHAPES.length];
@@ -85,6 +85,8 @@ function generateMockPhotos(count, startId = 0) {
       favorite: false,
       albums: [],
       ratio: shape.w / shape.h,
+      creationDate: `${year}/${month}/${rand(1, 28)}`,
+      fileSize: rand(800 * 1024, 4_500 * 1024),
       thumbnailUrl: makeSvgPhoto(w, h, shape.label, startId + i),
     });
   }
@@ -113,7 +115,7 @@ function generateMockMonths() {
       month: monthIndex + 1,
       title: `${year}年${MONTH_NAMES[monthIndex]}`,
       shortTitle: MONTH_NAMES[monthIndex],
-      photos: generateMockPhotos(photoCount, startId),
+      photos: generateMockPhotos(photoCount, startId, year, monthIndex + 1),
     });
   }
   return months;

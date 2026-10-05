@@ -31,71 +31,11 @@ function TrashPage({
       display: 'flex',
       flexDirection: 'column'
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: 'relative',
-      zIndex: 100,
-      padding: 'var(--ios-safe-top) 12px 6px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: 'relative',
-      height: 52,
-      borderRadius: 'var(--r-island)',
-      background: 'var(--glass-float)',
-      backdropFilter: 'var(--blur-float)',
-      WebkitBackdropFilter: 'var(--blur-float)',
-      boxShadow: 'var(--edge-float)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '0 8px',
-      animation: 'slideDownBar 0.3s var(--ease-drawer)'
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: onBack,
-    className: "ios-btn",
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: 4,
-      background: 'none',
-      border: 'none',
-      padding: '6px 10px',
-      cursor: 'pointer',
-      color: themeColor,
-      fontSize: 17,
-      fontFamily: '-apple-system, "SF Pro", system-ui',
-      fontWeight: 400
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: "12",
-    height: "20",
-    viewBox: "0 0 12 20"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M10 2L2 10l8 8",
-    stroke: themeColor,
-    strokeWidth: "2.5",
-    fill: "none",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  })), /*#__PURE__*/React.createElement("span", null, "\u7167\u7247")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: 'absolute',
-      left: '50%',
-      top: '50%',
-      transform: 'translate(-50%, -50%)',
-      fontSize: 17,
-      fontWeight: 600,
-      color: '#000',
-      fontFamily: '-apple-system, "SF Pro", system-ui',
-      letterSpacing: -0.4
-    }
-  }, "\u56DE\u6536\u7AD9"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 60
-    }
-  }))), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(TopBar, {
+    backLabel: "\u8FD4\u56DE",
+    centerTitle: "\u56DE\u6536\u7AD9",
+    onBack: onBack
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
       padding: '14px 24px',
       fontSize: 13,
