@@ -35,32 +35,21 @@ function formatGB(bytes) {
   return Math.round(bytes / (1024 * 1024 * 1024)) + ' GB';
 }
 
-// iOS 液态玻璃开关：轨道上亮下暗，滑块带柔和阴影
-function GlassSwitch({ value, onChange, disabled = false }) {
+// v3.0.1：开关用原生 checkbox + role="switch"。
+// iOS 17.4+ 的 WebKit 会把它渲染成系统 UISwitch（`html[data-native-controls]` 由 main.jsx 置位），
+// 桌面和旧系统走 .ios-switch 里那套同造型的液态玻璃回退。
+function GlassSwitch({ value, onChange, disabled = false, label }) {
   return (
-    <button
-      aria-pressed={!!value}
-      onClick={(e) => { e.stopPropagation(); if (!disabled && onChange) onChange(!value); }}
-      style={{
-        width: 51, height: 31, borderRadius: 15.5, border: 'none', padding: 0,
-        cursor: disabled ? 'default' : 'pointer', flexShrink: 0, position: 'relative',
-        opacity: disabled ? 0.5 : 1,
-        background: value
-          ? 'linear-gradient(180deg, rgba(62,206,102,0.98) 0%, rgba(38,164,72,0.9) 100%)'
-          : 'linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(120,120,128,0.34) 100%)',
-        boxShadow: value
-          ? 'inset 0 1px 0 rgba(255,255,255,0.6), 0 2px 8px rgba(20,80,40,0.24)'
-          : 'inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 6px rgba(22,32,72,0.12)',
-        transition: 'background 0.22s var(--ease-drawer)',
-      }}>
-      <div style={{
-        position: 'absolute', top: 2, left: value ? 22 : 2,
-        width: 27, height: 27, borderRadius: '50%',
-        background: '#fff',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.26), 0 0 0 0.5px rgba(0,0,0,0.04)',
-        transition: 'left 0.22s var(--ease-drawer)',
-      }} />
-    </button>
+    <input
+      type="checkbox"
+      role="switch"
+      className="ios-switch"
+      checked={!!value}
+      disabled={disabled}
+      aria-label={label}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => { if (!disabled && onChange) onChange(e.target.checked); }}
+    />
   );
 }
 
@@ -114,7 +103,7 @@ function MineSwitchRow({ label, value, onChange, isLast = false }) {
         cursor: 'pointer',
       }}>
       <div style={{ flex: 1 }}>{label}</div>
-      <GlassSwitch value={value} onChange={onChange} />
+      <GlassSwitch value={value} onChange={onChange} label={label} />
       {!isLast && (
         <div style={{
           position: 'absolute', bottom: 0, left: 16, right: 0,
@@ -133,6 +122,7 @@ function MinePage({
   onClearCache,
   trashCount = 0, onTrashClick,
 }) {
+  const [batchSize, setBatchSize] = React.useState(30);
   const cleanedCount = trashPhotos.length;
   const cleanedBytes = trashPhotos.reduce((sum, photo) => sum + (photo.fileSize || 0), 0);
   const usedRatio = storage && storage.total > 0 ? storage.used / storage.total : 0;
@@ -220,19 +210,25 @@ function MinePage({
           <div style={{ ...PANEL_STYLE, padding: '14px 16px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <div style={{ flex: 1, fontSize: 16, letterSpacing: -0.3 }}>每轮数量</div>
-              <div style={{ fontSize: 17, fontWeight: 600 }}>30</div>
-            </div>
-            <div style={{
-              position: 'relative', height: 8, borderRadius: 4, marginTop: 16,
-              background: 'rgba(60,60,67,0.14)',
-            }}>
-              <div style={{ position: 'absolute', left: 0, width: '10%', height: 8, borderRadius: 4, background: '#34C759' }} />
               <div style={{
-                position: 'absolute', left: '10%', top: -10, marginLeft: -14,
-                width: 28, height: 28, borderRadius: '50%', background: '#fff',
-                boxShadow: '0 2px 8px rgba(22,32,72,0.22)',
-              }} />
+                fontSize: 17, fontWeight: 600,
+                fontVariantNumeric: 'tabular-nums',
+              }}>{batchSize}</div>
             </div>
+            <input
+              type="range"
+              className="ios-range"
+              min="10"
+              max="300"
+              step="10"
+              value={batchSize}
+              aria-label="每轮数量"
+              style={{
+                '--range-pct': (((batchSize - 10) / 290) * 100) + '%',
+                marginTop: 12,
+              }}
+              onChange={(e) => setBatchSize(Number(e.target.value))}
+            />
             <div className="sf-body" style={{ fontSize: 12.5, color: 'rgba(60,60,67,0.45)', marginTop: 12 }}>
               单轮最高可整理 300 项
             </div>
@@ -298,7 +294,7 @@ function MinePage({
         <div style={{ paddingBottom: 20 }}>
           <SectionLabel>通用</SectionLabel>
           <div style={PANEL_STYLE}>
-            <MineRow label="关于" value="Evernight 3.0" disabled />
+            <MineRow label="关于" value="Evernight 3.0.1" disabled />
             <MineRow label="操作指引" disabled />
             <MineRow label="清理缓存" value={formatBytes(cleanedBytes)} onPress={onClearCache} isLast />
           </div>
@@ -309,7 +305,7 @@ function MinePage({
             fontSize: 13, color: 'var(--accent)', fontWeight: 500,
           }}>用户协议 · 隐私政策</div>
           <div className="sf-body" style={{ fontSize: 12, color: 'rgba(60,60,67,0.4)', marginTop: 6 }}>
-            Evernight 3.0 (11)
+            Evernight 3.0.1 (12)
           </div>
         </div>
       </div>

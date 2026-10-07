@@ -5,18 +5,6 @@ function TopBar({
   backLabel, centerTitle, onBack,
   trashCount = 0, onTrashClick,
 }) {
-  const [pickerOpen, setPickerOpen] = React.useState(false);
-  const pickerRef = React.useRef(null);
-
-  React.useEffect(() => {
-    if (!pickerOpen) return undefined;
-    const onDocPointer = (e) => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target)) setPickerOpen(false);
-    };
-    document.addEventListener('pointerdown', onDocPointer);
-    return () => document.removeEventListener('pointerdown', onDocPointer);
-  }, [pickerOpen]);
-
   const isDetail = !!backLabel;
 
   return (
@@ -54,71 +42,35 @@ function TopBar({
             fontFamily: '-apple-system, "SF Pro", system-ui',
             fontSize: 32, fontWeight: 700, color: '#000',
             letterSpacing: -1.1, lineHeight: 1.1,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{title}</div>
         )}
 
         <div style={{ flex: isDetail ? 1 : '0 0 auto', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10 }}>
           {monthLabel && (
-            <div ref={pickerRef} style={{ position: 'relative' }}>
-              <button
-                onClick={() => setPickerOpen((v) => !v)}
-                className="ios-btn"
-                style={{
-                  height: 34, borderRadius: 17, padding: '0 12px',
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  background: 'var(--glass-float-strong)',
-                  backdropFilter: 'var(--blur-float)',
-                  WebkitBackdropFilter: 'var(--blur-float)',
-                  boxShadow: 'var(--edge-float)',
-                  border: 'none', cursor: 'pointer',
-                  color: '#000',
-                  fontFamily: '-apple-system, "SF Pro", system-ui',
-                  fontSize: 15, fontWeight: 500, letterSpacing: -0.2,
-                  whiteSpace: 'nowrap',
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              {/* v3.0.1：月份选择用原生 <select>，iOS 上会弹出系统选择器 */}
+              <select
+                className="month-select"
+                value={currentMonthId || ''}
+                aria-label="选择月份"
+                style={{ maxWidth: 156 }}
+                onChange={(e) => {
+                  const picked = (months || []).find((m) => m.id === e.target.value);
+                  if (picked && onMonthSelect) onMonthSelect(picked);
                 }}>
-                <span>{monthLabel}</span>
+                {(months || []).map((month) => (
+                  <option key={month.id} value={month.id}>
+                    {month.title}
+                  </option>
+                ))}
+              </select>
+              <div style={{
+                position: 'absolute', right: 12,
+                display: 'flex', pointerEvents: 'none',
+              }}>
                 <ChevronDownIcon size={12} color="rgba(60,60,67,0.6)" />
-              </button>
-
-              {pickerOpen && (
-                <div style={{
-                  position: 'absolute', top: 42, right: 0,
-                  width: 200, maxHeight: 330, overflowY: 'auto',
-                  WebkitOverflowScrolling: 'touch',
-                  borderRadius: 22, padding: 6,
-                  background: 'var(--glass-float-strong)',
-                  backdropFilter: 'var(--blur-panel)',
-                  WebkitBackdropFilter: 'var(--blur-panel)',
-                  boxShadow: 'var(--edge-panel)',
-                  animation: 'fadeInScale 0.16s var(--ease-out)',
-                  zIndex: 120,
-                }}>
-                  {(months || []).map((month) => {
-                    const selected = month.id === currentMonthId;
-                    return (
-                      <div
-                        key={month.id}
-                        className="ios-row"
-                        onClick={() => { setPickerOpen(false); if (onMonthSelect) onMonthSelect(month); }}
-                        style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          height: 44, padding: '0 12px', borderRadius: 14,
-                          cursor: 'pointer',
-                          background: selected ? 'var(--accent-soft)' : 'transparent',
-                          fontFamily: '-apple-system, "SF Pro", system-ui',
-                          fontSize: 15, color: '#000',
-                        }}>
-                        <span>{month.title}</span>
-                        <span style={{
-                          fontSize: 12, color: 'rgba(60,60,67,0.45)',
-                          marginRight: selected ? 6 : 0,
-                        }}>{(month.photos || []).length}</span>
-                        {selected && <CheckIcon size={16} color="var(--accent)" weight={2.4} />}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              </div>
             </div>
           )}
 

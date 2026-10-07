@@ -251,10 +251,103 @@ const globalAnimations = `
     font-family: -apple-system, "SF Pro", system-ui, sans-serif;
     letter-spacing: -0.01em;
   }
+
+  /* ---------- v3.0.1 原生表单控件 ---------- */
+  /* 开关：iOS 17.4+ 交给 WebKit 渲染成系统 UISwitch，其余环境回退到同造型的自绘 */
+  .ios-switch {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 51px; height: 31px; border-radius: 15.5px;
+    position: relative; flex-shrink: 0; cursor: pointer;
+    border: 0; padding: 0; margin: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(120,120,128,0.34) 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 6px rgba(22,32,72,0.12);
+    transition: background 0.22s var(--ease-drawer);
+  }
+  .ios-switch::after {
+    content: '';
+    position: absolute; top: 2px; left: 2px;
+    width: 27px; height: 27px; border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.26), 0 0 0 0.5px rgba(0,0,0,0.04);
+    transition: left 0.22s var(--ease-drawer);
+  }
+  .ios-switch:checked {
+    background: linear-gradient(180deg, rgba(62,206,102,0.98) 0%, rgba(38,164,72,0.9) 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 2px 8px rgba(20,80,40,0.24);
+  }
+  .ios-switch:checked::after { left: 22px; }
+  html[data-native-controls="1"] .ios-switch {
+    -webkit-appearance: auto;
+    appearance: auto;
+    background: none; box-shadow: none;
+    width: auto; height: auto; border-radius: 0;
+  }
+  html[data-native-controls="1"] .ios-switch::after { content: none; }
+
+  /* 滑块：同一个套路，iOS 上是系统 UISlider */
+  .ios-range {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%; height: 28px; margin: 0;
+    background: transparent; cursor: pointer;
+  }
+  .ios-range::-webkit-slider-runnable-track {
+    height: 8px; border-radius: 4px;
+    background: linear-gradient(to right,
+      #34C759 0%, #34C759 var(--range-pct, 10%),
+      rgba(60,60,67,0.14) var(--range-pct, 10%), rgba(60,60,67,0.14) 100%);
+  }
+  .ios-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #fff; margin-top: -10px; border: 0;
+    box-shadow: 0 2px 8px rgba(22,32,72,0.22);
+  }
+  html[data-native-controls="1"] .ios-range {
+    -webkit-appearance: auto;
+    appearance: auto;
+    width: 100%; height: auto;
+  }
+  html[data-native-controls="1"] .ios-range::-webkit-slider-runnable-track {
+    background: none;
+  }
+
+  /* 月份选择：外观是玻璃胶囊，选项面板交给系统（iOS 上是原生选择器） */
+  .month-select {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 34px; border: 0; margin: 0;
+    border-radius: 17px; padding: 0 30px 0 13px;
+    background: var(--glass-float-strong);
+    backdrop-filter: var(--blur-float);
+    -webkit-backdrop-filter: var(--blur-float);
+    box-shadow: var(--edge-float);
+    font-family: -apple-system, "SF Pro", system-ui, sans-serif;
+    font-size: 15px; font-weight: 500; letter-spacing: -0.2px;
+    color: #000;
+  }
 `;
 const styleEl = document.createElement('style');
 styleEl.textContent = globalAnimations;
 document.head.appendChild(styleEl);
+
+// v3.0.1：iOS 17.4 起 WebKit 会把 <input type="checkbox" role="switch"> 渲染成系统开关。
+// 命中时交回系统绘制，其它环境继续用自绘的液态玻璃外观。
+(function detectNativeControls() {
+  try {
+    const ua = navigator.userAgent || '';
+    if (!/iPhone|iPad|iPod/.test(ua)) return;
+    const match = ua.match(/OS (\d+)[_.](\d+)/);
+    if (!match) return;
+    const major = Number(match[1]);
+    const minor = Number(match[2]);
+    if (major > 17 || major === 17 && minor >= 4) {
+      document.documentElement.dataset.nativeControls = '1';
+    }
+  } catch (e) {}
+})();
 
 // JS 全局错误上报（原生侧记录日志，便于排查）
 window.addEventListener('error', function (e) {

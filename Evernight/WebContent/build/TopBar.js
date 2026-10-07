@@ -11,16 +11,6 @@ function TopBar({
   trashCount = 0,
   onTrashClick
 }) {
-  const [pickerOpen, setPickerOpen] = React.useState(false);
-  const pickerRef = React.useRef(null);
-  React.useEffect(() => {
-    if (!pickerOpen) return undefined;
-    const onDocPointer = e => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target)) setPickerOpen(false);
-    };
-    document.addEventListener('pointerdown', onDocPointer);
-    return () => document.removeEventListener('pointerdown', onDocPointer);
-  }, [pickerOpen]);
   const isDetail = !!backLabel;
   return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -77,7 +67,10 @@ function TopBar({
       fontWeight: 700,
       color: '#000',
       letterSpacing: -1.1,
-      lineHeight: 1.1
+      lineHeight: 1.1,
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap'
     }
   }, title), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -88,87 +81,35 @@ function TopBar({
       gap: 10
     }
   }, monthLabel && /*#__PURE__*/React.createElement("div", {
-    ref: pickerRef,
     style: {
-      position: 'relative'
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setPickerOpen(v => !v),
-    className: "ios-btn",
-    style: {
-      height: 34,
-      borderRadius: 17,
-      padding: '0 12px',
+      position: 'relative',
       display: 'flex',
-      alignItems: 'center',
-      gap: 5,
-      background: 'var(--glass-float-strong)',
-      backdropFilter: 'var(--blur-float)',
-      WebkitBackdropFilter: 'var(--blur-float)',
-      boxShadow: 'var(--edge-float)',
-      border: 'none',
-      cursor: 'pointer',
-      color: '#000',
-      fontFamily: '-apple-system, "SF Pro", system-ui',
-      fontSize: 15,
-      fontWeight: 500,
-      letterSpacing: -0.2,
-      whiteSpace: 'nowrap'
+      alignItems: 'center'
     }
-  }, /*#__PURE__*/React.createElement("span", null, monthLabel), /*#__PURE__*/React.createElement(ChevronDownIcon, {
-    size: 12,
-    color: "rgba(60,60,67,0.6)"
-  })), pickerOpen && /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("select", {
+    className: "month-select",
+    value: currentMonthId || '',
+    "aria-label": "\u9009\u62E9\u6708\u4EFD",
+    style: {
+      maxWidth: 156
+    },
+    onChange: e => {
+      const picked = (months || []).find(m => m.id === e.target.value);
+      if (picked && onMonthSelect) onMonthSelect(picked);
+    }
+  }, (months || []).map(month => /*#__PURE__*/React.createElement("option", {
+    key: month.id,
+    value: month.id
+  }, month.title))), /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
-      top: 42,
-      right: 0,
-      width: 200,
-      maxHeight: 330,
-      overflowY: 'auto',
-      WebkitOverflowScrolling: 'touch',
-      borderRadius: 22,
-      padding: 6,
-      background: 'var(--glass-float-strong)',
-      backdropFilter: 'var(--blur-panel)',
-      WebkitBackdropFilter: 'var(--blur-panel)',
-      boxShadow: 'var(--edge-panel)',
-      animation: 'fadeInScale 0.16s var(--ease-out)',
-      zIndex: 120
+      right: 12,
+      display: 'flex',
+      pointerEvents: 'none'
     }
-  }, (months || []).map(month => {
-    const selected = month.id === currentMonthId;
-    return /*#__PURE__*/React.createElement("div", {
-      key: month.id,
-      className: "ios-row",
-      onClick: () => {
-        setPickerOpen(false);
-        if (onMonthSelect) onMonthSelect(month);
-      },
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        height: 44,
-        padding: '0 12px',
-        borderRadius: 14,
-        cursor: 'pointer',
-        background: selected ? 'var(--accent-soft)' : 'transparent',
-        fontFamily: '-apple-system, "SF Pro", system-ui',
-        fontSize: 15,
-        color: '#000'
-      }
-    }, /*#__PURE__*/React.createElement("span", null, month.title), /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 12,
-        color: 'rgba(60,60,67,0.45)',
-        marginRight: selected ? 6 : 0
-      }
-    }, (month.photos || []).length), selected && /*#__PURE__*/React.createElement(CheckIcon, {
-      size: 16,
-      color: "var(--accent)",
-      weight: 2.4
-    }));
+  }, /*#__PURE__*/React.createElement(ChevronDownIcon, {
+    size: 12,
+    color: "rgba(60,60,67,0.6)"
   }))), /*#__PURE__*/React.createElement("button", {
     onClick: onTrashClick,
     className: "ios-btn",

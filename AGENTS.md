@@ -1,7 +1,7 @@
 # Album Cleaner · 项目记忆
 
 > 本文件是项目的长期记忆，写给后续的协作者与 AI 会话。改动项目前先读这一份。
-> 最近更新：2026-10-05（**v3.0 未提交**：三 tab 重构、目录由 `Slidebox/` 改名为 `Evernight/`；上一个已提交版本是 `7f12987 v2.7`）
+> 最近更新：2026-10-07（v3.0.1：表单控件改为走系统原生渲染；上一个已提交版本是 `539b93b v3.0`）
 
 ## 1. 这是什么
 
@@ -98,6 +98,13 @@ rg -n --fixed-strings "background: '#000'" Evernight\WebContent\components
 
 **图标（v3.0）**：`Icons.jsx` 是唯一的图标来源，路径按 SF Symbols 的线条规格手写在 24×24 网格上，统一 round cap / round join。不要再往组件里塞一次性 `<svg>`。
 
+**原生表单控件（v3.0.1）**：能用系统控件的地方一律交回系统，不再自绘。
+
+- 开关是 `<input type="checkbox" role="switch" class="ios-switch">`。iOS 17.4 起 WebKit 会把它渲染成系统 `UISwitch`；`main.jsx` 里的 `detectNativeControls()` 命中时给 `<html>` 加 `data-native-controls="1"`，CSS 随即把 `appearance` 交回系统。桌面与旧系统走 `.ios-switch` 里同造型的液态玻璃回退。
+- 「每轮数量」滑块是 `<input type="range" class="ios-range">`，iOS 上是系统 `UISlider`，其它环境用 `--range-pct` 控制自绘填充。
+- 顶部月份选择是原生 `<select class="month-select">`，外观仍是玻璃胶囊，选项面板交给系统（iOS 上是原生选择器）。
+- 改这些控件时注意：`appearance: none` 会覆盖原生外观，回退样式必须写在**非** `data-native-controls` 分支里。
+
 ## 6. 预览工作流（Previews/）
 
 约定：**先出预览图 → 使用者拍板 → 再改项目文件**。`Previews/` 已加入 `.gitignore`，只留本地。
@@ -123,7 +130,9 @@ Previews/
 
 ## 7. 当前状态
 
-- **v3.0（未提交）**：三 tab 重构；目录改名 `Evernight/`；`WebContent/components/` 重写为 11 个组件（删掉 `HomePage` 与 `SettingsPage`）；Swift 侧新增 `creationDate` / `fileSize` / 相簿 `cover` / `getAlbumAssets` / `getStorageInfo`；版本号四处升到 3.0（构建号 10→11）。`compile-jsx.js`、`project.yml`（含 `INFOPLIST_FILE`）、`README.md` 的路径已同步改为 `Evernight`。
+- **v3.0.1（2026-10-07）**：开关、滑块、月份选择三个控件改成原生表单元素（iOS 上由系统渲染，桌面走自绘回退）；`main.jsx` 增加 iOS 版本检测；卡片照片区域加了极浅底色，浅色 mock 图不再和卡片糊在一起。
+- **待真机确认**：`role="switch"` 的系统渲染需要 iOS 17.4+ 的 WebKit 支持，本机只有无头 Chrome，验证方式是用 iPhone UA 跑一次确认 `data-native-controls` 命中（已确认命中）。真机上若看到的是蓝勾选框而不是系统开关，说明该 WebKit 没启用这套渲染，把 `detectNativeControls` 的判断收紧或退回自绘。
+- **v3.0（已提交 `539b93b`）**：三 tab 重构；目录改名 `Evernight/`；`WebContent/components/` 重写为 11 个组件（删掉 `HomePage` 与 `SettingsPage`）；Swift 侧新增 `creationDate` / `fileSize` / 相簿 `cover` / `getAlbumAssets` / `getStorageInfo`。`compile-jsx.js`、`project.yml`（含 `INFOPLIST_FILE`）、`README.md` 的路径已同步改为 `Evernight`。
 - Swift 侧本机没有 Xcode，**未做编译验证**；网页侧已用无头 Chrome 实测三个 tab 的渲染。
 - 最新提交 `7f12987 v2.7`：版本号统一（`project.yml` 2.7、构建号 9→10、`package.json`、设置页「关于」文案）、`.agents/skills/` 清空、新增 `skills-lock.json`。工作区干净，无未提交改动。
 - 看 `git log` 别按版本号推断先后：`v2.6` 出现过两次，`v2.6.1` 夹在它们与 `v2.7` 之间。

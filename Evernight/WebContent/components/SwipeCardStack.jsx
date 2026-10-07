@@ -51,7 +51,8 @@ function PhotoCard({ photo, onTap, themeColor = '#002FA7', autoPlayLive = true, 
       style={{
         position: 'absolute',
         inset: 0,
-        background: 'transparent',
+        // 照片 contain 后左右/上下会留白，铺一层极浅的灰让照片区域和卡片分得开
+        background: 'rgba(60,60,67,0.05)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -122,7 +123,7 @@ function PhotoCard({ photo, onTap, themeColor = '#002FA7', autoPlayLive = true, 
       {mockVideoAnim && (
         <div style={{
           position: 'absolute', left: 0, right: 0, bottom: 0, height: 14, zIndex: 2,
-          background: 'rgba(0,0,0,0.45)',
+          background: 'rgba(0,0,0,0.28)',
         }}>
           <div style={{
             height: '100%',

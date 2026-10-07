@@ -67,45 +67,27 @@ function formatGB(bytes) {
   return Math.round(bytes / (1024 * 1024 * 1024)) + ' GB';
 }
 
-// iOS 液态玻璃开关：轨道上亮下暗，滑块带柔和阴影
+// v3.0.1：开关用原生 checkbox + role="switch"。
+// iOS 17.4+ 的 WebKit 会把它渲染成系统 UISwitch（`html[data-native-controls]` 由 main.jsx 置位），
+// 桌面和旧系统走 .ios-switch 里那套同造型的液态玻璃回退。
 function GlassSwitch({
   value,
   onChange,
-  disabled = false
+  disabled = false,
+  label
 }) {
-  return /*#__PURE__*/React.createElement("button", {
-    "aria-pressed": !!value,
-    onClick: e => {
-      e.stopPropagation();
-      if (!disabled && onChange) onChange(!value);
-    },
-    style: {
-      width: 51,
-      height: 31,
-      borderRadius: 15.5,
-      border: 'none',
-      padding: 0,
-      cursor: disabled ? 'default' : 'pointer',
-      flexShrink: 0,
-      position: 'relative',
-      opacity: disabled ? 0.5 : 1,
-      background: value ? 'linear-gradient(180deg, rgba(62,206,102,0.98) 0%, rgba(38,164,72,0.9) 100%)' : 'linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(120,120,128,0.34) 100%)',
-      boxShadow: value ? 'inset 0 1px 0 rgba(255,255,255,0.6), 0 2px 8px rgba(20,80,40,0.24)' : 'inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 6px rgba(22,32,72,0.12)',
-      transition: 'background 0.22s var(--ease-drawer)'
+  return /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    role: "switch",
+    className: "ios-switch",
+    checked: !!value,
+    disabled: disabled,
+    "aria-label": label,
+    onClick: e => e.stopPropagation(),
+    onChange: e => {
+      if (!disabled && onChange) onChange(e.target.checked);
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: 'absolute',
-      top: 2,
-      left: value ? 22 : 2,
-      width: 27,
-      height: 27,
-      borderRadius: '50%',
-      background: '#fff',
-      boxShadow: '0 1px 4px rgba(0,0,0,0.26), 0 0 0 0.5px rgba(0,0,0,0.04)',
-      transition: 'left 0.22s var(--ease-drawer)'
-    }
-  }));
+  });
 }
 function SectionLabel({
   children
@@ -195,7 +177,8 @@ function MineSwitchRow({
     }
   }, label), /*#__PURE__*/React.createElement(GlassSwitch, {
     value: value,
-    onChange: onChange
+    onChange: onChange,
+    label: label
   }), !isLast && /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
@@ -220,6 +203,7 @@ function MinePage({
   trashCount = 0,
   onTrashClick
 }) {
+  const [batchSize, setBatchSize] = React.useState(30);
   const cleanedCount = trashPhotos.length;
   const cleanedBytes = trashPhotos.reduce((sum, photo) => sum + (photo.fileSize || 0), 0);
   const usedRatio = storage && storage.total > 0 ? storage.used / storage.total : 0;
@@ -447,38 +431,23 @@ function MinePage({
   }, "\u6BCF\u8F6E\u6570\u91CF"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 17,
-      fontWeight: 600
+      fontWeight: 600,
+      fontVariantNumeric: 'tabular-nums'
     }
-  }, "30")), /*#__PURE__*/React.createElement("div", {
+  }, batchSize)), /*#__PURE__*/React.createElement("input", {
+    type: "range",
+    className: "ios-range",
+    min: "10",
+    max: "300",
+    step: "10",
+    value: batchSize,
+    "aria-label": "\u6BCF\u8F6E\u6570\u91CF",
     style: {
-      position: 'relative',
-      height: 8,
-      borderRadius: 4,
-      marginTop: 16,
-      background: 'rgba(60,60,67,0.14)'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: 'absolute',
-      left: 0,
-      width: '10%',
-      height: 8,
-      borderRadius: 4,
-      background: '#34C759'
-    }
+      '--range-pct': (batchSize - 10) / 290 * 100 + '%',
+      marginTop: 12
+    },
+    onChange: e => setBatchSize(Number(e.target.value))
   }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: 'absolute',
-      left: '10%',
-      top: -10,
-      marginLeft: -14,
-      width: 28,
-      height: 28,
-      borderRadius: '50%',
-      background: '#fff',
-      boxShadow: '0 2px 8px rgba(22,32,72,0.22)'
-    }
-  })), /*#__PURE__*/React.createElement("div", {
     className: "sf-body",
     style: {
       fontSize: 12.5,
@@ -587,7 +556,7 @@ function MinePage({
     style: PANEL_STYLE
   }, /*#__PURE__*/React.createElement(MineRow, {
     label: "\u5173\u4E8E",
-    value: "Evernight 3.0",
+    value: "Evernight 3.0.1",
     disabled: true
   }), /*#__PURE__*/React.createElement(MineRow, {
     label: "\u64CD\u4F5C\u6307\u5F15",
@@ -616,7 +585,7 @@ function MinePage({
       color: 'rgba(60,60,67,0.4)',
       marginTop: 6
     }
-  }, "Evernight 3.0 (11)"))));
+  }, "Evernight 3.0.1 (12)"))));
 }
 Object.assign(window, {
   MinePage,
