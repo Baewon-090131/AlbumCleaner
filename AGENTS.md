@@ -1,58 +1,77 @@
 # Album Cleaner · 项目记忆
 
 > 本文件是项目的长期记忆，写给后续的协作者与 AI 会话。改动项目前先读这一份。
-> 最近更新：2026-10-07（v3.0.1：表单控件改为走系统原生渲染；上一个已提交版本是 `539b93b v3.0`）
+> 最近更新：2026-10-08（**v4.0：UI 层整体改成 SwiftUI 原生**；上一个已提交版本是 `0156ce2 v3.0.1`）
 
 ## 1. 这是什么
 
 一款 iOS 相册整理应用，交互参考 Slidebox：
 
-- **信息架构（v3.0）**：三个 tab——整理 / 相簿 / 我的，顶部统一是 app 标题「Evernight」+ 档案箱入口，底部是液态玻璃 tab 栏。
-- **形态**：原生 Swift 外壳（`WKWebView`）+ 内嵌 React 网页 UI。网页资源全部离线内置，运行时不需要网络、不需要 Babel。
-- **已接入真实照片库**（Photos framework）。无原生桥接时自动降级为模拟数据，因此网页部分可以脱离 iOS 单独在浏览器里跑。
-- **核心手势**：上滑删除 / 左滑下一张 / 右滑撤回 / 下滑收藏；删除先进应用内回收站。
-- **构建**：GitHub Actions 出 IPA（`.github/workflows/build.yml`），或本地 `xcodegen generate` + Xcode。最低 iOS 14.0。
+- **形态（v4.0 起）**：**纯 SwiftUI 原生应用**，没有 WebView、没有 React。相册数据直接来自 Photos framework。
+- **信息架构**：三个 tab——整理 / 相簿 / 我的。顶部用系统 `NavigationStack` 的大标题与工具栏，底部用系统 `TabView`。整理页的月份切换是系统 `Menu`，开关是 `Toggle`，滑块是 `Slider`，「我的」整页是 `List(.insetGrouped)`。
+- **核心手势**：上滑删除 / 左滑下一张 / 右滑撤回 / 下滑收藏（`DragGesture`）；删除先进应用内回收站，回收站里的「彻底删除」才动系统相册。
+- **构建**：GitHub Actions 出 IPA（`.github/workflows/build.yml`），或本地 `xcodegen generate` + Xcode。**最低 iOS 17.0**（`@Observable`、`ContentUnavailableView` 等要求）。
+- **`Evernight/WebContent/` 是 v3 的网页实现，v4.0 起不再参与构建**（`project.yml` 已移除引用），保留只作对照。它可以用浏览器直接打开预览设计，见第 6 节。
 
 ## 2. 目录结构
 
 ```
 Evernight/
-  AppDelegate.swift              应用入口
-  ViewController.swift           WKWebView 配置、photo:// 与 video:// scheme、photoApp JS 桥
-  PhotoLibraryManager.swift      权限 / 相册 / 缩略图缓存 / 删除与收藏 / 预取
-  LivePhotoViewController.swift  Live Photo 播放
-  Info.plist                     权限文案、状态栏样式、仅竖屏（iPad 允许横屏）
-  WebContent/
-    index.html                   入口：<style> 里的 --wall 壁纸、NativeBridge、按序加载 build/*.js
-    data.js                      DataLoader（原生优先）+ MockData（模拟月份/相簿/渐变图）
-    vendor/                      React 18 UMD（离线）
-    components/*.jsx             **源码，改这里**
-    build/*.js                   **编译产物，入库；必须与 components 同步**
-compile-jsx.js                   JSX → build 的预编译器
-project.yml / package.json / .github/  构建与 CI 配置
-Previews/                        预览产物（已 gitignore，见第 6 节）
+  EvernightApp.swift             入口 + 权限门（RootView）
+  Info.plist                     权限文案、启动屏、方向、仅浅色
+  Models/
+    LibraryModels.swift          PhotoItem / MonthSection / AlbumItem / StorageInfo / Format
+  Services/
+    PhotoLibraryService.swift    @Observable 数据源：权限、按月分组、相簿、回收站、写入
+    ThumbnailLoader.swift        缩略图异步加载 + NSCache
+  Design/
+    Theme.swift                  颜色 / 圆角令牌 + 壁纸 + Color(hex:)
+    GlassSurface.swift           Liquid Glass 适配层 + ContentPanel（内容层材质）
+  Components/
+    AsyncThumbnail.swift         缩略图视图
+    ProgressHeader.swift         整理页顶部进度胶囊
+    SortDeck.swift               卡片区 + 单卡 + 手势
+    SortActionBar.swift          底部操作岛
+    ToastBanner.swift            临时提示
+  Screens/
+    MainTabView.swift            系统 TabView + 三个 tab
+    SortScreen.swift             整理页（相簿详情复用）
+    AlbumsScreen.swift           相簿网格
+    MineScreen.swift             我的（List + Toggle + Slider）
+    TrashScreen.swift            回收站 + 全屏查看
+  WebContent/                    v3 的网页实现，v4.0 起不参与构建（见第 1 节）
+project.yml / .github/          构建与 CI 配置
+compile-jsx.js / package.json   网页版遗留工具链，v4.0 起不再需要
+Previews/                       预览产物（已 gitignore，见第 6 节）
 ```
 
-网页侧组件分工（v3.0）：`App`（tab 状态机 + 页内推入转场 + 数据流）、`TopBar`（标题 / 月份胶囊 / 档案箱）、`BottomTabBar`（整理 · 相簿 · 我的）、`Icons`（按 SF Symbols 线条规格绘制的图标集）、`SortPage`（整理页，相簿详情复用它）、`SwipeCardStack`（单卡 + 手势 + 日期体积角标）、`SortBottomBar`（四按钮操作岛 / 相簿展开态）、`AlbumsPage`（两列相簿网格）、`TrashPage`（回收站）、`MinePage`（数据卡 + 偏好 + 主题色）、`main`（全局令牌与关键帧 + 错误边界 + 挂载）。
+原生化用到的系统控件：`NavigationStack`（大标题 + 工具栏）、`TabView`（底部 tab）、`Menu`（月份）、`Toggle`、`Slider`、`List(.insetGrouped)`、`ProgressView`、`ContentUnavailableView`、`confirmationDialog`（回收站操作）、`fullScreenCover`（全屏看照片）。
 
-v2.x 的 `HomePage`（月份列表）和 `SettingsPage` 已在 v3.0 删除：月份改由顶部胶囊弹层选择，设置并入「我的」。
+v3 的网页版组件（`TopBar` / `BottomTabBar` / `SortPage` / `SwipeCardStack` / `SortBottomBar` / `AlbumsPage` / `TrashPage` / `MinePage` / `Icons`）仍留在 `WebContent/components/`，只作对照与设计基线，不再被 App 加载。
 
 ## 3. 改代码的流程（必须遵守）
 
-1. 只改 `WebContent/components/*.jsx`。
-2. 跑 `node compile-jsx.js` 生成 `WebContent/build/*.js`（首次需 `npm i`；只依赖 `@babel/core` 与 `@babel/preset-react`）。
-3. 跑 `node --check` 校验 8 个产物。
-4. **`build/` 是入库文件**：忘记重编译，应用跑的就是旧代码。
+v4.0 起 UI 全在 Swift 里，改完直接编译：
 
-静态自检命令（应全部为空或符合预期）：
+1. 只改 `Evernight/` 下的 `.swift`。`WebContent/` 是 v3 遗留，改了不影响 App。
+2. 新增文件不用改配置——`project.yml` 里 `sources: Evernight` 会整目录纳入。
+3. 有 Xcode 时：`xcodegen generate` 然后 `xcodebuild -scheme AlbumCleaner -sdk iphonesimulator build`。
+4. 没有 Xcode（比如 Windows）时：推到 GitHub 让 `.github/workflows/build.yml` 在 macos-latest 上编译，看 Actions 日志。
+5. 单个视图文件超过约 300 行就拆成独立 `View` 类型（见第 9 节）。
+
+静态自检（应全部为空或符合预期）：
 
 ```powershell
-rg -n "transition: all" Evernight\WebContent
-rg -n "pagePushEnter|pagePopLeave" Evernight\WebContent   # 废弃的转场关键帧，应为空
-rg -n --fixed-strings "background: '#000'" Evernight\WebContent\components
+rg -n "WKWebView|evaluateJavaScript|photoApp" Evernight --glob "*.swift"   # 应为空：WebView 层已删除
+rg -n "WebContent" project.yml                                             # 应为空：网页资源不再打包
+rg -n "^import UIKit" Evernight --glob "*.swift"                           # 只允许缩略图相关的两个文件
 ```
 
+网页版（v3）如果还要改：流程是改 `WebContent/components/*.jsx` → `node compile-jsx.js` → `node --check build/*.js`；`build/` 是入库文件，忘了重编译浏览器里跑的就是旧代码。
+
 ## 4. 设计系统（iOS 27「液态玻璃 2.0」· 仅浅色）
+
+**v4.0 起这套令牌搬到了 Swift**：颜色与圆角在 `Design/Theme.swift`，壁纸是 `Theme.wall`；材质在 `Design/GlassSurface.swift`——`glassSurface(cornerRadius:clear:tint:interactive:)` 内部走 iOS 26 的 `glassEffect(_:in:)`，更早系统退到 `.ultraThinMaterial`。下面这些 CSS 变量是 v3 网页版的对应实现，**数值仍是最新依据**，改设计时两边一起看。
 
 **材质分层（v3.0 按 Apple HIG 校正）**：Liquid Glass 只用于浮在内容之上的功能层——顶部栏、进度条、操作岛、tab 栏、月份胶囊；照片卡片、相簿卡片、设置分组这些内容层改用更实的白色面板（新增令牌 `--glass-solid` = `rgba(255,255,255,.72)`）。**不要把浅色半透明叠在浅色半透明上**，可读性会塌，「我的」页分组发闷就是这个原因。
 
@@ -76,6 +95,18 @@ rg -n --fixed-strings "background: '#000'" Evernight\WebContent\components
 **无障碍**：`main.jsx` 内的 `@media (prefers-reduced-motion: reduce)` 块把位移类关键帧降级成纯透明度过渡（含转场的四组揭示/位移关键帧）；`SwipeCardStack` 与 `App` 里 JS 直驱的动效也各自做了同样判断。
 
 ## 5. 关键机制与坑
+
+**v4.0 SwiftUI 机制**：
+
+- 数据源是 `PhotoLibraryService`（`@Observable` + `@MainActor`），在 `RootView` 用 `@State` 持有，往下用 `.environment(library)` 传；视图不自己存 PHAsset 列表副本。
+- 缩略图走 `ThumbnailLoader`（NSCache + `withCheckedContinuation` 包 `PHImageManager`，`degraded` 中间帧直接丢弃），视图侧是 `AsyncThumbnail` + `.task(id:)`。
+- 整理页卡片用 `DragGesture` 跟手，90pt 阈值判方向，飞出动画结束后才回调改状态；卡片尺寸按 `PhotoItem.ratio` 算并夹在 0.32–3.2。
+- 相簿详情复用 `SortScreen(album:)`：动作集只传 `[.undo, .delete, .next]`，标题用相簿名，`navigationBarTitleDisplayMode(.inline)`。
+- 「撤回」只记删除：`undoStack` 存 `(photo, index)`，撤回时让 service 按创建日期把照片插回原月份，再把游标退回去。
+- 主题色走 `@AppStorage("ac_theme")` + `Color(hex:)`，`MainTabView` 用 `.tint` 应用；`@AppStorage` 直接落 UserDefaults，不再有 localStorage。
+- 相簿照片只在 `.task(id: album?.id)` 里拉一次。**别把它写成计算属性**——那会让每次重绘都遍历整个相簿。
+
+以下为 **v3 网页版**机制，v4.0 起不再参与构建，保留作对照。
 
 **页面转场（易错点）**：`App.jsx` 每个页面渲染成两层——外层是**不透明壁纸背板**并负责 `clip-path` 揭示，内层承载页面内容并负责位移，两者同曲线同 360ms，380ms 后收栈。
 
@@ -130,6 +161,8 @@ Previews/
 
 ## 7. 当前状态
 
+- **v4.0（未提交）**：UI 层从 WKWebView + React 整体改成 SwiftUI（16 个 Swift 文件，约 1550 行）。删掉了 `AppDelegate` / `ViewController` / `LivePhotoViewController` / `PhotoLibraryManager`；新增 `Models` / `Services` / `Design` / `Components` / `Screens`。`project.yml` 不再打包 `WebContent`，最低系统从 iOS 14 提到 **iOS 17**，版本号 4.0（构建号 13）。`Info.plist` 的显示名改成 Evernight，并去掉了已无必要的 `NSAllowsArbitraryLoads`。
+- **本机验证限制**：开发机是 Windows、没有 Xcode 与 Swift 工具链，**Swift 代码没有编译过**，只做了结构与括号的人工复核。真正的编译验证要靠 CI（macos-latest）。
 - **v3.0.1（2026-10-07）**：开关、滑块、月份选择三个控件改成原生表单元素（iOS 上由系统渲染，桌面走自绘回退）；`main.jsx` 增加 iOS 版本检测；卡片照片区域加了极浅底色，浅色 mock 图不再和卡片糊在一起。
 - **待真机确认**：`role="switch"` 的系统渲染需要 iOS 17.4+ 的 WebKit 支持，本机只有无头 Chrome，验证方式是用 iPhone UA 跑一次确认 `data-native-controls` 命中（已确认命中）。真机上若看到的是蓝勾选框而不是系统开关，说明该 WebKit 没启用这套渲染，把 `detectNativeControls` 的判断收紧或退回自绘。
 - **v3.0（已提交 `539b93b`）**：三 tab 重构；目录改名 `Evernight/`；`WebContent/components/` 重写为 11 个组件（删掉 `HomePage` 与 `SettingsPage`）；Swift 侧新增 `creationDate` / `fileSize` / 相簿 `cover` / `getAlbumAssets` / `getStorageInfo`。`compile-jsx.js`、`project.yml`（含 `INFOPLIST_FILE`）、`README.md` 的路径已同步改为 `Evernight`。
@@ -151,6 +184,10 @@ Previews/
 - `index.html` 的 `maximum-scale=1 / user-scalable=no` 是否放开——站内没有输入框，属产品决策，需要单独拍板。
 
 **已知但未处理的摩擦点**
+- **v4.0 待办**：视频与 Live Photo 目前只按静态缩略图显示，还没接 `AVPlayer` 播放（v3 网页版有）。真机上要看播放效果得补这一块。
+- **v4.0 待办**：整理页的「本轮已看」「已收藏」两个统计仍是写死的 0，没有真实计数。
+- **v4.0 待办**：`WebContent/` 与 `compile-jsx.js` / `package.json` 已无用途，确认不再需要后可以删。
+- **v4.0 待办**：深色模式仍未实现（当前一律浅色壁纸）。
 - `SortPage` 的顶部进度条与全屏视频进度条仍动画 `width`（可改 `transform: scaleX()`，同期其它地方已用 `scaleX`）。
 - `SwipeHint` 用关键帧入场（可改 transition，避免快速反复触发时从零重来）。
 - 组件函数签名里的 `themeColor = '#007AFF'` 默认值仍是旧蓝，实际由 `App` 传入北洋蓝，仅作兜底。
@@ -167,38 +204,41 @@ Previews/
 - 信息架构、文案、手势逻辑与既有动效曲线不经要求不改。
 - Swift 侧改动前先读 `.agents/skills/write-swift`；网页动效改动前先读 `animate` 与 `apple-design`。
 
-## 10. 项目全景速查（2026-10-05 · v3.0）
+## 10. 项目全景速查（2026-10-08 · v4.0 SwiftUI）
 
 **文件规模**（不含 `node_modules/` 与 `.git/`）
 
 | 文件 | 行数 | 职责 |
 | --- | --- | --- |
-| `Evernight/PhotoLibraryManager.swift` | 407 | 权限、按月份分组、相簿、缩略图缓存与预取、删除 / 收藏 / 加相簿、视频与 Live 播放、文件大小、存储信息 |
-| `Evernight/ViewController.swift` | 264 | WKWebView 配置、`photo://` 与 `video://` scheme、`photoApp` 桥、JSON 回推、PNG 二级缓存（50MB） |
-| `Evernight/WebContent/components/*.jsx` | 2837 合计 | 11 个源文件，见第 2 节分工表 |
-| `Evernight/WebContent/build/*.js` | 4148 合计 | 11 个编译产物，入库 |
-| `Evernight/WebContent/data.js` | 164 | DataLoader（原生优先）+ MockData |
-| `Evernight/WebContent/index.html` | 153 | `--wall` 与 `--glass-solid`、`NativeBridge`（含 getAlbumAssets / getStorageInfo）、按序加载 `build/*.js` |
-| `Evernight/Info.plist` | 59 | 权限文案、状态栏、方向 |
-| `Evernight/LivePhotoViewController.swift` | 50 | Live Photo 播放控制器 |
-| `project.yml` | 45 | xcodegen 配置 |
-| `compile-jsx.js` | 32 | JSX 预编译（无运行时 Babel） |
-| `Evernight/AppDelegate.swift` | 15 | 应用入口 |
+| `Evernight/Screens/SortScreen.swift` | 257 | 整理页（相簿详情复用）+ 动作 + 月份菜单 |
+| `Evernight/Screens/MineScreen.swift` | 235 | 我的：List / Toggle / Slider / 主题色 |
+| `Evernight/Services/PhotoLibraryService.swift` | 222 | 权限、按月分组、相簿、回收站、写入 |
+| `Evernight/Components/SortDeck.swift` | 179 | 卡片区 + 单卡 + DragGesture |
+| `Evernight/Screens/TrashScreen.swift` | 115 | 回收站 + 全屏查看 |
+| `Evernight/Screens/AlbumsScreen.swift` | 83 | 相簿网格 |
+| `Evernight/EvernightApp.swift` | 73 | 入口 + 权限门 |
+| `Evernight/Models/LibraryModels.swift` | 72 | PhotoItem / MonthSection / AlbumItem / StorageInfo / Format |
+| `Evernight/Design/Theme.swift` | 57 | 颜色圆角令牌 + 壁纸 + Color(hex:) |
+| `Evernight/Design/GlassSurface.swift` | 50 | Liquid Glass 适配 + ContentPanel |
+| `Evernight/Components/ProgressHeader.swift` | 46 | 整理页进度胶囊 |
+| `Evernight/Services/ThumbnailLoader.swift` | 46 | 缩略图加载 + NSCache |
+| `Evernight/Components/SortActionBar.swift` | 43 | 底部操作岛 |
+| `Evernight/Screens/MainTabView.swift` | 34 | 系统 TabView |
+| `Evernight/Components/AsyncThumbnail.swift` | 26 | 缩略图视图 |
+| `Evernight/Components/ToastBanner.swift` | 17 | 临时提示 |
+| `project.yml` | 44 | xcodegen 配置（部署目标 iOS 17） |
+| `Evernight/Info.plist` | 52 | 权限文案、启动屏、方向（v4.0 去掉了 ATS 例外） |
 
-**JS 与 Swift 的桥接对照**（消息处理器统一为 `photoApp`）
+**数据流**（v4.0 没有 JS 桥了）
 
-| JS 调用 | Swift 处理 | 回执 |
-| --- | --- | --- |
-| `getData` | `ViewController.injectPhotoData()` | 回推 `NativeBridge.receiveData(...)` |
-| `getAlbumAssets(albumId, cb)` | `PhotoLibraryManager.fetchAlbumAssets` | 回推 `NativeBridge.receiveAlbumAssets(list)` |
-| `getStorageInfo(cb)` | `PhotoLibraryManager.storageInfo()` | 回推 `NativeBridge.receiveStorage(info)` |
-| `deleteAssets` | `PhotoLibraryManager.deleteAssets` | `onDeleteComplete(success)` |
-| `setFavorite` | `PhotoLibraryManager.setFavorite` | `onFavoriteComplete(success)` |
-| `addToAlbum` | `PhotoLibraryManager.addToAlbum` | `onAddToAlbumComplete(success)` |
-| `playMedia` | `PhotoLibraryManager.playMedia`（视频 / Live 原生全屏） | 无 |
-| `jsError` | `print("SLIDEBOX_JS: ...")` | 无 |
-| `photo://` | 取缩略图，带 PNG 二级缓存 | 直接返回图像数据 |
-| `video://` | 取视频数据与 Live 数据流 | 直接返回媒体数据 |
+| 界面动作 | 落到哪里 |
+| --- | --- |
+| 上滑删除 | `PhotoLibraryService.moveToTrash` → 只进应用内回收站，不动系统相册 |
+| 回收站「彻底删除」 | `deleteFromSystem` → `PHPhotoLibrary.performChanges` + `PHAssetChangeRequest.deleteAssets` |
+| 下滑收藏 | `setFavorite` → `PHAssetChangeRequest.isFavorite` |
+| 操作岛「相簿」 | 原生 `confirmationDialog` 列相簿 → `add(_:to:)` → `PHAssetCollectionChangeRequest` |
+| 缩略图 | `ThumbnailLoader` → `PHCachingImageManager.requestImage`，按 `identifier|size` 缓存 |
+| 存储占用 | `readStorage` → volumeTotalCapacity / volumeAvailableCapacityForImportantUsage |
 
 **构建链路**
 
@@ -208,19 +248,15 @@ Previews/
 | 2 | `xcodebuild -scheme AlbumCleaner -configuration Release -sdk iphoneos`（CI 里不签名） |
 | 3 | 把 `.app` 装进 `Payload/` 再压成 `AlbumCleaner.ipa` |
 | 4 | Actions artifact `AlbumCleaner-ipa`（保留 30 天）；失败时上传 `build.log` |
-| 网页侧 | `npm i` → `node compile-jsx.js` → `node --check build/*.js` |
-| 截图夹具 | 无头 Chrome 窗口小于约 500px 会被强制放大，用 `Previews/_shot.html?tab=sort|albums|mine`（iframe 390×844 + zoom 2 + 注入 safe-area） |
+| 网页版（v3 遗留，仅预览用） | `node compile-jsx.js` + `Previews/_shot.html?tab=sort\|albums\|mine`（无头 Chrome 窗口小于 500px 会被强制放大，必须走夹具） |
 
 **本轮核对结论**
 
 | 项 | 状态 |
 | --- | --- |
-| `transition: all` | 全仓库为空 |
-| `pagePushEnter` / `pagePopLeave` | 已清除 |
-| `background: '#000'` | 1 处（`SortPage.jsx` 全屏播放底色），属预期 |
-| 版本号四处 | `project.yml` 3.0 / 构建号 11、`package.json` 3.0、`MinePage.jsx` 的「关于」与版本行，`build/` 已同步 |
-| `.agents/skills/` | 空目录，正文已由 v2.7 提交删除 |
-| 触感反馈 / 深色模式 / 手势动量 | 均未实现，与第 8 节一致 |
-| `SortPage` 进度条 | 仍动画 `width`，第 8 节的摩擦点仍存在 |
-| Swift 编译 | 本机无 Xcode，未验证；网页侧已用无头 Chrome 实测三个 tab |
+| WebView 残留 | `Evernight/**/*.swift` 里已无 `WKWebView` / `photoApp` / `evaluateJavaScript` |
+| 打包范围 | `project.yml` 不再引用 `WebContent`，网页资源不进 bundle |
+| 版本号 | `project.yml` 4.0 / 构建号 13；`package.json` 是网页版遗留，不参与 App 版本 |
+| Swift 编译 | **本机无 Xcode，未验证**；只做了结构与括号复核，编译要看 CI |
+| 视频 / Live Photo | v4.0 只显示缩略图，尚未接播放（见第 8 节） |
 | `.gitignore` 生效项 | `Previews/`、`node_modules/`、`package-lock.json` |
