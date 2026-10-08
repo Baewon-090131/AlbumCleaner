@@ -63,7 +63,7 @@ private struct PermissionStateView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("重新检查", action: retry)
-                .buttonStyle(.borderedProminent)
+                .glassButtonStyle(prominent: true)
                 .tint(Theme.accent)
         }
         .padding(24)

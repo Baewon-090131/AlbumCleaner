@@ -43,6 +43,8 @@ struct SortScreen: View {
 
     @Environment(PhotoLibraryService.self) private var library
     @AppStorage("ac_theme") private var themeHex = "#002FA7"
+    /// 操作岛的玻璃形态在「四按钮 ↔ 三按钮」之间变形时共用这个命名空间
+    @Namespace private var actionNamespace
 
     @State private var selectedMonthID: String?
     @State private var index = 0
@@ -95,6 +97,7 @@ struct SortScreen: View {
                 actions: actions,
                 canUndo: !undoStack.isEmpty,
                 hasPhoto: current != nil,
+                namespace: actionNamespace,
                 onAction: handleAction
             )
         }

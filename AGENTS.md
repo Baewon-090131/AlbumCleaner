@@ -71,7 +71,18 @@ rg -n "^import UIKit" Evernight --glob "*.swift"                           # 只
 
 ## 4. 设计系统（iOS 27「液态玻璃 2.0」· 仅浅色）
 
-**v4.0 起这套令牌搬到了 Swift**：颜色与圆角在 `Design/Theme.swift`，壁纸是 `Theme.wall`；材质在 `Design/GlassSurface.swift`——`glassSurface(cornerRadius:clear:tint:interactive:)` 内部走 iOS 26 的 `glassEffect(_:in:)`，更早系统退到 `.ultraThinMaterial`。下面这些 CSS 变量是 v3 网页版的对应实现，**数值仍是最新依据**，改设计时两边一起看。
+**v4.0 起这套令牌搬到了 Swift**：颜色与圆角在 `Design/Theme.swift`，壁纸是 `Theme.wall`；玻璃在 `Design/GlassSurface.swift`。下面这些 CSS 变量是 v3 网页版的对应实现，**数值仍是最新依据**，改设计时两边一起看。
+
+**Liquid Glass 的用法（2026-10-08 修正过一次，别再退回旧写法）**：
+
+- 用系统的 `glassEffect(_:in:)`，不要自己拿 `.ultraThinMaterial` 拼。
+- **多个玻璃元素要包在 `GlassGroup`（`GlassEffectContainer`）里**，相邻形状会自己融合成一整块。操作岛就是这么做的：每个按钮各自一块玻璃，靠容器合并成一条岛。
+- **不要再给那组玻璃套一层玻璃外框**。玻璃叠玻璃既不符合 HIG，文字对比度也会塌——第一版就是这么写错的。
+- 会变形的玻璃用 `glassSurface(cornerRadius:morphID:in:)`，同一个 `@Namespace` 下相同 id 的形状会平滑变形（操作岛四按钮 ↔ 相簿详情三按钮）。
+- 可点的地方要 `.interactive()`；静态容器（加载页、进度条）不要加。
+- 按钮优先 `.glassButtonStyle()`（内部是 `.glass` / `.glassProminent`），低版本自动退 `.bordered`。
+- `.clear` 变体只在玻璃压在照片、视频这类视觉丰富的背景上时用；当前没有这种场景，所以没用。
+- 内容层（照片卡片、分组、相簿网格）按 HIG **继续用 `ContentPanel` 的材质**，不要改成 Liquid Glass。
 
 **材质分层（v3.0 按 Apple HIG 校正）**：Liquid Glass 只用于浮在内容之上的功能层——顶部栏、进度条、操作岛、tab 栏、月份胶囊；照片卡片、相簿卡片、设置分组这些内容层改用更实的白色面板（新增令牌 `--glass-solid` = `rgba(255,255,255,.72)`）。**不要把浅色半透明叠在浅色半透明上**，可读性会塌，「我的」页分组发闷就是这个原因。
 
@@ -188,6 +199,7 @@ Previews/
 - **v4.0 待办**：整理页的「本轮已看」「已收藏」两个统计仍是写死的 0，没有真实计数。
 - **v4.0 待办**：`WebContent/` 与 `compile-jsx.js` / `package.json` 已无用途，确认不再需要后可以删。
 - **v4.0 待办**：深色模式仍未实现（当前一律浅色壁纸）。
+- **v4.0 依赖**：`glassEffect` / `GlassEffectContainer` / `.glass` 按钮样式需要 **iOS 26 SDK 编译**（运行时已有 `#available` 降级）。CI 的 macos-latest 如果 Xcode 版本落后，会在这几个符号上编译失败——先看 Actions 日志里的 `xcodebuild -version`。
 - `SortPage` 的顶部进度条与全屏视频进度条仍动画 `width`（可改 `transform: scaleX()`，同期其它地方已用 `scaleX`）。
 - `SwipeHint` 用关键帧入场（可改 transition，避免快速反复触发时从零重来）。
 - 组件函数签名里的 `themeColor = '#007AFF'` 默认值仍是旧蓝，实际由 `App` 传入北洋蓝，仅作兜底。

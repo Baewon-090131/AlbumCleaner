@@ -1,10 +1,26 @@
 import SwiftUI
 
-/// Liquid Glass 适配层。
+// MARK: - Liquid Glass 入口
+
+/// 把多个玻璃元素交给系统合并。
 ///
-/// iOS 26 起直接调用系统 `glassEffect`（浮动功能层用 `.regular`，压在照片上的可点区域可传 `clear`）；
-/// 更早的系统退回 `.ultraThinMaterial`，保证层级关系一致、不会因为降级而糊成一片。
+/// 相邻的 Liquid Glass 形状会互相融合成一块，所以**不要**再给它们套一层玻璃外框——
+/// 玻璃叠玻璃既不符合 HIG，也会让文字对比度塌掉。操作岛上那一排按钮就走这里。
+struct GlassGroup<Content: View>: View {
+    var spacing: CGFloat = 10
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        if #available(iOS 26.0, *) {
+            GlassEffectContainer(spacing: spacing) { content }
+        } else {
+            content
+        }
+    }
+}
+
 extension View {
+    /// 单个浮动玻璃面（进度胶囊、加载页、提示卡）。
     @ViewBuilder
     func glassSurface(
         cornerRadius: CGFloat,
@@ -13,7 +29,7 @@ extension View {
         interactive: Bool = false
     ) -> some View {
         if #available(iOS 26.0, *) {
-            self.glassEffect(glassStyle(clear: clear, tint: tint, interactive: interactive),
+            self.glassEffect(makeGlass(clear: clear, tint: tint, interactive: interactive),
                              in: .rect(cornerRadius: cornerRadius))
         } else {
             self.background(.ultraThinMaterial,
@@ -21,17 +37,60 @@ extension View {
         }
     }
 
-    @available(iOS 26.0, *)
-    private func glassStyle(clear: Bool, tint: Color?, interactive: Bool) -> Glass {
-        var glass: Glass = clear ? .clear : .regular
-        if let tint { glass = glass.tint(tint) }
-        if interactive { glass = glass.interactive() }
-        return glass
+    /// 会随界面变化改变形状的玻璃面。同一 `namespace` 里相同 `id` 的形状会被系统平滑变形，
+    /// 例如操作岛从「四个按钮」变成相簿详情页的「三个按钮」。
+    @ViewBuilder
+    func glassSurface(
+        cornerRadius: CGFloat,
+        morphID: some Hashable,
+        in namespace: Namespace.ID,
+        tint: Color? = nil,
+        interactive: Bool = true
+    ) -> some View {
+        if #available(iOS 26.0, *) {
+            self.glassEffect(makeGlass(clear: false, tint: tint, interactive: interactive),
+                             in: .rect(cornerRadius: cornerRadius))
+                .glassEffectID(morphID, in: namespace)
+        } else {
+            self.background(.ultraThinMaterial,
+                            in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        }
     }
 }
 
-/// 内容层容器：卡片、分组这类承载阅读的表面。按 HIG，内容层不用 Liquid Glass，
-/// 这里用一层偏实的高亮材质把文字托住。
+@available(iOS 26.0, *)
+private func makeGlass(clear: Bool, tint: Color?, interactive: Bool) -> Glass {
+    var glass: Glass = clear ? .clear : .regular
+    if let tint { glass = glass.tint(tint) }
+    if interactive { glass = glass.interactive() }
+    return glass
+}
+
+extension View {
+    /// 原生玻璃按钮样式。iOS 26 用系统的 `.glass` / `.glassProminent`，
+    /// 更早系统退到 `.bordered` 系列。
+    @ViewBuilder
+    func glassButtonStyle(prominent: Bool = false) -> some View {
+        if #available(iOS 26.0, *) {
+            if prominent {
+                self.buttonStyle(.glassProminent)
+            } else {
+                self.buttonStyle(.glass)
+            }
+        } else {
+            if prominent {
+                self.buttonStyle(.borderedProminent)
+            } else {
+                self.buttonStyle(.bordered)
+            }
+        }
+    }
+}
+
+// MARK: - 内容层
+
+/// 卡片、分组这类承载阅读的表面。按 HIG，内容层不该用 Liquid Glass，
+/// 这里用偏实的高亮材质把文字托住，避免半透明叠半透明。
 struct ContentPanel<Content: View>: View {
     var cornerRadius: CGFloat = Theme.cornerPanel
     @ViewBuilder var content: Content
