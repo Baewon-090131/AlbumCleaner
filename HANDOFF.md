@@ -29,17 +29,28 @@ iOS 相册整理应用，交互参考 Slidebox。**SwiftUI 原生，纯本地，
 `Evernight/WebContent/` 是 v3 的 React 实现，**还在仓库里，但不参与构建**（`project.yml` 已移除引用）。
 改 UI 一律改 `Evernight/` 下的 `.swift`，不要碰 WebContent——它只作设计基线与对照。
 
-### 1.2 这份 Swift 代码从未编译过
+### 1.2 编译已通过，运行完全未验证
 
-开发机是 **Windows，没有 Xcode、没有 Swift 工具链、没有 iOS 模拟器**。
-16 个 Swift 文件全靠人工复核（结构与括号配对），**一次都没有编译验证过**。
-第一次真实编译发生在 GitHub Actions 上。
+开发机是 **Windows，没有 Xcode / Swift 工具链 / iOS 模拟器，本地编译不了**。
+但 CI 已经证明这份代码能编译：提交 `d745eb3`（v4.0.1）的 run **37791036942 结论 success**，
+产出了 `AlbumCleaner-ipa`（1.95 MB）。也就是说 Swift 语法没问题，
+`glassEffect` / `GlassEffectContainer` / `.glass` 这些 iOS 26 API 也能编过——runner 的 Xcode 版本够新。
 
-### 1.3 Liquid Glass 需要 iOS 26 SDK 编译
+**没验证的是运行时行为**：装到真机或模拟器里跑起来什么样、Liquid Glass 实际渲染成什么样、
+Photos 权限弹窗流程顺不顺、卡片手势跟不跟手——这些一次都没看过。第一次装机要重点看这几处。
 
-`glassEffect` / `GlassEffectContainer` / `.glass` 按钮样式这几个符号，只有 Xcode 26（iOS 26 SDK）才认。
-运行时已经用 `#available(iOS 26, *)` 做了降级，但**编译期过不去就是过不去**。
-先看 Actions 日志里的 `xcodebuild -version`——如果 runner 的 Xcode 落后，这几个文件会直接报 "cannot find in scope"。
+### 1.3 怎么查 CI 状态
+
+```powershell
+# 借用本地 git 凭据调 GitHub API（token 不会被打印出来）
+$cred = "protocol=https`nhost=github.com`n" | git credential fill 2>$null
+$token = ($cred | Select-String '^password=' | Select-Object -First 1) -replace '^password=',''
+curl.exe --ssl-no-revoke -sS -H "Authorization: Bearer $token" `
+  "https://api.github.com/repos/Baewon-090131/AlbumCleaner/actions/runs?per_page=5"
+```
+
+两个坑：`curl` 必须带 `--ssl-no-revoke`（Windows 的 TLS 吊销检查会掐断连接）；
+仓库是私有的，不带 token 匿名访问 API 一律 404。
 
 ---
 
@@ -47,8 +58,7 @@ iOS 相册整理应用，交互参考 Slidebox。**SwiftUI 原生，纯本地，
 
 | 优先级 | 事项 | 备注 |
 | --- | --- | --- |
-| P0 | **确认 CI 编译结果** | 我查不到（私有仓库 + 无 token + 未装 gh）。打开 Actions 页面看最近一次 run |
-| P0 | **真机跑一次** | Liquid Glass 实际长什么样，目前没人看过 |
+| P0 | **真机 / 模拟器跑一次** | 编译已过，但运行时行为完全是空白：Liquid Glass 实际渲染、Photos 权限流程、手势手感都要现场看 |
 | P1 | 补视频 / Live Photo 播放 | v4.0 只显示静态缩略图，v3 网页版有 `AVPlayer` 全屏播放，这块功能是退化的 |
 | P1 | 修版本号显示 | `MineScreen.swift` 里写死了 `"Evernight 4.0 (1)"`，和构建号 13 对不上 |
 | P2 | 「本轮已看」「已收藏」统计 | 目前恒为 0，没接真实计数 |
@@ -171,6 +181,8 @@ xcodegen generate
 xcodebuild -scheme AlbumCleaner -sdk iphonesimulator build
 ```
 
+本地没有 Mac 时不用干等——CI 已经在跑同一套 `xcodebuild`，push 上去看 Actions 就行（查法见 1.3）。
+
 ---
 
 ## 7. 版本史（知道个大概就行）
@@ -192,7 +204,8 @@ xcodebuild -scheme AlbumCleaner -sdk iphonesimulator build
 | 项 | 情况 |
 | --- | --- |
 | 开发机 | Windows，**无 Xcode / Swift / iOS 模拟器** |
-| 编译验证 | 只能靠 GitHub Actions（macos-latest） |
+| 编译验证 | GitHub Actions（macos-latest）。`d745eb3` 已验证成功，产物 `AlbumCleaner-ipa` |
+| CI 查询 | 见 1.3；`curl` 要带 `--ssl-no-revoke` |
 | 网页版预览（v3，仅对照） | `node compile-jsx.js`，然后 `Previews/_shot.html?tab=sort\|albums\|mine` |
 | 设计稿 | `Previews/Evernight-V3-UI.pptx`（7 页可编辑）+ `v3-shots/` |
 | v4 预览 | `Previews/v4-preview.png`（**注意：这是 HTML 画的示意图，不是 SwiftUI 渲染**） |
