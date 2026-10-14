@@ -6,13 +6,13 @@ struct AlbumsScreen: View {
     @State private var showTrash = false
 
     private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16),
     ]
 
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: columns, spacing: 12) {
+            LazyVGrid(columns: columns, spacing: 18) {
                 ForEach(library.albums) { album in
                     NavigationLink {
                         SortScreen(album: album)
@@ -46,38 +46,34 @@ struct AlbumsScreen: View {
     }
 }
 
+/// 单个相簿：正方形封面 + 名称/数量居中在封面下方，无卡片底（对齐 iOS 原生相册）。
 struct AlbumCardView: View {
     let album: AlbumItem
 
     var body: some View {
-        ContentPanel {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(album.name)
-                        .font(.subheadline.weight(.semibold))
-                        .lineLimit(1)
-                    Spacer(minLength: 4)
-                    Text("\(album.count)")
-                        .font(.subheadline.weight(.bold))
-                        .monospacedDigit()
-                        .foregroundStyle(Theme.accent)
-                }
-
-                ZStack {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(.quaternary)
+        VStack(spacing: 6) {
+            Rectangle()
+                .fill(.quaternary)
+                .aspectRatio(1, contentMode: .fill)
+                .overlay {
                     if let cover = album.coverAsset {
-                        AsyncThumbnail(asset: cover, targetSize: CGSize(width: 260, height: 200))
-                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        AsyncThumbnail(asset: cover, targetSize: CGSize(width: 320, height: 320))
                     } else {
                         Image(systemName: "photo")
                             .font(.title3)
                             .foregroundStyle(.secondary)
                     }
                 }
-                .frame(height: 92)
-            }
-            .padding(12)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            Text(album.name)
+                .font(.system(size: 15, weight: .semibold))
+                .lineLimit(1)
+
+            Text("\(album.count)")
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
         }
     }
 }

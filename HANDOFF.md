@@ -2,7 +2,7 @@
 
 > 交接文档，给下一个接手这个项目的智能体或人。
 > **先读这一份，再读 `AGENTS.md`（长期记忆，含设计令牌与历史沿革）。**
-> 生成时间：2026-10-09
+> 生成时间：2026-10-09 · 最近更新：2026-10-14（相簿页 / 回收站网格统一为 iOS 原生相册排列）
 
 ---
 
@@ -15,7 +15,7 @@ iOS 相册整理应用，交互参考 Slidebox。**SwiftUI 原生，纯本地，
 | --- | --- |
 | 仓库 | `https://github.com/Baewon-090131/AlbumCleaner`（私有） |
 | 分支 | `main`，工作区干净，与 origin 同步 |
-| 最新提交 | `d745eb3 v4.0.1 按 Liquid Glass 规范重做玻璃层` |
+| 最新提交 | 相簿 / 回收站网格统一（本次改动，hash 见 `git log -1`；上一条是 `d745eb3 v4.0.1`） |
 | 版本 / 构建号 | 4.0 / 13（`project.yml`） |
 | 最低系统 | iOS 17.0（`@Observable`、`ContentUnavailableView` 要求） |
 | 构建 | GitHub Actions（macos-latest）出 IPA artifact |
@@ -64,6 +64,7 @@ curl.exe --ssl-no-revoke -sS -H "Authorization: Bearer $token" `
 | P2 | 「本轮已看」「已收藏」统计 | 目前恒为 0，没接真实计数 |
 | P2 | 深色模式 | 当前一律浅色壁纸 |
 | P2 | 清理 v3 遗留 | `WebContent/`、`compile-jsx.js`、`package.json` 都无用途了，确认后删 |
+| 已做 | 相簿页 / 回收站网格排列 | 2026-10-14 统一为 iOS 原生相册式：相簿 2 列正方形封面、回收站 3 列 1:1（见第 7 节版本史与 5.6） |
 
 ---
 
@@ -89,8 +90,8 @@ Evernight/
   Screens/
     SortScreen.swift            260   整理页（相簿详情复用）+ 动作 + 月份菜单
     MineScreen.swift            235   我的：List / Toggle / Slider / 主题色
-    TrashScreen.swift           115   回收站 + 全屏查看
-    AlbumsScreen.swift           83   相簿网格
+    TrashScreen.swift           121   回收站（3 列正方形网格）+ 全屏查看
+    AlbumsScreen.swift           79   相簿网格（2 列正方形封面，iOS 原生式）
     MainTabView.swift            34   系统 TabView
   WebContent/                        v3 网页实现，不参与构建
 project.yml                      47   xcodegen 配置
@@ -157,6 +158,15 @@ HIG 明确说 Liquid Glass 只用于浮在内容之上的功能层，玻璃叠�
 
 `README.md` 仍然写着"使用 WKWebView 内嵌网页实现"，那是 v3 的描述。**以本文件和 `AGENTS.md` 为准。**
 
+### 5.6 网格排列：别直接给缩略图套 aspectRatio
+
+`AsyncThumbnail` 内部是 `.aspectRatio(contentMode: .fill)` 的 `Image`，尺寸会随图片比例浮动。
+再给它套一层 `.aspectRatio(1, contentMode: .fill)` 并不保证正方形——没有确定的尺寸底时，
+`LazyVGrid` 排出来的格子会高矮不齐。回收站原来的「乱」就是这么来的。
+
+正确做法：拿形状当底（`Rectangle().fill(.quaternary)`），`.aspectRatio(1, contentMode: .fill)` 让它撑满列宽；
+缩略图放进 `.overlay`，最后 `.clipShape` 统一裁圆角。相簿页与回收站现在都这么写。
+
 ---
 
 ## 6. 版本号与自检
@@ -189,6 +199,7 @@ xcodebuild -scheme AlbumCleaner -sdk iphonesimulator build
 
 | 版本 | 提交 | 内容 |
 | --- | --- | --- |
+| 网格统一 | 本次 | 相簿页改 2 列正方形封面（名称 / 数量居中在下方，去掉卡片底）；回收站改 3 列 1:1 圆角 8（间距 3 / 边距 12）；整理页未动 |
 | v4.0.1 | `d745eb3` | 按 Liquid Glass 规范重做玻璃层（GlassEffectContainer / interactive / morphing） |
 | v4.0 | `d4cd8cc` | **UI 层从 WKWebView + React 整体改成 SwiftUI**，删除 4 个旧 Swift 文件，最低系统提到 iOS 17 |
 | v3.0.1 | `0156ce2` | 网页版：开关 / 滑块 / 下拉改用原生表单元素 |
@@ -208,6 +219,7 @@ xcodebuild -scheme AlbumCleaner -sdk iphonesimulator build
 | CI 查询 | 见 1.3；`curl` 要带 `--ssl-no-revoke` |
 | 网页版预览（v3，仅对照） | `node compile-jsx.js`，然后 `Previews/_shot.html?tab=sort\|albums\|mine` |
 | 设计稿 | `Previews/Evernight-V3-UI.pptx`（7 页可编辑）+ `v3-shots/` |
+| 网格改动预览 | `Previews/Evernight-Grid-Preview.pptx`（5 页可编辑，相簿 / 回收站方案，2026-10-14 已拍板；非 SwiftUI 渲染） |
 | v4 预览 | `Previews/v4-preview.png`（**注意：这是 HTML 画的示意图，不是 SwiftUI 渲染**） |
 | 参考图 | 仓库根目录 `p1.jpg`–`p4.jpg`（用户提供的设计参考，已入库） |
 | 项目记忆 | `AGENTS.md`（设计令牌、机制、坑的完整版） |

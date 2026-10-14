@@ -7,7 +7,7 @@ struct TrashScreen: View {
     @State private var selected: PhotoItem?
     @State private var showDeleteAll = false
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 3)
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 3), count: 3)
 
     var body: some View {
         ScrollView {
@@ -19,17 +19,23 @@ struct TrashScreen: View {
                 Text("共 \(library.trash.count) 张，彻底删除后无法恢复")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
                     .padding(.top, 4)
 
-                LazyVGrid(columns: columns, spacing: 4) {
+                LazyVGrid(columns: columns, spacing: 3) {
                     ForEach(library.trash) { item in
                         Button {
                             selected = item
                         } label: {
-                            AsyncThumbnail(asset: item.asset,
-                                           targetSize: CGSize(width: 300, height: 300))
+                            Rectangle()
+                                .fill(.quaternary)
                                 .aspectRatio(1, contentMode: .fill)
-                                .clipped()
+                                .overlay {
+                                    AsyncThumbnail(asset: item.asset,
+                                                   targetSize: CGSize(width: 300, height: 300))
+                                }
+                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                         }
                         .buttonStyle(.plain)
                     }

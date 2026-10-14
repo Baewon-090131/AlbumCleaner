@@ -1,7 +1,7 @@
 # Album Cleaner · 项目记忆
 
 > 本文件是项目的长期记忆，写给后续的协作者与 AI 会话。改动项目前先读这一份。
-> 最近更新：2026-10-08（**v4.0：UI 层整体改成 SwiftUI 原生**；上一个已提交版本是 `0156ce2 v3.0.1`）
+> 最近更新：2026-10-14（相簿页 / 回收站网格统一为 iOS 原生相册排列，整理页未动；上一次是 2026-10-08 的 v4.0 SwiftUI 原生化）
 
 ## 1. 这是什么
 
@@ -116,6 +116,7 @@ rg -n "^import UIKit" Evernight --glob "*.swift"                           # 只
 - 「撤回」只记删除：`undoStack` 存 `(photo, index)`，撤回时让 service 按创建日期把照片插回原月份，再把游标退回去。
 - 主题色走 `@AppStorage("ac_theme")` + `Color(hex:)`，`MainTabView` 用 `.tint` 应用；`@AppStorage` 直接落 UserDefaults，不再有 localStorage。
 - 相簿照片只在 `.task(id: album?.id)` 里拉一次。**别把它写成计算属性**——那会让每次重绘都遍历整个相簿。
+- 相簿页（2 列）与回收站（3 列）都是 `LazyVGrid`。**别把 `.aspectRatio(1, …)` 直接套在 `AsyncThumbnail` 上**：它的尺寸随图片比例浮动，排出来格子会参差。用 `Rectangle().fill(.quaternary)` 当底 + `.aspectRatio(1, contentMode: .fill)` 撑满列宽，缩略图放 `.overlay`，最后 `.clipShape` 裁圆角。相簿页封面 1:1 圆角 12、名称 / 数量居中在封面下方（无卡片底）；回收站 1:1 圆角 8、格间距 3 / 边距 12。
 
 以下为 **v3 网页版**机制，v4.0 起不再参与构建，保留作对照。
 
@@ -172,6 +173,7 @@ Previews/
 
 ## 7. 当前状态
 
+- **网格统一（2026-10-14）**：相簿页与回收站统一为 iOS 原生相册排列——相簿页去掉 `ContentPanel` 卡片底，改 2 列 1:1 正方形封面（圆角 12），名称 / 数量居中在封面下方；回收站改 3 列 1:1（圆角 8）、格间距 3 / 左右边距 12，用形状底修掉了原来格子参差的尺寸链，顶部说明行改为左对齐。**整理页（`SortScreen`）未动，交互与数据流不变**。改前先出了可编辑预览 `Previews/Evernight-Grid-Preview.pptx` 并经用户拍板。
 - **v4.0（未提交）**：UI 层从 WKWebView + React 整体改成 SwiftUI（16 个 Swift 文件，约 1550 行）。删掉了 `AppDelegate` / `ViewController` / `LivePhotoViewController` / `PhotoLibraryManager`；新增 `Models` / `Services` / `Design` / `Components` / `Screens`。`project.yml` 不再打包 `WebContent`，最低系统从 iOS 14 提到 **iOS 17**，版本号 4.0（构建号 13）。`Info.plist` 的显示名改成 Evernight，并去掉了已无必要的 `NSAllowsArbitraryLoads`。
 - **本机验证限制**：开发机是 Windows、没有 Xcode 与 Swift 工具链，**Swift 代码没有编译过**，只做了结构与括号的人工复核。真正的编译验证要靠 CI（macos-latest）。
 - **v3.0.1（2026-10-07）**：开关、滑块、月份选择三个控件改成原生表单元素（iOS 上由系统渲染，桌面走自绘回退）；`main.jsx` 增加 iOS 版本检测；卡片照片区域加了极浅底色，浅色 mock 图不再和卡片糊在一起。
@@ -216,7 +218,7 @@ Previews/
 - 信息架构、文案、手势逻辑与既有动效曲线不经要求不改。
 - Swift 侧改动前先读 `.agents/skills/write-swift`；网页动效改动前先读 `animate` 与 `apple-design`。
 
-## 10. 项目全景速查（2026-10-08 · v4.0 SwiftUI）
+## 10. 项目全景速查（2026-10-14 · v4.0 SwiftUI）
 
 **文件规模**（不含 `node_modules/` 与 `.git/`）
 
@@ -226,8 +228,8 @@ Previews/
 | `Evernight/Screens/MineScreen.swift` | 235 | 我的：List / Toggle / Slider / 主题色 |
 | `Evernight/Services/PhotoLibraryService.swift` | 222 | 权限、按月分组、相簿、回收站、写入 |
 | `Evernight/Components/SortDeck.swift` | 179 | 卡片区 + 单卡 + DragGesture |
-| `Evernight/Screens/TrashScreen.swift` | 115 | 回收站 + 全屏查看 |
-| `Evernight/Screens/AlbumsScreen.swift` | 83 | 相簿网格 |
+| `Evernight/Screens/TrashScreen.swift` | 121 | 回收站（3 列正方形网格）+ 全屏查看 |
+| `Evernight/Screens/AlbumsScreen.swift` | 79 | 相簿网格（2 列正方形封面） |
 | `Evernight/EvernightApp.swift` | 73 | 入口 + 权限门 |
 | `Evernight/Models/LibraryModels.swift` | 72 | PhotoItem / MonthSection / AlbumItem / StorageInfo / Format |
 | `Evernight/Design/Theme.swift` | 57 | 颜色圆角令牌 + 壁纸 + Color(hex:) |
