@@ -1,42 +1,5 @@
 import SwiftUI
 
-enum SwipeIntent {
-    case delete, next, undo, favorite
-}
-
-enum SortAction: String, CaseIterable, Identifiable {
-    case undo, delete, next, album
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .undo: "撤回"
-        case .delete: "删除"
-        case .next: "下一张"
-        case .album: "相簿"
-        }
-    }
-
-    var symbol: String {
-        switch self {
-        case .undo: "arrow.uturn.backward"
-        case .delete: "trash"
-        case .next: "forward.end"
-        case .album: "photo.stack"
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .undo: Theme.warning
-        case .delete: Theme.danger
-        case .next: Theme.info
-        case .album: Theme.accent
-        }
-    }
-}
-
 /// 整理页。`album` 为 nil 时是「整理」tab（按月整理），否则是某个相簿的整理页。
 struct SortScreen: View {
     var album: AlbumItem? = nil
@@ -48,13 +11,22 @@ struct SortScreen: View {
 
     @State private var selectedMonthID: String?
     @State private var index = 0
-    /// 撤回栈只记「删除」：把照片还回相册，再把游标退回去。
-    @State private var undoStack: [(photo: PhotoItem, index: Int)] = []
+    /// 撤回栈：记住「上一步做了什么」，撤回就是完整倒做那一步（限深 50，切月清空）。
+    @State private var undoStack: [UndoRecord] = []
     @State private var albumPhotos: [PhotoItem] = []
     @State private var toast: String?
     @State private var showTrash = false
     @State private var showAlbumPicker = false
     @State private var viewerPhoto: PhotoItem?
+    /// 相簿按钮选完的目标，等动效播完才真正写入。
+    @State private var pendingAlbum: AlbumItem?
+    /// 交给卡片区播放的操作；`commandToken` 保证同一种动作也能被认出来。
+    @State private var command: DeckCommand?
+    @State private var commandToken = 0
+    /// 卡片区正在播动效：这期间不接新操作，避免动效播到一半被覆盖。
+    @State private var isPlaying = false
+
+    private let undoDepth = 50
 
     private var isAlbumMode: Bool { album != nil }
 
@@ -73,6 +45,12 @@ struct SortScreen: View {
         index < photos.count ? photos[index] : nil
     }
 
+    /// 后方待命的那张：当前卡飞出后由它顶上。
+    private var upcoming: PhotoItem? {
+        let next = index + 1
+        return next < photos.count ? photos[next] : nil
+    }
+
     private var actions: [SortAction] {
         isAlbumMode ? [.undo, .delete, .next] : SortAction.allCases
     }
@@ -88,8 +66,13 @@ struct SortScreen: View {
 
             SortDeck(
                 photo: current,
+                nextPhoto: upcoming,
                 sizeLabel: current.map { Format.bytes(library.fileSize(of: $0)) } ?? "",
-                onSwipe: handleSwipe,
+                nextSizeLabel: upcoming.map { Format.bytes(library.fileSize(of: $0)) } ?? "",
+                command: command,
+                isPlaying: $isPlaying,
+                onSwipe: { request($0) },
+                onFinished: finish,
                 onTap: { viewerPhoto = $0 }
             )
 
@@ -169,52 +152,110 @@ private extension SortScreen {
         selectedMonthID = candidate.id
         index = 0
         undoStack.removeAll()
-    }
-
-    func handleSwipe(_ intent: SwipeIntent) {
-        perform(intent)
+        command = nil
+        pendingAlbum = nil
     }
 
     func handleAction(_ action: SortAction) {
         switch action {
-        case .undo: perform(.undo)
-        case .delete: perform(.delete)
-        case .next: perform(.next)
+        case .undo: request(.undo)
+        case .delete: request(.delete)
+        case .next: request(.next)
         case .album: showAlbumPicker = true
         }
     }
 
-    func perform(_ intent: SwipeIntent) {
-        switch intent {
+    /// 手势与按钮都走这里：只写 command，动效和数据变更都等卡片区播完再收尾。
+    /// 返回是否受理——撤回但没有可撤的步骤时不受理，卡片原地弹回。
+    @discardableResult
+    func request(_ move: SortMove) -> Bool {
+        guard !isPlaying else { return false }
+
+        var incoming: PhotoItem?
+        var reverseOf: SortMove?
+        if move == .undo {
+            guard let last = undoStack.last else { return false }
+            incoming = last.restorePhoto
+            reverseOf = last.origin
+        }
+
+        commandToken += 1
+        command = DeckCommand(token: commandToken,
+                              move: move,
+                              incoming: incoming,
+                              reverseOf: reverseOf)
+        return true
+    }
+
+    /// 卡片区播完动效后回调：这时才真正改数据，界面早就先动完了。
+    func finish(_ move: SortMove) {
+        command = nil
+        withoutAnimation { apply(move) }
+    }
+
+    func apply(_ move: SortMove) {
+        switch move {
         case .delete:
             guard let photo = current else { return }
             library.moveToTrash(photo)
-            undoStack.append((photo, index))
+            push(.deletion(photo: photo, index: index))
             show("已移到回收站")
 
         case .next:
-            guard current != nil else { return }
+            guard let photo = current else { return }
+            push(.advance(photo: photo, index: index))
             index += 1
-
-        case .undo:
-            guard let last = undoStack.popLast() else { return }
-            library.restore(last.photo)
-            index = max(0, last.index)
-            show("已撤回删除")
 
         case .favorite:
             guard let photo = current else { return }
             library.setFavorite(photo, true)
+            push(.favorite(photo: photo))
+            show("已收藏")
+
+        case .album:
+            guard let photo = current, let target = pendingAlbum else { return }
+            pendingAlbum = nil
+            library.add(photo, to: target)
+            push(.albumAdd(photo: photo, album: target, index: index))
             index += 1
-            show("已加入个人收藏")
+            show("已存入「\(target.name)」")
+
+        case .undo:
+            undo()
         }
     }
 
+    func undo() {
+        guard let last = undoStack.popLast() else { return }
+        switch last {
+        case .deletion(let photo, let position):
+            library.restore(photo)
+            index = max(0, position)
+            show("已撤回删除")
+
+        case .advance(_, let position):
+            index = max(0, position)
+            show("已回到上一张")
+
+        case .favorite(let photo):
+            library.setFavorite(photo, false)
+            show("已取消收藏")
+
+        case .albumAdd(let photo, let target, let position):
+            library.remove(photo, from: target)
+            index = max(0, position)
+            show("已取消存入")
+        }
+    }
+
+    func push(_ record: UndoRecord) {
+        undoStack.append(record)
+        if undoStack.count > undoDepth { undoStack.removeFirst() }
+    }
+
     func addCurrentPhoto(to target: AlbumItem) {
-        guard let photo = current else { return }
-        library.add(photo, to: target)
-        index += 1
-        show("已存入「\(target.name)」")
+        pendingAlbum = target
+        request(.album)
     }
 
     func show(_ message: String) {
@@ -224,37 +265,5 @@ private extension SortScreen {
             guard toast == message else { return }
             withAnimation(.easeOut(duration: 0.2)) { toast = nil }
         }
-    }
-}
-
-// MARK: - 月份菜单
-
-private struct MonthMenu: View {
-    let months: [MonthSection]
-    let selectedID: String?
-    let onSelect: (MonthSection) -> Void
-
-    var body: some View {
-        Menu {
-            ForEach(months) { candidate in
-                Button {
-                    onSelect(candidate)
-                } label: {
-                    if candidate.id == selectedID {
-                        Label(candidate.title, systemImage: "checkmark")
-                    } else {
-                        Text(candidate.title)
-                    }
-                }
-            }
-        } label: {
-            HStack(spacing: 4) {
-                Text(months.first { $0.id == selectedID }?.title ?? "选择月份")
-                Image(systemName: "chevron.down")
-                    .font(.caption2.weight(.semibold))
-            }
-            .font(.subheadline.weight(.medium))
-        }
-        .accessibilityLabel("选择月份")
     }
 }

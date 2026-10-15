@@ -98,6 +98,15 @@ final class PhotoLibraryService {
         }
     }
 
+    /// 把照片从相簿里移出（撤回「存入相簿」用）。照片本身留在系统相册，只是不在这个相簿里。
+    func remove(_ item: PhotoItem, from album: AlbumItem) {
+        guard let collection = fetchCollection(album.id) else { return }
+        PHPhotoLibrary.shared().performChanges {
+            guard let request = PHAssetCollectionChangeRequest(for: collection) else { return }
+            request.removeAssets([item.asset] as NSArray)
+        }
+    }
+
     // MARK: - 相簿
 
     func photos(in album: AlbumItem) -> [PhotoItem] {

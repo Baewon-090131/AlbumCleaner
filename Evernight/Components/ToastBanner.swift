@@ -10,7 +10,7 @@ struct ToastBanner: View {
             .foregroundStyle(.white)
             .padding(.horizontal, 18)
             .padding(.vertical, 10)
-            .background(.black.opacity(0.78), in: Capsule())
+            .background(.black.opacity(0.30), in: Capsule())
             .padding(.top, 8)
             .transition(.move(edge: .top).combined(with: .opacity))
     }

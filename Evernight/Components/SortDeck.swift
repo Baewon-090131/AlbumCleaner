@@ -1,179 +1,237 @@
 import SwiftUI
 
-/// 卡片区：一次只显示一张，尺寸按媒体比例算。
+/// 不带任何动画地改状态。复位卡片位移时必须这样走——
+/// 否则新卡会从屏外「飞」回来，或者旧卡拖着过渡重演一遍。
+func withoutAnimation(_ work: () -> Void) {
+    var transaction = Transaction()
+    transaction.disablesAnimations = true
+    withTransaction(transaction, work)
+}
+
+/// 卡片区：当前卡跟手平移、超过阈值飞出屏幕；下一张卡先在后方 0.92 处待命，
+/// 前一张飞出时用 Spring 放大到 1.0。撤回则把整套分拣动效倒着放一遍——
+/// 当前卡缩回 0.92 退场，被撤那张从它当初飞出去的方向飞回正面。
+///
+/// 手势与按钮共用一条通道：手势在卡上跟手并判定方向，松手只把结论交给外层；
+/// 外层写入 `command` 再回到这里播动效，按钮点击同样只写 `command`。
+/// 播完先复位动效状态、再回调 `onFinished` 让数据跟进——界面永远先动、数据后变，
+/// 新卡因此不会出现从屏外飞回来的一帧。
 struct SortDeck: View {
     let photo: PhotoItem?
+    let nextPhoto: PhotoItem?
     let sizeLabel: String
-    let onSwipe: (SwipeIntent) -> Void
+    let nextSizeLabel: String
+    let command: DeckCommand?
+    @Binding var isPlaying: Bool
+    /// 手势松手后的判定结果；返回是否受理（撤回但栈空时返回 false，卡片归位）。
+    let onSwipe: (SortMove) -> Bool
+    let onFinished: (SortMove) -> Void
     let onTap: (PhotoItem) -> Void
+
+    @State private var frontOffset: CGSize = .zero
+    @State private var frontScale: CGFloat = 1
+    @State private var backOffset: CGSize = .zero
+    @State private var backScale: CGFloat = 0.92
+    /// 撤回时前置的「飞回来」那张；其余时候为 nil。
+    @State private var incoming: PhotoItem?
+
+    /// 判方向：横竖谁大看谁，90pt 过阈值；下滑做收藏只要 40pt。
+    private let threshold: CGFloat = 90
+    private let favoriteThreshold: CGFloat = 40
+    private let leaveDuration: TimeInterval = 0.26
 
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                if let photo {
-                    SwipeCard(
-                        photo: photo,
-                        sizeLabel: sizeLabel,
-                        bounds: geometry.size,
-                        onSwipe: onSwipe,
-                        onTap: onTap
-                    )
-                    .id(photo.id)
-                } else {
+                // 下一张压在后方；撤回时后方的位置留给当前卡（它正缩回去）
+                if let back = (incoming != nil ? photo : nextPhoto) {
+                    SortCard(photo: back,
+                             sizeLabel: incoming != nil ? sizeLabel : nextSizeLabel,
+                             bounds: geometry.size)
+                        .id(back.id)
+                        .offset(backOffset)
+                        .scaleEffect(backScale)
+                }
+
+                // 前置卡：平时是当前张，撤回时是被撤那张从屏外飞回来
+                if let front = incoming ?? photo {
+                    SortCard(photo: front,
+                             // 飞回来那 0.26s 里体积还没算，标签先留空
+                             sizeLabel: incoming != nil ? "" : sizeLabel,
+                             bounds: geometry.size)
+                        .id(front.id)
+                        .offset(frontOffset)
+                        .scaleEffect(frontScale)
+                        .rotationEffect(.degrees(frontOffset.width / 26))
+                        .gesture(dragGesture)
+                        .onTapGesture { onTap(front) }
+                }
+
+                if photo == nil && incoming == nil {
                     EmptyDeckView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onChange(of: command) { _, value in
+            guard let value else { return }
+            play(value.move, incoming: value.incoming, reverseOf: value.reverseOf)
+        }
+        .onChange(of: photo?.id) { _, _ in
+            // 换照片时把动效状态归位；必须禁掉过渡，否则新卡会从屏外飞回来
+            withoutAnimation { reset() }
+        }
     }
 }
 
-private struct SwipeCard: View {
-    let photo: PhotoItem
-    let sizeLabel: String
-    let bounds: CGSize
-    let onSwipe: (SwipeIntent) -> Void
-    let onTap: (PhotoItem) -> Void
+// MARK: - 手势
 
-    @State private var offset: CGSize = .zero
-    @State private var isLeaving = false
-
-    /// 横图占满宽度、竖图占满高度；比例夹在 0.32–3.2，避免超长图把卡片压成一条线。
-    private var cardSize: CGSize {
-        let ratio = min(max(photo.ratio, 0.32), 3.2)
-        let maxWidth = max(0, bounds.width - 8)
-        let maxHeight = max(0, bounds.height - 8)
-        var width = maxWidth
-        var height = maxWidth / ratio
-        if height > maxHeight {
-            height = maxHeight
-            width = maxHeight * ratio
-        }
-        return CGSize(width: width, height: height)
-    }
-
-    var body: some View {
-        ZStack {
-            Rectangle().fill(.regularMaterial)
-            AsyncThumbnail(asset: photo.asset, targetSize: cardSize, contentMode: .fit)
-            badges
-        }
-        .frame(width: cardSize.width, height: cardSize.height)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.cornerPlate, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: Theme.cornerPlate, style: .continuous)
-                .strokeBorder(.white.opacity(0.55), lineWidth: 0.5)
-        }
-        .shadow(color: Color(red: 12 / 255, green: 18 / 255, blue: 48 / 255).opacity(0.22),
-                radius: 18, y: 10)
-        .offset(offset)
-        .rotationEffect(.degrees(offset.width / 26))
-        .gesture(dragGesture)
-        .onTapGesture { onTap(photo) }
-        .accessibilityLabel("待整理的照片")
-    }
-
-    private var badges: some View {
-        VStack {
-            HStack {
-                Spacer()
-                if photo.isVideo {
-                    Label(Format.duration(photo.duration), systemImage: "play.fill").badgeStyle()
-                } else if photo.isLivePhoto {
-                    Text("LIVE").badgeStyle()
-                }
-            }
-            Spacer()
-            HStack {
-                if !photo.creationText.isEmpty {
-                    Text(photo.creationText).badgeStyle()
-                }
-                Spacer()
-                if !sizeLabel.isEmpty {
-                    Text(sizeLabel).badgeStyle()
-                }
-            }
-        }
-        .padding(12)
-        .allowsHitTesting(false)
-    }
-
-    private var dragGesture: some Gesture {
+private extension SortDeck {
+    var dragGesture: some Gesture {
         DragGesture()
             .onChanged { value in
-                guard !isLeaving else { return }
-                offset = value.translation
+                guard !isPlaying else { return }
+                frontOffset = value.translation
             }
             .onEnded { value in
-                guard !isLeaving else { return }
+                guard !isPlaying else { return }
                 let translation = value.translation
-                let threshold: CGFloat = 90
-                var intent: SwipeIntent?
+                var move: SortMove?
 
                 if abs(translation.width) > abs(translation.height) {
-                    if translation.width < -threshold { intent = .next }
-                    else if translation.width > threshold { intent = .undo }
+                    if translation.width < -threshold { move = .next }
+                    else if translation.width > threshold { move = .undo }
                 } else {
-                    if translation.height < -threshold { intent = .delete }
-                    else if translation.height > threshold { intent = .favorite }
+                    if translation.height < -threshold { move = .delete }
+                    else if translation.height > favoriteThreshold { move = .favorite }
                 }
 
-                if let intent {
-                    flyOut(intent)
-                } else {
-                    withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
-                        offset = .zero
-                    }
+                // 没到阈值、或外层不受理（撤回但没有可撤的步骤）就弹回原位
+                guard let move, onSwipe(move) else {
+                    springBack()
+                    return
                 }
+                // 受理了：等外层把 command 写回来，再由这里播动效
             }
     }
+}
 
-    private func flyOut(_ intent: SwipeIntent) {
-        isLeaving = true
-        let target: CGSize
-        switch intent {
-        case .next: target = CGSize(width: -900, height: 0)
-        case .undo: target = CGSize(width: 900, height: 0)
-        case .delete: target = CGSize(width: 0, height: -1300)
-        case .favorite: target = CGSize(width: 0, height: 1300)
+// MARK: - 播放
+
+private extension SortDeck {
+    func play(_ move: SortMove, incoming incomingPhoto: PhotoItem?, reverseOf origin: SortMove?) {
+        guard !isPlaying else { return }
+        isPlaying = true
+
+        if move == .favorite {
+            playFavorite()
+        } else if move == .undo, origin == SortMove.favorite {
+            playFavoriteUndo()
+        } else if move == .undo {
+            playReverse(origin ?? .next, incoming: incomingPhoto)
+        } else {
+            playFlyOut(move)
         }
+    }
 
-        withAnimation(.easeOut(duration: 0.26)) { offset = target }
+    /// 删除 / 下一张 / 存入相簿：当前卡飞出屏幕，下一张用 Spring 放大到 1.0。
+    func playFlyOut(_ move: SortMove) {
+        withAnimation(.easeOut(duration: leaveDuration)) {
+            frontOffset = flyTarget(move)
+        }
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) {
+            backScale = 1
+        }
         Task {
+            try? await Task.sleep(for: .seconds(leaveDuration))
+            finish(move)
+        }
+    }
+
+    /// 收藏：只有下滑手势会走到这里——不飞出、不推进，弹回原位。
+    func playFavorite() {
+        withAnimation(.spring(response: 0.30, dampingFraction: 0.70)) {
+            frontOffset = .zero
+        }
+        Task {
+            try? await Task.sleep(for: .seconds(0.30))
+            finish(.favorite)
+        }
+    }
+
+    /// 撤回：当前卡从它被拖到的位置退回后方 0.92，被撤那张从当初飞出去的方向飞回正面。
+    func playReverse(_ origin: SortMove, incoming incomingPhoto: PhotoItem?) {
+        guard let incomingPhoto else {
+            finish(.undo)
+            return
+        }
+        let start = frontOffset
+        withoutAnimation {
+            incoming = incomingPhoto
+            backOffset = start
+            frontOffset = flyTarget(origin)
+            frontScale = 1
+            backScale = 1
+        }
+        withAnimation(.easeOut(duration: leaveDuration)) {
+            frontOffset = .zero
+            backOffset = .zero
+        }
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) {
+            backScale = 0.92
+        }
+        Task {
+            try? await Task.sleep(for: .seconds(leaveDuration))
+            finish(.undo)
+        }
+    }
+
+    /// 撤「收藏」：它当初没有飞出，倒放就是让当前卡弹一下。
+    func playFavoriteUndo() {
+        withAnimation(.spring(response: 0.24, dampingFraction: 0.55)) {
+            frontScale = 0.94
+        }
+        Task {
+            try? await Task.sleep(for: .seconds(0.14))
+            withAnimation(.spring(response: 0.30, dampingFraction: 0.72)) {
+                frontScale = 1
+            }
             try? await Task.sleep(for: .seconds(0.26))
-            onSwipe(intent)
-            offset = .zero
-            isLeaving = false
+            finish(.undo)
         }
     }
-}
 
-private struct EmptyDeckView: View {
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 44))
-                .foregroundStyle(Theme.success)
-            Text("本月项目已整理完毕")
-                .font(.headline)
-            Text("删除的照片已移入回收站")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+    // MARK: - 收尾
+
+    func springBack() {
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+            frontOffset = .zero
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .glassSurface(cornerRadius: Theme.cornerPlate)
     }
-}
 
-extension View {
-    /// 卡片角和右上角的小标签统一造型。
-    func badgeStyle() -> some View {
-        self
-            .font(.system(size: 12, weight: .medium))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 11)
-            .padding(.vertical, 5)
-            .background(.black.opacity(0.42), in: Capsule())
+    /// 先归位动效状态，再回调让数据跟进；两者落在同一帧上，界面连得上。
+    func finish(_ move: SortMove) {
+        withoutAnimation { reset() }
+        isPlaying = false
+        onFinished(move)
+    }
+
+    func reset() {
+        frontOffset = .zero
+        frontScale = 1
+        backOffset = .zero
+        backScale = 0.92
+        incoming = nil
+    }
+
+    /// 各动作飞出屏幕的目标位移；撤回靠 `origin` 反着用，收藏不飞出。
+    func flyTarget(_ move: SortMove) -> CGSize {
+        switch move {
+        case .delete: return CGSize(width: 0, height: -1300)
+        case .next: return CGSize(width: -900, height: 0)
+        case .album: return CGSize(width: 900, height: 0)
+        case .undo, .favorite: return .zero
+        }
     }
 }

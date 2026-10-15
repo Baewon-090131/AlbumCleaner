@@ -2,7 +2,7 @@
 
 > 交接文档，给下一个接手这个项目的智能体或人。
 > **先读这一份，再读 `AGENTS.md`（长期记忆，含设计令牌与历史沿革）。**
-> 生成时间：2026-10-09 · 最近更新：2026-10-14（相簿页 / 回收站网格统一为 iOS 原生相册排列）
+> 生成时间：2026-10-09 · 最近更新：2026-10-15（整理页：撤回收敛为通用撤销栈 + 全操作统一为「滑动分拣」动效）
 
 ---
 
@@ -15,7 +15,7 @@ iOS 相册整理应用，交互参考 Slidebox。**SwiftUI 原生，纯本地，
 | --- | --- |
 | 仓库 | `https://github.com/Baewon-090131/AlbumCleaner`（私有） |
 | 分支 | `main`，工作区干净，与 origin 同步 |
-| 最新提交 | 相簿 / 回收站网格统一（本次改动，hash 见 `git log -1`；上一条是 `d745eb3 v4.0.1`） |
+| 最新提交 | 整理页撤回与滑动分拣动效（本次改动，hash 见 `git log -1`；上一条是相簿 / 回收站网格统一） |
 | 版本 / 构建号 | 4.0 / 13（`project.yml`） |
 | 最低系统 | iOS 17.0（`@Observable`、`ContentUnavailableView` 要求） |
 | 构建 | GitHub Actions（macos-latest）出 IPA artifact |
@@ -64,6 +64,7 @@ curl.exe --ssl-no-revoke -sS -H "Authorization: Bearer $token" `
 | P2 | 「本轮已看」「已收藏」统计 | 目前恒为 0，没接真实计数 |
 | P2 | 深色模式 | 当前一律浅色壁纸 |
 | P2 | 清理 v3 遗留 | `WebContent/`、`compile-jsx.js`、`package.json` 都无用途了，确认后删 |
+| 已做 | 整理页撤回 + 滑动分拣动效 | 2026-10-15：撤回不再只撤删除，收敛为通用撤销栈（限深 50、切月清空）；手势与按钮统一走同一条动效通道（见 5.7） |
 | 已做 | 相簿页 / 回收站网格排列 | 2026-10-14 统一为 iOS 原生相册式：相簿 2 列正方形封面、回收站 3 列 1:1（见第 7 节版本史与 5.6） |
 
 ---
@@ -74,21 +75,25 @@ curl.exe --ssl-no-revoke -sS -H "Authorization: Bearer $token" `
 Evernight/
   EvernightApp.swift             73   入口 + 权限门（RootView）
   Info.plist                     54   权限文案、启动屏、方向
-  Models/LibraryModels.swift     72   PhotoItem / MonthSection / AlbumItem / StorageInfo / Format
+  Models/
+    LibraryModels.swift           72   PhotoItem / MonthSection / AlbumItem / StorageInfo / Format
+    SortModels.swift              84   SortMove / DeckCommand / UndoRecord / SortAction
   Services/
-    PhotoLibraryService.swift   222   @Observable 数据源：权限、按月分组、相簿、回收站、写入
+    PhotoLibraryService.swift   231   @Observable 数据源：权限、按月分组、相簿、回收站、写入
     ThumbnailLoader.swift        46   缩略图异步加载 + NSCache
   Design/
     Theme.swift                  57   颜色 / 圆角令牌 + 壁纸 + Color(hex:)
     GlassSurface.swift          109   Liquid Glass 入口（GlassGroup / glassSurface / glassButtonStyle）+ ContentPanel
   Components/
-    SortDeck.swift              179   卡片区 + 单卡 + DragGesture
+    SortDeck.swift              237   卡片区：跟手 / 飞出 / 下一张入场 / 撤回倒放（动效编排）
+    SortCard.swift               93   单张卡片视觉 + 空态 + badgeStyle
     SortActionBar.swift          63   底部操作岛（GlassEffectContainer）
     ProgressHeader.swift         46   整理页进度胶囊
+    MonthMenu.swift              32   月份切换胶囊（系统 Menu）
     AsyncThumbnail.swift         26   缩略图视图
     ToastBanner.swift            17   临时提示
   Screens/
-    SortScreen.swift            260   整理页（相簿详情复用）+ 动作 + 月份菜单
+    SortScreen.swift            269   整理页（相簿详情复用）+ 撤销栈 + 动作
     MineScreen.swift            235   我的：List / Toggle / Slider / 主题色
     TrashScreen.swift           121   回收站（3 列正方形网格）+ 全屏查看
     AlbumsScreen.swift           79   相簿网格（2 列正方形封面，iOS 原生式）
@@ -115,6 +120,8 @@ project.yml                      47   xcodegen 配置
 | 回收站「彻底删除」 | `deleteFromSystem` → `PHPhotoLibrary.performChanges` + `PHAssetChangeRequest.deleteAssets` |
 | 下滑收藏 | `setFavorite` → `PHAssetChangeRequest.isFavorite` |
 | 操作岛「相簿」 | 原生 `confirmationDialog` 列相簿 → `add(_:to:)` |
+| 撤回（按钮 / 右滑） | 按撤销栈顶记录倒做：删除 → `restore` 按创建日期插回原位；下一张 → 游标退一张；收藏 → `setFavorite(false)`；存入相簿 → `remove(_:from:)` |
+| 手势与按钮触发动效 | 都写 `SortScreen.command`（`DeckCommand`，带 token）→ `SortDeck.onChange` 播放 → 播完回调 `onFinished` 才改数据 |
 | 缩略图 | `ThumbnailLoader` → `PHCachingImageManager.requestImage`，按 `identifier\|size` 缓存 |
 | 存储占用 | `readStorage` → volumeTotalCapacity / volumeAvailableCapacityForImportantUsage |
 | 主题色 | `@AppStorage("ac_theme")` + `Color(hex:)`，`MainTabView` 用 `.tint` 应用 |
@@ -167,6 +174,31 @@ HIG 明确说 Liquid Glass 只用于浮在内容之上的功能层，玻璃叠�
 正确做法：拿形状当底（`Rectangle().fill(.quaternary)`），`.aspectRatio(1, contentMode: .fill)` 让它撑满列宽；
 缩略图放进 `.overlay`，最后 `.clipShape` 统一裁圆角。相簿页与回收站现在都这么写。
 
+### 5.7 整理页动效：动效先播，数据后改
+
+手势和按钮**共用一条通道**，别让任何一条自己去改数据：
+
+1. 手势在 `SortDeck` 里跟手并判定方向，松手只把结论交给外层（`onSwipe` 返回是否受理）；
+2. 外层（按钮点击同理）写 `SortScreen.command = DeckCommand(token:move:incoming:reverseOf:)`——
+   `token` 递增是为了让「同一个动作」也能被 `.onChange` 认出来；
+3. `SortDeck.onChange(of: command)` 播放飞出 / 倒放；
+4. 播完 `finish` 里**先归位动效状态**（`withoutAnimation { reset() }`），再回调 `onFinished`，
+   `SortScreen` 这时才 `index += 1` / 压栈 / 写 Photos。
+
+三步顺序不能换，否则会看到「新卡从屏外飞回来」或「旧卡拖着过渡重演」。
+复位一律走 `withoutAnimation`：`Transaction(disablesAnimations:)` 这个初始化器**不存在**，
+要 `var transaction = Transaction(); transaction.disablesAnimations = true` 再 `withTransaction`。
+
+另外几个约定：`isPlaying` 期间不再受理新操作（`request` 直接返回 false）；
+下滑收藏不飞出也不推进（40pt 判定后弹回原位）；撤回按 `UndoRecord.origin` 反着播——
+当前卡从被拖到的位置退回后方 0.92，被撤那张从当初飞出去的方向飞回。
+
+### 5.8 卡片区是双层，别把后方的卡省掉
+
+`SortDeck` 同时渲染「前置卡 + 后置卡（0.92 缩放）」。后置卡是新插入的视图时，
+`AsyncThumbnail` 的占位会露一帧（`Rectangle().fill(.quaternary)`）——这是模型的固有代价，
+换位时（前卡飞出、后卡顶上来）靠 `withoutAnimation` 让两层在同一帧交接，肉眼看不出来。
+
 ---
 
 ## 6. 版本号与自检
@@ -199,7 +231,8 @@ xcodebuild -scheme AlbumCleaner -sdk iphonesimulator build
 
 | 版本 | 提交 | 内容 |
 | --- | --- | --- |
-| 网格统一 | 本次 | 相簿页改 2 列正方形封面（名称 / 数量居中在下方，去掉卡片底）；回收站改 3 列 1:1 圆角 8（间距 3 / 边距 12）；整理页未动 |
+| 整理页动效 | 本次 | 撤回收敛为通用撤销栈（删除 / 下一张 / 收藏 / 存入相簿，限深 50、切月清空）；整理页手势与按钮统一为「滑动分拣」动效，撤回即整套倒放；`SortModels.swift` / `SortCard.swift` / `MonthMenu.swift` 拆出 |
+| 网格统一 | `1631484` | 相簿页改 2 列正方形封面（名称 / 数量居中在下方，去掉卡片底）；回收站改 3 列 1:1 圆角 8（间距 3 / 边距 12）；整理页未动 |
 | v4.0.1 | `d745eb3` | 按 Liquid Glass 规范重做玻璃层（GlassEffectContainer / interactive / morphing） |
 | v4.0 | `d4cd8cc` | **UI 层从 WKWebView + React 整体改成 SwiftUI**，删除 4 个旧 Swift 文件，最低系统提到 iOS 17 |
 | v3.0.1 | `0156ce2` | 网页版：开关 / 滑块 / 下拉改用原生表单元素 |
@@ -220,6 +253,7 @@ xcodebuild -scheme AlbumCleaner -sdk iphonesimulator build
 | 网页版预览（v3，仅对照） | `node compile-jsx.js`，然后 `Previews/_shot.html?tab=sort\|albums\|mine` |
 | 设计稿 | `Previews/Evernight-V3-UI.pptx`（7 页可编辑）+ `v3-shots/` |
 | 网格改动预览 | `Previews/Evernight-Grid-Preview.pptx`（5 页可编辑，相簿 / 回收站方案，2026-10-14 已拍板；非 SwiftUI 渲染） |
+| 整理页动效预览 | `Previews/Evernight-Sort-Motion-Preview.pptx`（8 页可编辑：滑动分拣关键帧、撤回倒放、语义与参数表，2026-10-15 已拍板；生成脚本 `Previews/_sort-build/build.mjs`） |
 | v4 预览 | `Previews/v4-preview.png`（**注意：这是 HTML 画的示意图，不是 SwiftUI 渲染**） |
 | 参考图 | 仓库根目录 `p1.jpg`–`p4.jpg`（用户提供的设计参考，已入库） |
 | 项目记忆 | `AGENTS.md`（设计令牌、机制、坑的完整版） |
