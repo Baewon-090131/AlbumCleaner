@@ -8,9 +8,9 @@ func withoutAnimation(_ work: () -> Void) {
     withTransaction(transaction, work)
 }
 
-/// 卡片区：当前卡跟手平移、超过阈值飞出屏幕；下一张卡先在后方 0.92 处待命，
-/// 前一张飞出时用 Spring 放大到 1.0。撤回则把整套分拣动效倒着放一遍——
-/// 当前卡缩回 0.92 退场，被撤那张从它当初飞出去的方向飞回正面。
+/// 卡片区：当前卡跟手平移、超过阈值飞出屏幕；下一张卡先在后方 0.92 处透明待命，
+/// 前一张飞出时用同一个 Spring 放大到 1.0 并同步渐显。撤回则把整套分拣动效倒着放一遍——
+/// 当前卡缩回 0.92 并渐隐退场，被撤那张从它当初飞出去的方向飞回正面。
 ///
 /// 手势与按钮共用一条通道：手势在卡上跟手并判定方向，松手只把结论交给外层；
 /// 外层写入 `command` 再回到这里播动效，按钮点击同样只写 `command`。
@@ -32,6 +32,8 @@ struct SortDeck: View {
     @State private var frontScale: CGFloat = 1
     @State private var backOffset: CGSize = .zero
     @State private var backScale: CGFloat = 0.92
+    /// 后置卡的渐显：待命时全透明，顶上来时与放大同步显现。
+    @State private var backOpacity: CGFloat = 0
     /// 撤回时前置的「飞回来」那张；其余时候为 nil。
     @State private var incoming: PhotoItem?
 
@@ -51,6 +53,7 @@ struct SortDeck: View {
                         .id(back.id)
                         .offset(backOffset)
                         .scaleEffect(backScale)
+                        .opacity(backOpacity)
                 }
 
                 // 前置卡：平时是当前张，撤回时是被撤那张从屏外飞回来
@@ -135,13 +138,15 @@ private extension SortDeck {
         }
     }
 
-    /// 删除 / 下一张 / 存入相簿：当前卡飞出屏幕，下一张用 Spring 放大到 1.0。
+    /// 删除 / 下一张 / 存入相簿：当前卡飞出屏幕，下一张在同一个 Spring 里
+    /// 从 0.92 缩小态放大到 1.0，并同步渐显——「缩小按压态过渡到正常」与透明度一起走完。
     func playFlyOut(_ move: SortMove) {
         withAnimation(.easeOut(duration: leaveDuration)) {
             frontOffset = flyTarget(move)
         }
         withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) {
             backScale = 1
+            backOpacity = 1
         }
         Task {
             try? await Task.sleep(for: .seconds(leaveDuration))
@@ -170,6 +175,8 @@ private extension SortDeck {
         withoutAnimation {
             incoming = incomingPhoto
             backOffset = start
+            // 后置卡此刻就是被拖到 `start` 的那张当前卡，倒放时它要从可见缩回待命
+            backOpacity = 1
             frontOffset = flyTarget(origin)
             frontScale = 1
             backScale = 1
@@ -180,6 +187,7 @@ private extension SortDeck {
         }
         withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) {
             backScale = 0.92
+            backOpacity = 0
         }
         Task {
             try? await Task.sleep(for: .seconds(leaveDuration))
@@ -222,6 +230,7 @@ private extension SortDeck {
         frontScale = 1
         backOffset = .zero
         backScale = 0.92
+        backOpacity = 0
         incoming = nil
     }
 

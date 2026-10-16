@@ -85,7 +85,7 @@ Evernight/
     Theme.swift                  57   颜色 / 圆角令牌 + 壁纸 + Color(hex:)
     GlassSurface.swift          109   Liquid Glass 入口（GlassGroup / glassSurface / glassButtonStyle）+ ContentPanel
   Components/
-    SortDeck.swift              237   卡片区：跟手 / 飞出 / 下一张入场 / 撤回倒放（动效编排）
+    SortDeck.swift              246   卡片区：跟手 / 飞出 / 下一张渐显入场 / 撤回倒放（动效编排）
     SortCard.swift               93   单张卡片视觉 + 空态 + badgeStyle
     SortActionBar.swift          63   底部操作岛（GlassEffectContainer）
     ProgressHeader.swift         46   整理页进度胶囊
@@ -191,11 +191,13 @@ HIG 明确说 Liquid Glass 只用于浮在内容之上的功能层，玻璃叠�
 
 另外几个约定：`isPlaying` 期间不再受理新操作（`request` 直接返回 false）；
 下滑收藏不飞出也不推进（40pt 判定后弹回原位）；撤回按 `UndoRecord.origin` 反着播——
-当前卡从被拖到的位置退回后方 0.92，被撤那张从当初飞出去的方向飞回。
+当前卡从被拖到的位置退回后方 0.92 并渐隐，被撤那张从当初飞出去的方向飞回。
 
 ### 5.8 卡片区是双层，别把后方的卡省掉
 
-`SortDeck` 同时渲染「前置卡 + 后置卡（0.92 缩放）」。后置卡是新插入的视图时，
+`SortDeck` 同时渲染「前置卡 + 后置卡（0.92 缩放、待命时全透明）」。前卡飞出时后卡用
+`spring(0.42, 0.78)` 从 0.92 放到 1.0 **并同步渐显**（缩放与透明度共用同一个 Spring）；撤回是这套的倒放
+（缩回 0.92 并渐隐）。后置卡是新插入的视图时，
 `AsyncThumbnail` 的占位会露一帧（`Rectangle().fill(.quaternary)`）——这是模型的固有代价，
 换位时（前卡飞出、后卡顶上来）靠 `withoutAnimation` 让两层在同一帧交接，肉眼看不出来。
 
