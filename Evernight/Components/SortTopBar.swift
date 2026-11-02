@@ -24,9 +24,6 @@ struct SortTopBar: View {
                 MonthMenu(months: months,
                           selectedID: selectedMonthID,
                           onSelect: onSelectMonth)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 7)
-                    .glassSurface(cornerRadius: 17, interactive: true)
                 filterMenu
             }
 
