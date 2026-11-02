@@ -49,7 +49,8 @@ struct SortDeck: View {
                 if let back = (incoming != nil ? photo : nextPhoto) {
                     SortCard(photo: back,
                              sizeLabel: incoming != nil ? sizeLabel : nextSizeLabel,
-                             bounds: geometry.size)
+                             bounds: geometry.size,
+                             isFront: false)
                         .id(back.id)
                         .offset(backOffset)
                         .scaleEffect(backScale)
@@ -61,13 +62,14 @@ struct SortDeck: View {
                     SortCard(photo: front,
                              // 飞回来那 0.26s 里体积还没算，标签先留空
                              sizeLabel: incoming != nil ? "" : sizeLabel,
-                             bounds: geometry.size)
+                             bounds: geometry.size,
+                             isFront: true,
+                             onOpenViewer: { onTap(front) })
                         .id(front.id)
                         .offset(frontOffset)
                         .scaleEffect(frontScale)
                         .rotationEffect(.degrees(frontOffset.width / 26))
                         .gesture(dragGesture)
-                        .onTapGesture { onTap(front) }
                 }
 
                 if photo == nil && incoming == nil {

@@ -15,9 +15,10 @@ struct SortScreen: View {
     @State private var undoStack: [UndoRecord] = []
     @State private var albumPhotos: [PhotoItem] = []
     @State private var toast: String?
-    @State private var showTrash = false
     @State private var showAlbumPicker = false
     @State private var viewerPhoto: PhotoItem?
+    /// 分列模式：1 = 单卡，2 / 3 = 瀑布流分列（双指收拢切换）。相簿详情不支持分列。
+    @State private var columnCount = 1
     /// 相簿按钮选完的目标，等动效播完才真正写入。
     @State private var pendingAlbum: AlbumItem?
     /// 交给卡片区播放的操作；`commandToken` 保证同一种动作也能被认出来。
@@ -64,32 +65,44 @@ struct SortScreen: View {
                 tint: Color(hex: themeHex)
             )
 
-            SortDeck(
-                photo: current,
-                nextPhoto: upcoming,
-                sizeLabel: current.map { Format.bytes(library.fileSize(of: $0)) } ?? "",
-                nextSizeLabel: upcoming.map { Format.bytes(library.fileSize(of: $0)) } ?? "",
-                command: command,
-                isPlaying: $isPlaying,
-                onSwipe: { request($0) },
-                onFinished: finish,
-                onTap: { viewerPhoto = $0 }
-            )
+            if columnCount == 1 {
+                SortDeck(
+                    photo: current,
+                    nextPhoto: upcoming,
+                    sizeLabel: current.map { Format.bytes(library.fileSize(of: $0)) } ?? "",
+                    nextSizeLabel: upcoming.map { Format.bytes(library.fileSize(of: $0)) } ?? "",
+                    command: command,
+                    isPlaying: $isPlaying,
+                    onSwipe: { request($0) },
+                    onFinished: finish,
+                    onTap: { viewerPhoto = $0 }
+                )
 
-            SortActionBar(
-                actions: actions,
-                canUndo: !undoStack.isEmpty,
-                hasPhoto: current != nil,
-                namespace: actionNamespace,
-                onAction: handleAction
-            )
+                SortActionBar(
+                    actions: actions,
+                    canUndo: !undoStack.isEmpty,
+                    hasPhoto: current != nil,
+                    namespace: actionNamespace,
+                    onAction: handleAction
+                )
+            } else {
+                ColumnsGrid(
+                    photos: photos,
+                    columns: columnCount,
+                    onMarkDelete: markDeleteInColumns
+                )
+            }
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 6)
-        .navigationTitle(isAlbumMode ? (album?.name ?? "相簿") : "Evernight")
+        .gesture(
+            // 双指收拢进分列（最多 3 列），张开退回单卡；相簿详情不分列
+            MagnifyGesture()
+                .onEnded { value in handlePinch(value.magnification) }
+        )
+        .navigationTitle(isAlbumMode ? (album?.name ?? "相簿") : "evernight")
         .navigationBarTitleDisplayMode(isAlbumMode ? .inline : .large)
         .toolbar { toolbarContent }
-        .navigationDestination(isPresented: $showTrash) { TrashScreen() }
         .fullScreenCover(item: $viewerPhoto) { PhotoViewerScreen(photo: $0) }
         .confirmationDialog("存入相簿", isPresented: $showAlbumPicker, titleVisibility: .visible) {
             ForEach(library.albums) { target in
@@ -123,24 +136,21 @@ struct SortScreen: View {
             }
         }
 
-        ToolbarItem(placement: .topBarTrailing) {
-            Button {
-                showTrash = true
-            } label: {
-                Image(systemName: "archivebox")
-                    .overlay(alignment: .topTrailing) {
-                        if !library.trash.isEmpty {
-                            Text("\(min(library.trash.count, 99))")
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 1)
-                                .background(Theme.danger, in: Capsule())
-                                .offset(x: 10, y: -8)
-                        }
-                    }
+        // 分列模式下操作岛被瀑布流取代，撤回挪到顶栏
+        if columnCount > 1 {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    undo()
+                } label: {
+                    Image(systemName: "arrow.uturn.backward")
+                }
+                .disabled(undoStack.isEmpty)
+                .accessibilityLabel("撤回")
             }
-            .accessibilityLabel("回收站")
+        }
+
+        ToolbarItem(placement: .topBarTrailing) {
+            TrayButton()
         }
     }
 }
@@ -256,6 +266,25 @@ private extension SortScreen {
     func addCurrentPhoto(to target: AlbumItem) {
         pendingAlbum = target
         request(.album)
+    }
+
+    /// 双指收拢进分列、张开退回单卡。相簿详情不支持分列（它的删除不走月份游标）。
+    func handlePinch(_ magnification: CGFloat) {
+        guard !isAlbumMode else { return }
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+            if magnification < 0.82, columnCount < 3 {
+                columnCount += 1
+            } else if magnification > 1.22, columnCount > 1 {
+                columnCount -= 1
+            }
+        }
+    }
+
+    /// 分列模式里的滑删：飞出动画播完才走到这里，与卡片区「先动效后数据」一致。
+    func markDeleteInColumns(_ photo: PhotoItem) {
+        library.moveToTrash(photo)
+        push(.deletion(photo: photo, index: index))
+        show("已标记，进待删除")
     }
 
     func show(_ message: String) {

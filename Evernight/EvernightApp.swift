@@ -9,9 +9,20 @@ struct EvernightApp: App {
     }
 }
 
+/// 全局界面状态：任何页面的「待删除托盘」都经它弹出回收站；「我的」也经它开合。
+@Observable
+@MainActor
+final class UIState {
+    var showTrash = false
+    var showMine = false
+}
+
 /// 顶层：壁纸 + 权限门 + 主界面。数据源在这里创建，往下用 environment 传。
 struct RootView: View {
     @State private var library = PhotoLibraryService()
+    @State private var ui = UIState()
+    /// 相似检测结果常驻这里：切 tab 不重扫。
+    @State private var similarity = SimilarityService()
 
     var body: some View {
         ZStack {
@@ -19,6 +30,8 @@ struct RootView: View {
             content
         }
         .environment(library)
+        .environment(ui)
+        .environment(similarity)
         .task { await library.load() }
     }
 

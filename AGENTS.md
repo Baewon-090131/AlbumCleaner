@@ -1,54 +1,62 @@
 # Album Cleaner · 项目记忆
 
 > 本文件是项目的长期记忆，写给后续的协作者与 AI 会话。改动项目前先读这一份。
-> 最近更新：2026-10-15（整理页撤回收敛为通用撤销栈、全操作统一为「滑动分拣」动效；上一次是 2026-10-14 的相簿页 / 回收站网格统一）
+> 最近更新：2026-11-02（v0.1：更名 evernight、底栏 3+1 与「我的」sheet、卡内播放、分列删除、待删除结算页、相似页 pHash、相簿管理；上一次是 2026-10-15 的整理页撤回收敛与滑动分拣动效）
 
 ## 1. 这是什么
 
-一款 iOS 相册整理应用，交互参考 Slidebox：
+一款 iOS 相册整理应用，交互参考 Slidebox 与「卡待删」：
 
 - **形态（v4.0 起）**：**纯 SwiftUI 原生应用**，没有 WebView、没有 React。相册数据直接来自 Photos framework。
-- **信息架构**：三个 tab——整理 / 相簿 / 我的。顶部用系统 `NavigationStack` 的大标题与工具栏，底部用系统 `TabView`。整理页的月份切换是系统 `Menu`，开关是 `Toggle`，滑块是 `Slider`，「我的」整页是 `List(.insetGrouped)`。
-- **核心手势**：上滑删除 / 左滑下一张 / 右滑撤回 / 下滑收藏（`DragGesture`）；删除先进应用内回收站，回收站里的「彻底删除」才动系统相册。
+- **信息架构（v0.1 起）**：底栏是自定义的「3 栏玻璃胶囊（整理 / 相似 / 相簿）+ 独立圆形『我的』按钮」（`Components/AppTabBar.swift`），不再是系统 `TabView`；「我的」从底部上滑覆盖当前页（MainTabView 自绘 sheet，抓握条下拉关闭）。三个 tab 常驻只切显隐（`opacity` + `allowsHitTesting`），整理页游标与撤销栈、相似页扫描结果不因切换丢失。回收站改名「待删除」，由全局 `UIState.showTrash` 经 `fullScreenCover` 弹出。
+- **核心手势**：整理页上滑删除 / 左滑下一张 / 右滑撤回 / 下滑收藏（`DragGesture`）；**双指收拢进分列模式**（2 / 3 列瀑布流），分列里任意一张左右滑即标记删除。删除先进应用内「待删除」，待删除里的「彻底删除」才动系统相册。
 - **构建**：GitHub Actions 出 IPA（`.github/workflows/build.yml`），或本地 `xcodegen generate` + Xcode。**最低 iOS 17.0**（`@Observable`、`ContentUnavailableView` 等要求）。
-- **`Evernight/WebContent/` 是 v3 的网页实现，v4.0 起不再参与构建**（`project.yml` 已移除引用），保留只作对照。它可以用浏览器直接打开预览设计，见第 6 节。
+- **`Evernight/WebContent/` 是 v3 的网页实现，不参与构建**（`project.yml` 已移除引用），保留只作对照。
 
 ## 2. 目录结构
 
 ```
 Evernight/
-  EvernightApp.swift             入口 + 权限门（RootView）
-  Info.plist                     权限文案、启动屏、方向、仅浅色
+  EvernightApp.swift             入口 + 权限门（RootView）+ 全局 UIState
+  Info.plist                     权限文案、启动屏、方向、仅浅色（显示名 evernight）
   Models/
     LibraryModels.swift          PhotoItem / MonthSection / AlbumItem / StorageInfo / Format
     SortModels.swift             SortMove / DeckCommand / UndoRecord / SortAction
   Services/
-    PhotoLibraryService.swift    @Observable 数据源：权限、按月分组、相簿、回收站、写入
-    ThumbnailLoader.swift        缩略图异步加载 + NSCache
+    PhotoLibraryService.swift    @Observable 数据源：权限、按月分组、相簿、待删除、写入、累计战果
+    SimilarityService.swift      相似检测：dHash 指纹 + 分桶候选 + 并查集分组（指纹存 UserDefaults）
+    ThumbnailLoader.swift        缩略图异步加载 + NSCache（大卡原图级走独立 8 张缓存）
   Design/
     Theme.swift                  颜色 / 圆角令牌 + 壁纸 + Color(hex:)
     GlassSurface.swift           Liquid Glass 适配层 + ContentPanel（内容层材质）
   Components/
-    SortDeck.swift               卡片区：跟手 / 飞出 / 下一张入场 / 撤回倒放（动效编排）
-    SortCard.swift               单张卡片视觉 + 空态 + badgeStyle
+    SortDeck.swift               卡片区：跟手 / 飞出 / 下一张渐显入场 / 撤回倒放（动效编排）
+    SortCard.swift               单张卡片视觉 + 空态 + badgeStyle（媒体内容走 MediaCardContent）
+    MediaCardContent.swift       视频卡（AVPlayerLayer 静音循环）+ 实况卡（PHLivePhotoView）
+    ColumnsGrid.swift            分列瀑布流：双指收拢进入，左右滑标记删除
     SortActionBar.swift          底部操作岛
+    AppTabBar.swift              自定义底栏：3 栏玻璃胶囊 + 我的独立圆钮
+    TrayButton.swift             待删除托盘（垃圾桶 + 红角标），各页右上共用
+    SimilarGroupCard.swift       相似页的一组：缩略图行 + 勾选 + 组底删除条
     ProgressHeader.swift         整理页顶部进度胶囊
     MonthMenu.swift              整理页月份切换（系统 Menu）
-    AsyncThumbnail.swift         缩略图视图
+    AsyncThumbnail.swift         缩略图视图（highQuality 开关给前置大卡）
     ToastBanner.swift            临时提示
   Screens/
-    MainTabView.swift            系统 TabView + 三个 tab
-    SortScreen.swift             整理页（相簿详情复用）+ 撤销栈 + 动作
-    AlbumsScreen.swift           相簿网格
-    MineScreen.swift             我的（List + Toggle + Slider）
-    TrashScreen.swift            回收站 + 全屏查看
-  WebContent/                    v3 的网页实现，v4.0 起不参与构建（见第 1 节）
+    MainTabView.swift            自定义底栏 + 我的 sheet + 回收站 fullScreenCover
+    SortScreen.swift             整理页（相簿详情复用）+ 撤销栈 + 分列模式 + 动作
+    SimilarScreen.swift          相似页：年份筛选 + 智能清理 + 分组列表
+    AlbumsScreen.swift           相簿管理：空相簿横幅 / 新建 / 排序 / 长按菜单
+    MineScreen.swift             我的面板（sheet）：深色统计卡 + 设置
+    TrashScreen.swift            待删除（结算页：全选 / 勾选 / 红色删除条）+ 全屏查看
+    FavoritesScreen.swift        已喜欢网格（从我的进入）
+  WebContent/                    v3 的网页实现，不参与构建（见第 1 节）
 project.yml / .github/          构建与 CI 配置
 compile-jsx.js / package.json   网页版遗留工具链，v4.0 起不再需要
 Previews/                       预览产物（已 gitignore，见第 6 节）
 ```
 
-原生化用到的系统控件：`NavigationStack`（大标题 + 工具栏）、`TabView`（底部 tab）、`Menu`（月份）、`Toggle`、`Slider`、`List(.insetGrouped)`、`ProgressView`、`ContentUnavailableView`、`confirmationDialog`（回收站操作）、`fullScreenCover`（全屏看照片）。
+原生化用到的系统控件：`NavigationStack`（大标题 + 工具栏）、`Menu`（月份、排序）、`Toggle`、`Slider`、`List(.insetGrouped)`、`ProgressView`、`ContentUnavailableView`、`confirmationDialog`（相簿与待删除操作）、`fullScreenCover`（待删除 / 全屏看照片 / 已喜欢）、`contextMenu`（相簿长按）。v0.1 起底部 tab 不再用系统 `TabView`，见第 1 节。
 
 v3 的网页版组件（`TopBar` / `BottomTabBar` / `SortPage` / `SwipeCardStack` / `SortBottomBar` / `AlbumsPage` / `TrashPage` / `MinePage` / `Icons`）仍留在 `WebContent/components/`，只作对照与设计基线，不再被 App 加载。
 
@@ -109,6 +117,17 @@ rg -n "^import UIKit" Evernight --glob "*.swift"                           # 只
 **无障碍**：`main.jsx` 内的 `@media (prefers-reduced-motion: reduce)` 块把位移类关键帧降级成纯透明度过渡（含转场的四组揭示/位移关键帧）；`SwipeCardStack` 与 `App` 里 JS 直驱的动效也各自做了同样判断。
 
 ## 5. 关键机制与坑
+
+**v0.1 新机制**：
+
+- **底栏 3+1 与「我的」sheet**：`MainTabView` 用 `ZStack(alignment: .bottom)` 叠「tab 内容 + 我的面板 + AppTabBar」。三个 tab 常驻（`opacity` 切显隐），不要用 switch 重建——会丢整理页撤销栈。「我的」面板顶部圆角 + 抓握条，抓握区的 `DragGesture` 实时写 `mineDrag`，松手超 110pt 关闭；手势只挂在抓握区，下面 List 滚动不受影响。
+- **待删除托盘**：`UIState`（`@Observable`，RootView 创建经 environment 下传）持有 `showTrash` / `showMine`。各页右上角的 `TrayButton` 只写 `ui.showTrash = true`，`MainTabView` 用 `fullScreenCover` 弹出（盖住自定义底栏）。**别再用 `navigationDestination` 弹回收站**——自定义底栏不会随 push 隐藏。
+- **卡内播放**：`SortCard` 按媒体类型换内容——视频走 `VideoCardContent`（UIViewRepresentable 包 `AVPlayerLayer`，`videoGravity = .resizeAspect`；静音默认开、可点喇叭切换；播到头回卷循环；底部细进度条），实况走 `LivePhotoCardContent`（`PHLivePhotoView`，载入后 `replayToken` 自增触发 `startPlayback(.full)`，点按重播）。**只有前置卡加载播放器**（`isFront`），后卡退化为缩略图。`UIViewRepresentable.Context.coordinator` 是只读属性，要记状态得用引用类型 coordinator。点按手势归属：媒体卡点按 = 播放控制，普通照片点按 = 全屏查看（`onOpenViewer`），都在 SortCard 内部，SortDeck 不再统一挂 onTap。
+- **原图画质**：`AsyncThumbnail(highQuality: true)` 把请求尺寸乘 `displayScale × 1.5`（单边封顶 2800px），走 `ThumbnailLoader.fullCache`（只留 8 张，防内存爆）。网格缩略图别加这个开关。
+- **分列删除**：`SortScreen.columnCount`（1/2/3），`MagnifyGesture().onEnded` 收拢 <0.82 加列、张开 >1.22 减列（相簿详情不支持分列——它的删除不走月份游标）。瀑布流在 `ColumnsGrid`：最短列优先分配；单元格用 `simultaneousGesture` 做横向滑删（|dx| > |dy|×1.2 才接管，70pt 过阈值，飞出 0.22s 后才调 `onMarkDelete`，与卡片区「先动效后数据」一致）。分列时操作岛隐藏，撤回挪到顶栏。
+- **相似页**：`SimilarityService` 在 RootView 常驻（environment）。指纹 = 64×64 缩略图 → 9×8 灰度 → dHash；16 位分段分桶找候选对（桶 >60 跳过，防全白全黑误判风暴）；汉明 ≤ 7 并查集成组；组内最优按「像素数 + 文件MB」打分。指纹存 UserDefaults（`ac_similar_hash_v1`），增量扫描。视频不参与。删除一律进「待删除」，不直接动系统相册。
+- **待删除结算页**：默认全勾（`unchecked` 集合记取消项），红条「彻底删除 N 项 · 释放 xx MB」。`deleteFromSystem` 返回 Bool：**成功后才把未勾选项 `restore` 放回相册**（参照「卡待删」语义）；用户取消系统弹窗则一切保持原样。删除成功时落账 `totalCleaned` / `totalFreedBytes`（UserDefaults），给「我的」统计卡。
+- **相簿管理**：`AlbumItem.isUserAlbum` 区分自建 / 智能相簿（智能相簿不能重命名删除）。`createAlbum` / `renameAlbum` / `deleteAlbums` / `deleteAlbumWithPhotos` / `moveAllPhotos` 都是 async→Bool，成功后 `reloadAlbums()`。空相簿横幅只统计自建相簿。
 
 **v4.0 SwiftUI 机制**：
 
@@ -178,7 +197,8 @@ Previews/
 
 ## 7. 当前状态
 
-- **整理页交互与动效（2026-10-15）**：撤回从「只撤删除」收敛为通用撤销栈（删除 / 下一张 / 收藏 / 存入相簿，限深 50、切月清空，「下一张」后撤回会退回上一张）；手势与按钮统一为「滑动分拣」动效——跟手平移、90pt 飞出、下一张从 0.92 Spring 放大，撤回按原动作倒放。下滑收藏改为 40pt 判定后弹回原位、不推进，提示胶囊透明度降到 30%。改前先出了可编辑预览 `Previews/Evernight-Sort-Motion-Preview.pptx`（8 页）并经用户拍板。**本机无 Xcode，代码尚未编译**，编译验证仍靠 CI。
+- **v0.1（2026-11-02）**：更名 evernight（`Info.plist` 显示名 + `project.yml` 0.1 / 构建号 14）。移植「卡待删」核心能力：底栏改自定义 3+1（整理 / 相似 / 相簿胶囊 + 我的独立圆钮，我的从底部上滑覆盖成 sheet）；整理页前置卡原图级画质 + 视频 / 实况卡内播放（AVPlayerLayer / PHLivePhotoView）；双指收拢进分列瀑布流，左右滑标记删除；回收站改「待删除」结算页（全选 / 勾选 / 红色删除条，未勾选项放回）；新增相似页（dHash 指纹 + 分桶 + 并查集，最优保留 / 智能清理）；相簿管理（空相簿一键删除 / 新建 / 排序 / 长按菜单）。改前出了可编辑预览 `Previews/Evernight-V5-Feature-Preview.pptx`（11 页）并经用户拍板。**本机无 Xcode，编译验证靠 CI。**
+- **整理页交互与动效（2026-10-15）**：撤回从「只撤删除」收敛为通用撤销栈（删除 / 下一张 / 收藏 / 存入相簿，限深 50、切月清空，「下一张」后撤回会退回上一张）；手势与按钮统一为「滑动分拣」动效——跟手平移、90pt 飞出、下一张从 0.92 Spring 放大**并同步渐显**（v0.1 增补：缩放与透明度共用同一 Spring），撤回按原动作倒放。下滑收藏改为 40pt 判定后弹回原位、不推进，提示胶囊透明度降到 30%。改前先出了可编辑预览 `Previews/Evernight-Sort-Motion-Preview.pptx`（8 页）并经用户拍板。
 - **网格统一（2026-10-14）**：相簿页与回收站统一为 iOS 原生相册排列——相簿页去掉 `ContentPanel` 卡片底，改 2 列 1:1 正方形封面（圆角 12），名称 / 数量居中在封面下方；回收站改 3 列 1:1（圆角 8）、格间距 3 / 左右边距 12，用形状底修掉了原来格子参差的尺寸链，顶部说明行改为左对齐。**整理页（`SortScreen`）未动，交互与数据流不变**。改前先出了可编辑预览 `Previews/Evernight-Grid-Preview.pptx` 并经用户拍板。
 - **v4.0**：UI 层从 WKWebView + React 整体改成 SwiftUI（现为 19 个 Swift 文件、约 1900 行）。删掉了 `AppDelegate` / `ViewController` / `LivePhotoViewController` / `PhotoLibraryManager`；新增 `Models` / `Services` / `Design` / `Components` / `Screens`。`project.yml` 不再打包 `WebContent`，最低系统从 iOS 14 提到 **iOS 17**，版本号 4.0（构建号 13）。`Info.plist` 的显示名改成 Evernight，并去掉了已无必要的 `NSAllowsArbitraryLoads`。
 - **本机验证限制**：开发机是 Windows、没有 Xcode 与 Swift 工具链，**Swift 代码没有编译过**，只做了结构与括号的人工复核。真正的编译验证要靠 CI（macos-latest）。
@@ -203,19 +223,15 @@ Previews/
 - `index.html` 的 `maximum-scale=1 / user-scalable=no` 是否放开——站内没有输入框，属产品决策，需要单独拍板。
 
 **已知但未处理的摩擦点**
-- **v4.0 待办**：视频与 Live Photo 目前只按静态缩略图显示，还没接 `AVPlayer` 播放（v3 网页版有）。真机上要看播放效果得补这一块。
-- **v4.0 待办**：整理页的「本轮已看」「已收藏」两个统计仍是写死的 0，没有真实计数。
+- **v0.1 已清**：视频 / Live Photo 卡内播放（`MediaCardContent`）；「已喜欢」「待清理」统计（真实计数 + 累计战果落账）；相簿新建与空相簿清理。
+- 整理页的「本轮已看」统计仍是写死的 0（每轮数量滑块 v0.1 起存 `ac_batchSize`，但还没有地方消费它——「一轮 N 个」的回合制玩法没做）。
+- 隐藏的 tab 内容常驻：被 `opacity(0)` 盖住的整理页里若有视频卡在播，不会自动暂停（静音循环，开销小但存在）。
+- 相簿详情（`SortScreen(album:)`）里删除 / 存相簿不会更新 `albumPhotos` 列表——v4.0 就存在的已知限制，分列模式因此在相簿详情里禁用。
+- 相似检测阈值固定 7、桶上限 60，没做用户可调；dHash 对旋转 / 大幅裁剪不敏感是算法固有边界。
 - **v4.0 待办**：`WebContent/` 与 `compile-jsx.js` / `package.json` 已无用途，确认不再需要后可以删。
 - **v4.0 待办**：深色模式仍未实现（当前一律浅色壁纸）。
 - **v4.0 依赖**：`glassEffect` / `GlassEffectContainer` / `.glass` 按钮样式需要 **iOS 26 SDK 编译**（运行时已有 `#available` 降级）。CI 的 macos-latest 如果 Xcode 版本落后，会在这几个符号上编译失败——先看 Actions 日志里的 `xcodebuild -version`。
-- `SortPage` 的顶部进度条与全屏视频进度条仍动画 `width`（可改 `transform: scaleX()`，同期其它地方已用 `scaleX`）。
-- `SwipeHint` 用关键帧入场（可改 transition，避免快速反复触发时从零重来）。
-- 组件函数签名里的 `themeColor = '#007AFF'` 默认值仍是旧蓝，实际由 `App` 传入北洋蓝，仅作兜底。
-- `App.jsx` 里 `--ac-*` 系统色令牌有一部分未被引用。
-- 「我的」页里没有后端支撑的项（滑动方向、展示顺序、照片显示、HDR、视频声音、语言）是静态行，点不动；每轮数量滑块也只做了展示。
 - `PHAssetResource.assetResources` 读 `fileSize` 是逐张同步调用并缓存的，相册数量很大时会拖慢首次加载，后续可改后台索引。
-- 「本轮已看」「已收藏」两个统计目前恒为 0，没有接真实计数。
-- 待办：深色模式；相簿页缺空状态与「新建相簿」。
 
 ## 9. 工作习惯
 
@@ -224,47 +240,59 @@ Previews/
 - 信息架构、文案、手势逻辑与既有动效曲线不经要求不改。
 - Swift 侧改动前先读 `.agents/skills/write-swift`；网页动效改动前先读 `animate` 与 `apple-design`。
 
-## 10. 项目全景速查（2026-10-15 · v4.0 SwiftUI）
+## 10. 项目全景速查（2026-11-02 · v0.1）
 
 **文件规模**（不含 `node_modules/` 与 `.git/`）
 
 | 文件 | 行数 | 职责 |
 | --- | --- | --- |
-| `Evernight/Screens/SortScreen.swift` | 269 | 整理页（相簿详情复用）+ 撤销栈 + 动作 |
-| `Evernight/Components/SortDeck.swift` | 246 | 卡片区：跟手 / 飞出 / 下一张渐显入场 / 撤回倒放 |
-| `Evernight/Screens/MineScreen.swift` | 235 | 我的：List / Toggle / Slider / 主题色 |
-| `Evernight/Services/PhotoLibraryService.swift` | 231 | 权限、按月分组、相簿、回收站、写入 |
-| `Evernight/Screens/TrashScreen.swift` | 121 | 回收站（3 列正方形网格）+ 全屏查看 |
+| `Evernight/Services/PhotoLibraryService.swift` | 346 | 权限、按月分组、相簿增删改、待删除、累计战果、写入 |
+| `Evernight/Screens/SimilarScreen.swift` | 214 | 相似页：年份筛选 + 智能清理 + 分组列表 |
+| `Evernight/Screens/SortScreen.swift` | 298 | 整理页（相簿详情复用）+ 撤销栈 + 分列模式 + 动作 |
+| `Evernight/Screens/AlbumsScreen.swift` | 291 | 相簿管理：空相簿横幅 / 新建 / 排序 / 长按菜单 |
+| `Evernight/Screens/MineScreen.swift` | 283 | 我的面板（sheet）：深色统计卡 + 设置 |
+| `Evernight/Components/MediaCardContent.swift` | 248 | 视频卡 / 实况卡卡内播放 |
+| `Evernight/Components/SortDeck.swift` | 248 | 卡片区：跟手 / 飞出 / 下一张渐显入场 / 撤回倒放 |
+| `Evernight/Services/SimilarityService.swift` | 221 | dHash 指纹 + 分桶 + 并查集分组 |
+| `Evernight/Screens/TrashScreen.swift` | 166 | 待删除结算页 + 全屏查看 |
+| `Evernight/Components/SortCard.swift` | 111 | 单张卡片视觉 + 空态 + badgeStyle |
 | `Evernight/Design/GlassSurface.swift` | 109 | Liquid Glass 适配 + ContentPanel |
-| `Evernight/Components/SortCard.swift` | 93 | 单张卡片视觉 + 空态 + badgeStyle |
+| `Evernight/Screens/MainTabView.swift` | 100 | 自定义底栏 + 我的 sheet + 待删除 cover |
+| `Evernight/Components/SimilarGroupCard.swift` | 97 | 相似页的一组卡片 |
+| `Evernight/Components/ColumnsGrid.swift` | 89 | 分列瀑布流 + 横向滑删 |
+| `Evernight/EvernightApp.swift` | 86 | 入口 + 权限门 + UIState |
 | `Evernight/Models/SortModels.swift` | 84 | SortMove / DeckCommand / UndoRecord / SortAction |
-| `Evernight/Screens/AlbumsScreen.swift` | 79 | 相簿网格（2 列正方形封面） |
-| `Evernight/EvernightApp.swift` | 73 | 入口 + 权限门 |
-| `Evernight/Models/LibraryModels.swift` | 72 | PhotoItem / MonthSection / AlbumItem / StorageInfo / Format |
+| `Evernight/Models/LibraryModels.swift` | 74 | PhotoItem / MonthSection / AlbumItem / StorageInfo / Format |
+| `Evernight/Components/AppTabBar.swift` | 65 | 底栏 3+1 |
 | `Evernight/Components/SortActionBar.swift` | 63 | 底部操作岛 |
 | `Evernight/Design/Theme.swift` | 57 | 颜色圆角令牌 + 壁纸 + Color(hex:) |
+| `Evernight/Services/ThumbnailLoader.swift` | 55 | 缩略图加载 + 双缓存 |
+| `Evernight/Screens/FavoritesScreen.swift` | 51 | 已喜欢网格 |
 | `Evernight/Components/ProgressHeader.swift` | 46 | 整理页进度胶囊 |
-| `Evernight/Services/ThumbnailLoader.swift` | 46 | 缩略图加载 + NSCache |
-| `Evernight/Screens/MainTabView.swift` | 34 | 系统 TabView |
+| `Evernight/Components/AsyncThumbnail.swift` | 39 | 缩略图视图（highQuality 开关） |
 | `Evernight/Components/MonthMenu.swift` | 32 | 月份切换（系统 Menu） |
-| `Evernight/Components/AsyncThumbnail.swift` | 26 | 缩略图视图 |
+| `Evernight/Components/TrayButton.swift` | 30 | 待删除托盘 |
 | `Evernight/Components/ToastBanner.swift` | 17 | 临时提示 |
-| `project.yml` | 47 | xcodegen 配置（部署目标 iOS 17） |
-| `Evernight/Info.plist` | 52 | 权限文案、启动屏、方向（v4.0 去掉了 ATS 例外） |
+| `project.yml` | 47 | xcodegen 配置（部署目标 iOS 17，0.1 / 14） |
+| `Evernight/Info.plist` | 52 | 权限文案、启动屏、方向（显示名 evernight） |
 
-合计 19 个 Swift 文件、1933 行。
+合计 26 个 Swift 文件、3519 行。
 
-**数据流**（v4.0 没有 JS 桥了）
+**数据流**（v0.1）
 
 | 界面动作 | 落到哪里 |
 | --- | --- |
-| 上滑删除 | `PhotoLibraryService.moveToTrash` → 只进应用内回收站，不动系统相册 |
-| 回收站「彻底删除」 | `deleteFromSystem` → `PHPhotoLibrary.performChanges` + `PHAssetChangeRequest.deleteAssets` |
+| 上滑删除 / 分列滑删 | `PhotoLibraryService.moveToTrash` → 只进应用内「待删除」，不动系统相册 |
+| 待删除「彻底删除」 | `deleteFromSystem`（返 Bool）→ 成功后未勾选项 `restore` 放回；落账 `totalCleaned` / `totalFreedBytes` |
 | 下滑收藏 | `setFavorite` → `PHAssetChangeRequest.isFavorite` |
 | 操作岛「相簿」 | 原生 `confirmationDialog` 列相簿 → `add(_:to:)` → `PHAssetCollectionChangeRequest` |
-| 撤回（按钮 / 右滑） | 按 `UndoRecord` 倒做：删除 → `restore` 插回原月份原位；下一张 → 游标退一张；收藏 → `setFavorite(_:false)`；存入相簿 → `remove(_:from:)` |
+| 撤回（按钮 / 右滑 / 分列顶栏） | 按 `UndoRecord` 倒做：删除 → `restore` 插回原月份原位；下一张 → 游标退一张；收藏 → `setFavorite(_:false)`；存入相簿 → `remove(_:from:)` |
 | 手势 / 按钮触发动效 | 都写 `SortScreen.command` → `SortDeck` 播完再回调改数据（见第 5 节「整理页手势与按钮共用一条动效通道」） |
-| 缩略图 | `ThumbnailLoader` → `PHCachingImageManager.requestImage`，按 `identifier|size` 缓存 |
+| 视频 / 实况卡内播放 | `MediaCardContent` → `PHCachingImageManager.requestAVAsset` / `requestLivePhoto` |
+| 相似分组 | `SimilarityService.scan` → dHash 指纹（UserDefaults 缓存）→ 分桶 + 并查集 → 删除走 `moveToTrash` |
+| 相簿管理 | `createAlbum` / `renameAlbum` / `deleteAlbums` / `deleteAlbumWithPhotos` / `moveAllPhotos` → 全直写系统相册 |
+| 待删除 / 我的弹出 | 各页 `TrayButton` / 底栏圆钮 → `UIState.showTrash` / `showMine` → `MainTabView` 全屏覆盖 / 上滑 sheet |
+| 缩略图 | `ThumbnailLoader` → `PHCachingImageManager.requestImage`，按 `identifier\|size` 缓存；大卡 `highQuality` 走独立缓存 |
 | 存储占用 | `readStorage` → volumeTotalCapacity / volumeAvailableCapacityForImportantUsage |
 
 **构建链路**
@@ -281,10 +309,9 @@ Previews/
 
 | 项 | 状态 |
 | --- | --- |
-| 整理页动效 | 撤回收敛为通用栈、手势与按钮统一走 `command` 通道；旧 `SwipeIntent` 已全仓库清除，`Transaction(disablesAnimations:)` 也已清除 |
+| v0.1 功能 | 底栏 3+1 / 我的 sheet / 卡内播放 / 原图画质 / 分列删除 / 待删除结算 / 相似 pHash / 相簿管理全部落地 |
 | WebView 残留 | `Evernight/**/*.swift` 里已无 `WKWebView` / `photoApp` / `evaluateJavaScript` |
 | 打包范围 | `project.yml` 不再引用 `WebContent`，网页资源不进 bundle |
-| 版本号 | `project.yml` 4.0 / 构建号 13；`package.json` 是网页版遗留，不参与 App 版本 |
+| 版本号 | `project.yml` 0.1 / 构建号 14；显示名 evernight；`package.json` 是网页版遗留，不参与 App 版本 |
 | Swift 编译 | **本机无 Xcode，未验证**；只做了结构与括号复核，编译要看 CI |
-| 视频 / Live Photo | v4.0 只显示缩略图，尚未接播放（见第 8 节） |
 | `.gitignore` 生效项 | `Previews/`、`node_modules/`、`package-lock.json` |

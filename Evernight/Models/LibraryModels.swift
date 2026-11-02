@@ -40,6 +40,8 @@ struct AlbumItem: Identifiable {
     let name: String
     let count: Int
     let coverAsset: PHAsset?
+    /// 用户自建相簿才可重命名 / 删除；智能相簿（收藏、视频、自拍…）只能看。
+    var isUserAlbum: Bool = false
 }
 
 struct StorageInfo {

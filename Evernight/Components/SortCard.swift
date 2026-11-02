@@ -1,10 +1,15 @@
 import SwiftUI
 
 /// 单张照片卡。这里只管画，位移 / 缩放 / 手势都由 `SortDeck` 施加。
+/// 视频与实况直接在卡里播放（`MediaCardContent`），点按不再一律开全屏页。
 struct SortCard: View {
     let photo: PhotoItem
     let sizeLabel: String
     let bounds: CGSize
+    /// 前置卡为 true：视频 / 实况才加载播放器，后置待命卡只用缩略图。
+    var isFront = true
+    /// 普通照片的点按：开全屏查看。媒体卡的点按被播放控制占用，不会走到这里。
+    var onOpenViewer: () -> Void = {}
 
     /// 横图占满宽度、竖图占满高度；比例夹在 0.32–3.2，避免超长图把卡片压成一条线。
     private var cardSize: CGSize {
@@ -23,7 +28,7 @@ struct SortCard: View {
     var body: some View {
         ZStack {
             Rectangle().fill(.regularMaterial)
-            AsyncThumbnail(asset: photo.asset, targetSize: cardSize, contentMode: .fit)
+            content
             badges
         }
         .frame(width: cardSize.width, height: cardSize.height)
@@ -35,6 +40,19 @@ struct SortCard: View {
         .shadow(color: Color(red: 12 / 255, green: 18 / 255, blue: 48 / 255).opacity(0.22),
                 radius: 18, y: 10)
         .accessibilityLabel("待整理的照片")
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if photo.isVideo {
+            VideoCardContent(asset: photo.asset, isActive: isFront)
+        } else if photo.isLivePhoto {
+            LivePhotoCardContent(asset: photo.asset, isActive: isFront)
+        } else {
+            AsyncThumbnail(asset: photo.asset, targetSize: cardSize, contentMode: .fit,
+                           highQuality: isFront)
+                .onTapGesture { onOpenViewer() }
+        }
     }
 
     private var badges: some View {
@@ -71,7 +89,7 @@ struct EmptyDeckView: View {
                 .foregroundStyle(Theme.success)
             Text("本月项目已整理完毕")
                 .font(.headline)
-            Text("删除的照片已移入回收站")
+            Text("删除的照片已移入待删除")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
