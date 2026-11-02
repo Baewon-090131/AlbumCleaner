@@ -8,9 +8,9 @@ func withoutAnimation(_ work: () -> Void) {
     withTransaction(transaction, work)
 }
 
-/// 卡片区：当前卡跟手平移、超过阈值飞出屏幕；下一张卡先在后方 0.92 处透明待命，
-/// 前一张飞出时用同一个 Spring 放大到 1.0 并同步渐显。撤回则把整套分拣动效倒着放一遍——
-/// 当前卡缩回 0.92 并渐隐退场，被撤那张从它当初飞出去的方向飞回正面。
+/// 卡片区：当前卡跟手平移、超过阈值飞出屏幕；下一张卡先在后方 0.94 处、向下沉 26pt 透明待命，
+/// 前一张飞出时用同一个 Spring 放大到 1.0、归位并同步渐显。撤回则把整套分拣动效倒着放一遍——
+/// 当前卡缩回 0.94 并下沉、渐隐退场，被撤那张从它当初飞出去的方向飞回正面。
 ///
 /// 手势与按钮共用一条通道：手势在卡上跟手并判定方向，松手只把结论交给外层；
 /// 外层写入 `command` 再回到这里播动效，按钮点击同样只写 `command`。
@@ -31,7 +31,9 @@ struct SortDeck: View {
     @State private var frontOffset: CGSize = .zero
     @State private var frontScale: CGFloat = 1
     @State private var backOffset: CGSize = .zero
-    @State private var backScale: CGFloat = 0.92
+    @State private var backScale: CGFloat = 0.94
+    /// 后卡待命时向下沉的量：让底边露出一条，对应参考视频里「下一张在下面露出一角」。
+    @State private var backLift: CGFloat = 26
     /// 后置卡的渐显：待命时全透明，顶上来时与放大同步显现。
     @State private var backOpacity: CGFloat = 0
     /// 撤回时前置的「飞回来」那张；其余时候为 nil。
@@ -52,7 +54,7 @@ struct SortDeck: View {
                              bounds: geometry.size,
                              isFront: false)
                         .id(back.id)
-                        .offset(backOffset)
+                        .offset(x: backOffset.width, y: backOffset.height + backLift)
                         .scaleEffect(backScale)
                         .opacity(backOpacity)
                 }
@@ -141,13 +143,14 @@ private extension SortDeck {
     }
 
     /// 删除 / 下一张 / 存入相簿：当前卡飞出屏幕，下一张在同一个 Spring 里
-    /// 从 0.92 缩小态放大到 1.0，并同步渐显——「缩小按压态过渡到正常」与透明度一起走完。
+    /// 从 0.94 缩小态放大到 1.0、从下沉位归位，并同步渐显。
     func playFlyOut(_ move: SortMove) {
         withAnimation(.easeOut(duration: leaveDuration)) {
             frontOffset = flyTarget(move)
         }
         withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) {
             backScale = 1
+            backLift = 0
             backOpacity = 1
         }
         Task {
@@ -178,6 +181,7 @@ private extension SortDeck {
             incoming = incomingPhoto
             backOffset = start
             // 后置卡此刻就是被拖到 `start` 的那张当前卡，倒放时它要从可见缩回待命
+            backLift = 0
             backOpacity = 1
             frontOffset = flyTarget(origin)
             frontScale = 1
@@ -188,7 +192,8 @@ private extension SortDeck {
             backOffset = .zero
         }
         withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) {
-            backScale = 0.92
+            backScale = 0.94
+            backLift = 26
             backOpacity = 0
         }
         Task {
@@ -220,18 +225,22 @@ private extension SortDeck {
         }
     }
 
-    /// 先归位动效状态，再回调让数据跟进；两者落在同一帧上，界面连得上。
+    /// 动效复位与数据变更放进同一个无动画事务：中间态不会被单独渲染，
+    /// 从而不会出现「旧卡回到中央」或「刚顶上的卡瞬间消失」的一帧。
     func finish(_ move: SortMove) {
-        withoutAnimation { reset() }
-        isPlaying = false
-        onFinished(move)
+        withoutAnimation {
+            reset()
+            isPlaying = false
+            onFinished(move)
+        }
     }
 
     func reset() {
         frontOffset = .zero
         frontScale = 1
         backOffset = .zero
-        backScale = 0.92
+        backScale = 0.94
+        backLift = 26
         backOpacity = 0
         incoming = nil
     }

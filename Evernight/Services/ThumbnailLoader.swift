@@ -20,7 +20,7 @@ final class ThumbnailLoader: @unchecked Sendable {
     /// `highQuality` 时走大卡缓存（只留 8 张）。
     func image(for asset: PHAsset, targetSize: CGSize, highQuality: Bool = false) async -> UIImage? {
         let store = highQuality ? fullCache : cache
-        let key = "\(asset.localIdentifier)|\(Int(targetSize.width))x\(Int(targetSize.height))" as NSString
+        let key = cacheKey(asset, targetSize)
         if let cached = store.object(forKey: key) { return cached }
 
         return await withCheckedContinuation { (continuation: CheckedContinuation<UIImage?, Never>) in
@@ -47,6 +47,15 @@ final class ThumbnailLoader: @unchecked Sendable {
                 continuation.resume(returning: image)
             }
         }
+    }
+
+    /// 同步读缓存：视图重建时先在 body 里拿到已有图片，避免闪一帧灰色占位。
+    func cached(for asset: PHAsset, targetSize: CGSize, highQuality: Bool) -> UIImage? {
+        store(for: highQuality).object(forKey: cacheKey(asset, targetSize))
+    }
+
+    private func cacheKey(_ asset: PHAsset, _ size: CGSize) -> NSString {
+        "\(asset.localIdentifier)|\(Int(size.width))x\(Int(size.height))" as NSString
     }
 
     private func store(for highQuality: Bool) -> NSCache<NSString, UIImage> {

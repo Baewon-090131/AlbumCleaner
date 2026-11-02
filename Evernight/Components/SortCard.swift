@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// 单张照片卡。这里只管画，位移 / 缩放 / 手势都由 `SortDeck` 施加。
-/// 视频与实况直接在卡里播放（`MediaCardContent`），点按不再一律开全屏页。
+/// 单张照片卡。也是「媒体即卡片」：照片 / 播放器本身构成卡片实体，
+/// 不再垫一层 `.regularMaterial` 让媒体浮在上面——材质在动画中每帧重采样背景，
+/// 会让卡片发飘、露边，也让换卡时多一层重绘。
 struct SortCard: View {
     let photo: PhotoItem
     let sizeLabel: String
@@ -26,31 +27,29 @@ struct SortCard: View {
     }
 
     var body: some View {
-        ZStack {
-            Rectangle().fill(.regularMaterial)
-            content
-            badges
-        }
-        .frame(width: cardSize.width, height: cardSize.height)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.cornerPlate, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: Theme.cornerPlate, style: .continuous)
-                .strokeBorder(.white.opacity(0.55), lineWidth: 0.5)
-        }
-        .shadow(color: Color(red: 12 / 255, green: 18 / 255, blue: 48 / 255).opacity(0.22),
-                radius: 18, y: 10)
-        .accessibilityLabel("待整理的照片")
+        media
+            .frame(width: cardSize.width, height: cardSize.height)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.cornerPlate, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: Theme.cornerPlate, style: .continuous)
+                    .strokeBorder(.white.opacity(0.55), lineWidth: 0.5)
+            }
+            .shadow(color: Color(red: 12 / 255, green: 18 / 255, blue: 48 / 255).opacity(0.20),
+                    radius: 12, y: 8)
+            .overlay { badges }
+            .accessibilityLabel("待整理的照片")
     }
 
     @ViewBuilder
-    private var content: some View {
+    private var media: some View {
         if photo.isVideo {
-            VideoCardContent(asset: photo.asset, isActive: isFront)
+            VideoCardContent(asset: photo.asset, cardSize: cardSize, isActive: isFront)
         } else if photo.isLivePhoto {
-            LivePhotoCardContent(asset: photo.asset, isActive: isFront)
+            LivePhotoCardContent(asset: photo.asset, cardSize: cardSize, isActive: isFront)
         } else {
-            AsyncThumbnail(asset: photo.asset, targetSize: cardSize, contentMode: .fit,
-                           highQuality: isFront)
+            // 前后卡都按同一尺寸请求高清图：换位时缓存必然命中，不会闪灰块
+            AsyncThumbnail(asset: photo.asset, targetSize: cardSize,
+                           contentMode: .fill, highQuality: true, glassPlaceholder: true)
                 .onTapGesture { onOpenViewer() }
         }
     }

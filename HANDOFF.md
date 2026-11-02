@@ -2,7 +2,7 @@
 
 > 交接文档，给下一个接手这个项目的智能体或人。
 > **先读这一份，再读 `AGENTS.md`（长期记忆，含设计令牌与历史沿革）。**
-> 生成时间：2026-10-09 · 最近更新：2026-11-02（v0.1：更名 evernight + 移植「卡待删」能力——底栏 3+1、我的 sheet、卡内播放、分列删除、待删除结算页、相似页 pHash、相簿管理）
+> 生成时间：2026-10-09 · 最近更新：2026-11-02（v0.1.1：整理页 UI 按参考视频重写——自绘顶栏 + 媒体类型筛选 + 右侧竖排玻璃钮，媒体真正嵌入卡片，修掉删除换卡时的灰块闪烁）
 
 ---
 
@@ -79,29 +79,30 @@ Evernight/
   Info.plist                     52   权限文案、启动屏、方向（显示名 evernight）
   Models/
     LibraryModels.swift           74   PhotoItem / MonthSection / AlbumItem / StorageInfo / Format
-    SortModels.swift              84   SortMove / DeckCommand / UndoRecord / SortAction
+    SortModels.swift             112   SortMove / DeckCommand / UndoRecord / SortAction / MediaFilter
   Services/
     PhotoLibraryService.swift   346   @Observable 数据源：权限、按月分组、相簿增删改、待删除、写入、战果
     SimilarityService.swift     221   相似检测：dHash 指纹 + 分桶候选 + 并查集（指纹存 UserDefaults）
-    ThumbnailLoader.swift        55   缩略图异步加载 + 双 NSCache（大卡原图级独立缓存）
+    ThumbnailLoader.swift        64   缩略图异步加载 + 双 NSCache + 同步读缓存（cached(for:)）
   Design/
     Theme.swift                  57   颜色 / 圆角令牌 + 壁纸 + Color(hex:)
     GlassSurface.swift          109   Liquid Glass 入口（GlassGroup / glassSurface / glassButtonStyle）+ ContentPanel
   Components/
-    SortDeck.swift              248   卡片区：跟手 / 飞出 / 下一张渐显入场 / 撤回倒放（动效编排）
-    MediaCardContent.swift      248   视频卡（AVPlayerLayer 静音循环）+ 实况卡（PHLivePhotoView）
-    SortCard.swift              111   单张卡片视觉 + 空态 + badgeStyle
+    SortDeck.swift              257   卡片区：跟手 / 飞出 / 下一张渐显入场 / 撤回倒放（动效编排）
+    MediaCardContent.swift      252   视频卡（AVPlayerLayer 静音循环）+ 实况卡（PHLivePhotoView）
+    SortCard.swift              110   单张卡：媒体即卡片（无材质叠层）+ 空态 + badgeStyle
+    SortTopBar.swift            103   整理页自绘顶栏：月份 + 媒体类型 + 撤回/托盘
+    SimilarGroupCard.swift       97   相似页的一组卡片
     ColumnsGrid.swift            89   分列瀑布流 + 横向滑删
     AppTabBar.swift              65   底栏 3+1（胶囊 + 我的圆钮）
-    SortActionBar.swift          63   底部操作岛（GlassEffectContainer）
-    SimilarGroupCard.swift       97   相似页的一组卡片
-    ProgressHeader.swift         46   整理页进度胶囊
-    AsyncThumbnail.swift         39   缩略图视图（highQuality 开关）
+    AsyncThumbnail.swift         54   缩略图视图（同步缓存 + 玻璃占位 + highQuality）
+    ProgressHeader.swift         41   整理页细进度条（无玻璃外壳）
+    SortSideBar.swift            38   卡片右侧竖排圆形玻璃钮
     MonthMenu.swift              32   月份切换胶囊（系统 Menu）
     TrayButton.swift             30   待删除托盘（垃圾桶 + 红角标）
     ToastBanner.swift            17   临时提示
   Screens/
-    SortScreen.swift            298   整理页（相簿详情复用）+ 撤销栈 + 分列模式 + 动作
+    SortScreen.swift            300   整理页（相簿详情复用）+ 撤销栈 + 分列 + 媒体筛选 + 动作
     AlbumsScreen.swift          291   相簿管理：空相簿横幅 / 新建 / 排序 / 长按菜单
     MineScreen.swift            283   我的面板（sheet）：深色统计卡 + 设置
     SimilarScreen.swift         214   相似页：年份筛选 + 智能清理 + 分组列表
@@ -113,11 +114,12 @@ project.yml                      47   xcodegen 配置（0.1 / 构建号 14）
 ```
 
 **用到的系统控件**（这就是"原生化"的实质）：
-`NavigationStack`（大标题 + 工具栏）、`Menu`（月份 / 排序）、`Toggle`、`Slider`、
+`NavigationStack`（相簿页 / 相似页的大标题；整理页已隐藏导航栏改自绘顶栏）、
+`Menu`（月份 / 媒体类型 / 排序）、`Toggle`、`Slider`、
 `List(.insetGrouped)`、`ProgressView`、`ContentUnavailableView`、
 `confirmationDialog`（相簿与待删除操作）、`fullScreenCover`（待删除 / 全屏看图 / 已喜欢）、
 `contextMenu`（相簿长按）。**v0.1 起底栏不再用系统 `TabView`**，媒体播放用
-`UIViewRepresentable` 包 `AVPlayerLayer` / `PHLivePhotoView`。
+`UIViewRepresentable` 包 `AVPlayerLayer` / `PHLivePhotoView`，整理页顶栏是自绘的。
 
 ---
 
@@ -249,7 +251,8 @@ xcodebuild -scheme AlbumCleaner -sdk iphonesimulator build
 
 | 版本 | 提交 | 内容 |
 | --- | --- | --- |
-| v0.1 | 本次 | 更名 evernight（0.1 / 构建号 14）；移植「卡待删」能力：底栏 3+1 + 我的 sheet、卡内播放（视频 / 实况）、原图画质、分列删除（双指收拢 + 左右滑）、待删除结算页（未勾选项放回）、相似页 dHash pHash、相簿管理（空相簿 / 新建 / 长按菜单 / 排序）；新增 `AppTabBar` / `ColumnsGrid` / `MediaCardContent` / `TrayButton` / `SimilarScreen` / `SimilarityService` / `FavoritesScreen` / `SimilarGroupCard` |
+| v0.1.1 | 本次 | 整理页 UI 按参考视频重写：隐藏导航栏 + `SortTopBar` 自绘顶栏（月份 + 媒体类型筛选 + 撤回/托盘）+ `ProgressHeader` 细进度条 + `SortSideBar` 右侧竖排玻璃钮；卡片去掉 `.regularMaterial` 底层，媒体即卡片；前后卡统一高清 + `ThumbnailLoader.cached(for:)` 同步读缓存，修掉换卡灰块闪烁；`SortDeck.finish` 把复位与数据变更合并进同一事务；新增 `MediaFilter` |
+| v0.1 | `e0c75e6` | 更名 evernight（0.1 / 构建号 14）；移植「卡待删」能力：底栏 3+1 + 我的 sheet、卡内播放（视频 / 实况）、原图画质、分列删除（双指收拢 + 左右滑）、待删除结算页（未勾选项放回）、相似页 dHash pHash、相簿管理（空相簿 / 新建 / 长按菜单 / 排序）；新增 `AppTabBar` / `ColumnsGrid` / `MediaCardContent` / `TrayButton` / `SimilarScreen` / `SimilarityService` / `FavoritesScreen` / `SimilarGroupCard` |
 | 整理页动效 | `fea71e8` | 撤回收敛为通用撤销栈（删除 / 下一张 / 收藏 / 存入相簿，限深 50、切月清空）；整理页手势与按钮统一为「滑动分拣」动效，撤回即整套倒放；`SortModels.swift` / `SortCard.swift` / `MonthMenu.swift` 拆出 |
 | 网格统一 | `1631484` | 相簿页改 2 列正方形封面（名称 / 数量居中在下方，去掉卡片底）；回收站改 3 列 1:1 圆角 8（间距 3 / 边距 12）；整理页未动 |
 | v4.0.1 | `d745eb3` | 按 Liquid Glass 规范重做玻璃层（GlassEffectContainer / interactive / morphing） |

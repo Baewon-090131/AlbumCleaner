@@ -1,12 +1,15 @@
 import SwiftUI
 
 /// 整理页。`album` 为 nil 时是「整理」tab（按月整理），否则是某个相簿的整理页。
+/// 布局按参考视频：顶栏一行（月份 + 媒体类型 + 撤回/待删除）→ 细进度条 → 满幅卡片，
+/// 操作按钮浮在卡片右侧。导航栏隐藏，改由自绘顶栏承担，避免上下各堆三层把卡片挤小。
 struct SortScreen: View {
     var album: AlbumItem? = nil
 
     @Environment(PhotoLibraryService.self) private var library
+    @Environment(\.dismiss) private var dismiss
     @AppStorage("ac_theme") private var themeHex = "#002FA7"
-    /// 操作岛的玻璃形态在「四按钮 ↔ 三按钮」之间变形时共用这个命名空间
+    /// 右侧竖排钮的玻璃形态在「四按钮 ↔ 三按钮」之间变形时共用这个命名空间
     @Namespace private var actionNamespace
 
     @State private var selectedMonthID: String?
@@ -19,6 +22,8 @@ struct SortScreen: View {
     @State private var viewerPhoto: PhotoItem?
     /// 分列模式：1 = 单卡，2 / 3 = 瀑布流分列（双指收拢切换）。相簿详情不支持分列。
     @State private var columnCount = 1
+    /// 媒体类型筛选：照片 / 视频 / 实况 / 全部。相簿详情不显示。
+    @State private var mediaFilter: MediaFilter = .all
     /// 相簿按钮选完的目标，等动效播完才真正写入。
     @State private var pendingAlbum: AlbumItem?
     /// 交给卡片区播放的操作；`commandToken` 保证同一种动作也能被认出来。
@@ -38,8 +43,11 @@ struct SortScreen: View {
         return library.months.first
     }
 
+    /// `.all` 走快路径（零拷贝）；只有筛选态才多一次 O(n) 扫描。
     private var photos: [PhotoItem] {
-        isAlbumMode ? albumPhotos : (month?.photos ?? [])
+        let base = isAlbumMode ? albumPhotos : (month?.photos ?? [])
+        guard mediaFilter != .all else { return base }
+        return base.filter { mediaFilter.matches($0) }
     }
 
     private var current: PhotoItem? {
@@ -58,6 +66,18 @@ struct SortScreen: View {
 
     var body: some View {
         VStack(spacing: 10) {
+            SortTopBar(
+                months: library.months,
+                selectedMonthID: month?.id,
+                filter: mediaFilter,
+                canUndo: !undoStack.isEmpty,
+                albumName: isAlbumMode ? (album?.name ?? "相簿") : nil,
+                onSelectMonth: selectMonth,
+                onSelectFilter: selectFilter,
+                onUndo: { request(.undo) },
+                onBack: { dismiss() }
+            )
+
             ProgressHeader(
                 processed: index,
                 total: photos.count,
@@ -77,14 +97,14 @@ struct SortScreen: View {
                     onFinished: finish,
                     onTap: { viewerPhoto = $0 }
                 )
-
-                SortActionBar(
-                    actions: actions,
-                    canUndo: !undoStack.isEmpty,
-                    hasPhoto: current != nil,
-                    namespace: actionNamespace,
-                    onAction: handleAction
-                )
+                .overlay(alignment: .trailing) {
+                    SortSideBar(actions: actions,
+                                canUndo: !undoStack.isEmpty,
+                                hasPhoto: current != nil,
+                                namespace: actionNamespace,
+                                onAction: handleAction)
+                        .padding(.trailing, 4)
+                }
             } else {
                 ColumnsGrid(
                     photos: photos,
@@ -100,9 +120,8 @@ struct SortScreen: View {
             MagnifyGesture()
                 .onEnded { value in handlePinch(value.magnification) }
         )
-        .navigationTitle(isAlbumMode ? (album?.name ?? "相簿") : "evernight")
-        .navigationBarTitleDisplayMode(isAlbumMode ? .inline : .large)
-        .toolbar { toolbarContent }
+        // 自绘顶栏取代导航栏，避免大标题与顶栏叠成两层挤占卡片高度
+        .toolbar(.hidden, for: .navigationBar)
         .fullScreenCover(item: $viewerPhoto) { PhotoViewerScreen(photo: $0) }
         .confirmationDialog("存入相簿", isPresented: $showAlbumPicker, titleVisibility: .visible) {
             ForEach(library.albums) { target in
@@ -125,34 +144,6 @@ struct SortScreen: View {
             albumPhotos = library.photos(in: album)
         }
     }
-
-    @ToolbarContentBuilder
-    private var toolbarContent: some ToolbarContent {
-        if !isAlbumMode {
-            ToolbarItem(placement: .topBarLeading) {
-                MonthMenu(months: library.months,
-                          selectedID: month?.id,
-                          onSelect: selectMonth)
-            }
-        }
-
-        // 分列模式下操作岛被瀑布流取代，撤回挪到顶栏
-        if columnCount > 1 {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    undo()
-                } label: {
-                    Image(systemName: "arrow.uturn.backward")
-                }
-                .disabled(undoStack.isEmpty)
-                .accessibilityLabel("撤回")
-            }
-        }
-
-        ToolbarItem(placement: .topBarTrailing) {
-            TrayButton()
-        }
-    }
 }
 
 // MARK: - 动作
@@ -160,6 +151,17 @@ struct SortScreen: View {
 private extension SortScreen {
     func selectMonth(_ candidate: MonthSection) {
         selectedMonthID = candidate.id
+        resetCursor()
+    }
+
+    /// 切筛选与切月同语义：游标回 0、清空撤销栈，避免跨筛选撤销导致游标指错。
+    func selectFilter(_ next: MediaFilter) {
+        guard next != mediaFilter else { return }
+        mediaFilter = next
+        resetCursor()
+    }
+
+    func resetCursor() {
         index = 0
         undoStack.removeAll()
         command = nil
@@ -197,10 +199,10 @@ private extension SortScreen {
         return true
     }
 
-    /// 卡片区播完动效后回调：这时才真正改数据，界面早就先动完了。
+    /// 卡片区播完动效后回调；复位与数据变更已在同一个无动画事务里（见 `SortDeck.finish`）。
     func finish(_ move: SortMove) {
         command = nil
-        withoutAnimation { apply(move) }
+        apply(move)
     }
 
     func apply(_ move: SortMove) {
@@ -209,7 +211,7 @@ private extension SortScreen {
             guard let photo = current else { return }
             library.moveToTrash(photo)
             push(.deletion(photo: photo, index: index))
-            show("已移到回收站")
+            show("已移到待删除")
 
         case .next:
             guard let photo = current else { return }

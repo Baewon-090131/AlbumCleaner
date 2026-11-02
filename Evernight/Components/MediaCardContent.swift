@@ -8,6 +8,8 @@ import SwiftUI
 /// 只在前置卡激活（`isActive`）；后置待命卡退化为静态缩略图，避免凭空多起一个播放器。
 struct VideoCardContent: View {
     let asset: PHAsset
+    /// 卡片尺寸（点），缩略图按它请求，保证与卡片一致、不留边。
+    let cardSize: CGSize
     var isActive: Bool
 
     @AppStorage("ac_videoMuted") private var muted = true
@@ -25,8 +27,8 @@ struct VideoCardContent: View {
                 PlayerLayerView(player: player)
                     .onTapGesture { toggle() }
             } else {
-                AsyncThumbnail(asset: asset, targetSize: CGSize(width: 900, height: 900),
-                               contentMode: .fit)
+                AsyncThumbnail(asset: asset, targetSize: cardSize,
+                               contentMode: .fill, highQuality: true, glassPlaceholder: true)
             }
 
             // 左上：静音切换
@@ -162,7 +164,7 @@ private final class PlayerUIView: UIView {
     init(player: AVPlayer) {
         super.init(frame: .zero)
         playerLayer.player = player
-        playerLayer.videoGravity = .resizeAspect
+        playerLayer.videoGravity = .resizeAspectFill
     }
 
     required init?(coder: NSCoder) { fatalError("不用 storyboard") }
@@ -171,6 +173,8 @@ private final class PlayerUIView: UIView {
 /// 实况卡内容：PHLivePhotoView 包进卡片，出现时自动播一次实况效果，点按重播。
 struct LivePhotoCardContent: View {
     let asset: PHAsset
+    /// 卡片尺寸（点），缩略图按它请求，与卡片一致。
+    let cardSize: CGSize
     var isActive: Bool
 
     @AppStorage("ac_autoLive") private var autoPlay = true
@@ -184,8 +188,8 @@ struct LivePhotoCardContent: View {
                 LivePhotoView(livePhoto: livePhoto, replayToken: replayToken)
                     .onTapGesture { replayToken += 1 }
             } else {
-                AsyncThumbnail(asset: asset, targetSize: CGSize(width: 900, height: 900),
-                               contentMode: .fit)
+                AsyncThumbnail(asset: asset, targetSize: cardSize,
+                               contentMode: .fill, highQuality: true, glassPlaceholder: true)
             }
         }
         .task(id: asset.localIdentifier) {
@@ -228,7 +232,7 @@ struct LivePhotoCardContent: View {
         func makeUIView(context: Context) -> PHLivePhotoView {
             let view = PHLivePhotoView()
             view.livePhoto = livePhoto
-            view.contentMode = .scaleAspectFit
+            view.contentMode = .scaleAspectFill
             return view
         }
 
