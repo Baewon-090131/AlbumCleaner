@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AppTab: Hashable, CaseIterable, Identifiable {
-    case sort, similar, albums, mine
+    case sort, similar, albums
 
     var id: Self { self }
 
@@ -10,7 +10,6 @@ enum AppTab: Hashable, CaseIterable, Identifiable {
         case .sort: "整理"
         case .similar: "相似"
         case .albums: "相簿"
-        case .mine: "我的"
         }
     }
 
@@ -19,121 +18,142 @@ enum AppTab: Hashable, CaseIterable, Identifiable {
         case .sort: "rectangle.stack"
         case .similar: "square.on.square"
         case .albums: "photo.on.rectangle"
-        case .mine: "person.crop.circle"
         }
     }
 }
 
-/// 主界面：系统 `TabView`（Liquid Glass 底栏由系统渲染，不是自绘）。
+/// 主界面：三个 tab 的内容区 + 底部一行（3 栏玻璃胶囊 +「我的」独立圆形玻璃钮）。
 ///
-/// iOS 26 及以上：3 个 tab + `.tabViewBottomAccessory` 放「我的」入口——
-/// 底栏正常时它显示在底栏上方一条，底栏收起时内联进底栏；
-/// 「我的」点按后仍从这条入口扩散到全屏（zoom 转场）。
-/// iOS 17–25：没有 accessory，退回 4 个 tab。
+/// 为什么不用系统 `TabView`：系统 tab bar 是整体渲染的，**没有公开 API** 能在它右侧
+/// 再并排放一个独立圆钮（`tabViewBottomAccessory` 只能显示在底栏上方或内联）。
+/// 所以底栏用一个容器承载，玻璃走 Apple 官方的 `glassEffect` / `GlassEffectContainer`
+/// —— 材质由系统渲染，只是布局由我们决定。
 struct MainTabView: View {
     @AppStorage("ac_theme_v2") private var themeHex = "#2B4A6F"
     @Environment(UIState.self) private var ui
     @State private var selection: AppTab = .sort
-    /// 「我的」的 zoom 转场：源是底栏上方的入口条，目标是全屏 cover。
+    /// 「我的」的 zoom 转场：源是底栏圆钮，目标是全屏 cover。
     @Namespace private var mineNamespace
 
     private static let mineTransitionID = "mine"
+    /// 底栏占位：圆钮 62 + 下边距 10 + 呼吸 20
+    private static let barReserve: CGFloat = 92
+    private static let knobSize: CGFloat = 62
 
     var body: some View {
         @Bindable var ui = ui
-        tabRoot
-            .tint(Color(hex: themeHex))
-            .fullScreenCover(isPresented: $ui.showMine) { mineCover }
-            .sheet(isPresented: $ui.showTrash) { trashSheet }
+        ZStack(alignment: .bottom) {
+            Theme.wall
+
+            tabContent
+                .safeAreaInset(edge: .bottom) {
+                    Color.clear.frame(height: Self.barReserve)
+                }
+
+            bottomBar
+        }
+        .tint(Color(hex: themeHex))
+        .fullScreenCover(isPresented: $ui.showMine) { mineCover }
+        .sheet(isPresented: $ui.showTrash) { trashSheet }
     }
 
-    @ViewBuilder
-    private var tabRoot: some View {
-        if #available(iOS 26.0, *) {
-            TabView(selection: $selection) {
-                sortTab
-                similarTab
-                albumsTab
-            }
-            .tabViewBottomAccessory { mineAccessory }
-            .tabBarMinimizeBehavior(.onScrollDown)
-        } else {
-            TabView(selection: $selection) {
-                sortTab
-                similarTab
-                albumsTab
-                mineTab
+    /// 三个 tab 常驻、只切显隐：整理页游标与撤销栈、相似页扫描结果不因切换丢失。
+    private var tabContent: some View {
+        ZStack {
+            ForEach(AppTab.allCases) { tab in
+                NavigationStack {
+                    switch tab {
+                    case .sort: SortScreen()
+                    case .similar: SimilarScreen()
+                    case .albums: AlbumsScreen()
+                    }
+                }
+                .opacity(selection == tab ? 1 : 0)
+                .allowsHitTesting(selection == tab)
             }
         }
     }
 
-    // MARK: - 各 tab
+    // MARK: - 底栏
 
-    private var sortTab: some View {
-        NavigationStack { SortScreen() }
-            .background(Theme.wall)
-            .tabItem { Label("整理", systemImage: "rectangle.stack") }
-            .tag(AppTab.sort)
+    private var bottomBar: some View {
+        GlassGroup(spacing: 12) {
+            HStack(spacing: 10) {
+                tabPill
+                mineKnob
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 10)
     }
 
-    private var similarTab: some View {
-        NavigationStack { SimilarScreen() }
-            .background(Theme.wall)
-            .tabItem { Label("相似", systemImage: "square.on.square") }
-            .tag(AppTab.similar)
+    /// 三栏胶囊：一块玻璃包住三个按钮（系统 tab bar 正是这个结构）。
+    private var tabPill: some View {
+        HStack(spacing: 2) {
+            ForEach(AppTab.allCases) { tab in
+                tabButton(tab)
+            }
+        }
+        .padding(6)
+        .frame(maxWidth: .infinity)
+        .glassSurface(cornerRadius: 36)
     }
 
-    private var albumsTab: some View {
-        NavigationStack { AlbumsScreen() }
-            .background(Theme.wall)
-            .tabItem { Label("相簿", systemImage: "photo.on.rectangle") }
-            .tag(AppTab.albums)
+    private func tabButton(_ tab: AppTab) -> some View {
+        let isOn = selection == tab
+        return Button {
+            withAnimation(.snappy(duration: 0.26)) { selection = tab }
+        } label: {
+            VStack(spacing: 3) {
+                Image(systemName: tab.symbol)
+                    .font(.system(size: 19))
+                Text(tab.title)
+                    .font(.system(size: 9.5, weight: .medium))
+            }
+            .foregroundStyle(isOn ? Color(hex: themeHex) : Theme.ink2)
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .background(isOn ? Color(hex: themeHex).opacity(0.12) : .clear,
+                        in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(tab.title)
+        .accessibilityAddTraits(isOn ? [.isSelected] : [])
     }
 
-    /// iOS 17–25 的回退：没有 accessory，就把「我的」放成一个普通 tab。
-    private var mineTab: some View {
-        NavigationStack { MineScreen(showsCloseButton: false) }
-            .background(Theme.wall)
-            .tabItem { Label("我的", systemImage: "person.crop.circle") }
-            .tag(AppTab.mine)
-    }
-
-    // MARK: - 「我的」入口
-
+    /// 「我的」：独立圆形玻璃，与胶囊同一行。
     @ViewBuilder
-    private var mineAccessory: some View {
+    private var mineKnob: some View {
         if #available(iOS 18.0, *) {
-            accessoryButton.matchedTransitionSource(id: Self.mineTransitionID, in: mineNamespace)
+            mineButton.matchedTransitionSource(id: Self.mineTransitionID, in: mineNamespace)
         } else {
-            accessoryButton
+            mineButton
         }
     }
 
-    private var accessoryButton: some View {
+    private var mineButton: some View {
         Button {
             ui.showMine = true
         } label: {
-            HStack(spacing: 8) {
+            VStack(spacing: 3) {
                 Image(systemName: "person.crop.circle.fill")
-                    .font(.system(size: 18))
+                    .font(.system(size: 24))
                 Text("我的")
-                    .font(.subheadline.weight(.medium))
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.ink3)
+                    .font(.system(size: 9.5, weight: .medium))
             }
-            .foregroundStyle(Color(hex: themeHex))
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .frame(maxWidth: .infinity)
-            .contentShape(Rectangle())
+            .foregroundStyle(ui.showMine ? Color(hex: themeHex) : Theme.ink2)
+            .frame(width: Self.knobSize, height: Self.knobSize)
+            .contentShape(Circle())
         }
         .buttonStyle(.plain)
+        .glassSurface(cornerRadius: Self.knobSize / 2, interactive: true)
         .accessibilityLabel("我的")
     }
 
-    /// 「我的」：从入口条扩散到全屏；退出用右上角 ×，转场自动倒放。
+    // MARK: - 呈现
+
+    /// 「我的」：从底栏圆钮扩散到全屏；退出用右上角 ×，转场自动倒放。
     @ViewBuilder
     private var mineCover: some View {
         if #available(iOS 18.0, *) {
