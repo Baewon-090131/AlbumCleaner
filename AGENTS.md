@@ -1,14 +1,14 @@
 # Album Cleaner · 项目记忆
 
 > 本文件是项目的长期记忆，写给后续的协作者与 AI 会话。改动项目前先读这一份。
-> 最近更新：2026-11-02（v0.1.1：整理页 UI 按参考视频重写——自绘顶栏 + 媒体类型筛选 + 右侧竖排玻璃钮；媒体真正嵌入卡片、去掉材质叠层；修掉删除换卡时的灰块闪烁）
+> 最近更新：2026-11-03（v0.1.2：UI 原生化——「我的」改为从底栏圆钮扩散全屏（zoom 转场）、待删除改系统 sheet + 滑动删除、整理页顶栏回系统 toolbar、动效统一为 iOS 17 预设）
 
 ## 1. 这是什么
 
 一款 iOS 相册整理应用，交互参考 Slidebox 与「卡待删」：
 
 - **形态（v4.0 起）**：**纯 SwiftUI 原生应用**，没有 WebView、没有 React。相册数据直接来自 Photos framework。
-- **信息架构（v0.1 起）**：底栏是自定义的「3 栏玻璃胶囊（整理 / 相似 / 相簿）+ 独立圆形『我的』按钮」（`Components/AppTabBar.swift`），不再是系统 `TabView`；「我的」从底部上滑覆盖当前页（MainTabView 自绘 sheet，抓握条下拉关闭）。三个 tab 常驻只切显隐（`opacity` + `allowsHitTesting`），整理页游标与撤销栈、相似页扫描结果不因切换丢失。回收站改名「待删除」，由全局 `UIState.showTrash` 经 `fullScreenCover` 弹出。
+- **信息架构（v0.1 起）**：底栏是自定义的「3 栏玻璃胶囊（整理 / 相似 / 相簿）+ 独立圆形『我的』按钮」（`Components/AppTabBar.swift`），不再是系统 `TabView`；「我的」点按后**从圆钮扩散到全屏**（`fullScreenCover` + iOS 18 的 `navigationTransition(.zoom)`），右上角 × 退出、退出即入场倒放。三个 tab 常驻只切显隐（`opacity` + `allowsHitTesting`），整理页游标与撤销栈、相似页扫描结果不因切换丢失。待删除是**系统 sheet**（`presentationDetents([.large])` + 系统抓握条），由全局 `UIState.showTrash` 触发。
 - **核心手势**：整理页上滑删除 / 左滑下一张 / 右滑撤回 / 下滑收藏（`DragGesture`）；**双指收拢进分列模式**（2 / 3 列瀑布流），分列里任意一张左右滑即标记删除。删除先进应用内「待删除」，待删除里的「彻底删除」才动系统相册。
 - **构建**：GitHub Actions 出 IPA（`.github/workflows/build.yml`），或本地 `xcodegen generate` + Xcode。**最低 iOS 17.0**（`@Observable`、`ContentUnavailableView` 等要求）。
 - **`Evernight/WebContent/` 是 v3 的网页实现，不参与构建**（`project.yml` 已移除引用），保留只作对照。
@@ -120,9 +120,12 @@ rg -n "^import UIKit" Evernight --glob "*.swift"                           # 只
 
 **v0.1 新机制**：
 
-- **底栏 3+1 与「我的」sheet**：`MainTabView` 用 `ZStack(alignment: .bottom)` 叠「tab 内容 + 我的面板 + AppTabBar」。三个 tab 常驻（`opacity` 切显隐），不要用 switch 重建——会丢整理页撤销栈。「我的」面板顶部圆角 + 抓握条，抓握区的 `DragGesture` 实时写 `mineDrag`，松手超 110pt 关闭；手势只挂在抓握区，下面 List 滚动不受影响。
-- **待删除托盘**：`UIState`（`@Observable`，RootView 创建经 environment 下传）持有 `showTrash` / `showMine`。各页右上角的 `TrayButton` 只写 `ui.showTrash = true`，`MainTabView` 用 `fullScreenCover` 弹出（盖住自定义底栏）。**别再用 `navigationDestination` 弹回收站**——自定义底栏不会随 push 隐藏。
-- **整理页布局（v0.1.1 重写）**：`.toolbar(.hidden, for: .navigationBar)` 隐藏大标题，改由 `SortTopBar` 自绘一行（月份胶囊 + 媒体类型胶囊 + 撤回/待删除圆钮）→ `ProgressHeader` 细进度条（无玻璃外壳）→ 满幅 `SortDeck`。操作按钮从底部操作岛改成 `SortSideBar`：**浮在卡片右侧的竖排圆形玻璃钮**（overlay，不占布局高度）。相簿详情模式（`albumName != nil`）顶栏左侧换成返回 + 相簿名，不显示月份与筛选。隐藏导航栏后 `NSScreenEdgePan` 侧滑返回仍可用。
+- **底栏 3+1 与「我的」zoom**：`MainTabView` 用 `ZStack(alignment: .bottom)` 叠「tab 内容 + AppTabBar」。三个 tab 常驻（`opacity` 切显隐），不要用 switch 重建——会丢整理页撤销栈。「我的」是 `fullScreenCover` + `.navigationTransition(.zoom(sourceID:in:))`（iOS 18+，iOS 17 退普通全屏），源 id `AppTabBar.mineTransitionID` 挂在底栏圆钮的 `matchedTransitionSource` 上；**不要**再自绘 sheet 并用 offset 做下拉——那样底部会露空。退出走右上角 ×（`dismiss()`），转场自动倒放。
+- **待删除是系统 sheet**：`MainTabView` 用 `.sheet` + `presentationDetents([.large])` + `presentationDragIndicator(.visible)` + `presentationCornerRadius(28)` + `presentationBackground { Theme.wall }`。抓握条与进出场动效全交给系统。**别再用 `fullScreenCover`**——那样没有抓握条，也不符合 sheet 语义。
+- **滑动删除**：`Components/SwipeDeleteButton.swift`。轨道「滑动进行删除」，圆钮位置与轨道填充由**同一个 `progress`** 驱动（`travel` 从 `GeometryReader` 传入，不要用 `UIScreen`）。未到终点松手用 `.bouncy(duration:extraBounce:)` 回起点且不执行；过 0.92 松手确认：箭头 `contentTransition(.symbolEffect(.replace))` 变对勾、文字变「已删除 N 项 · 释放 xx MB」，450ms 后才回调真正删除，并 `.sensoryFeedback(.impact(weight: .heavy))`。
+- **待删除托盘**：`UIState`（`@Observable`，RootView 创建经 environment 下传）持有 `showTrash` / `showMine`。各页右上角的 `TrayButton` 只写 `ui.showTrash = true`，`MainTabView` 用 **`.sheet`** 弹出。**别再用 `navigationDestination` 弹回收站**——自定义底栏不会随 push 隐藏。
+- **整理页顶栏回系统 toolbar**：`SortToolbar`（`ToolbarContent`）拆成四个独立 `ToolbarItem`：月份、媒体类型、撤回、托盘。**不要在 toolbar 里叠自绘玻璃**——系统会按 Liquid Glass 规范给每个 item 绘制背景，叠一层就是玻璃叠玻璃。`MonthMenu` 因此只保留纯文字 label。导航栏用 `.toolbarBackground(.hidden, for: .navigationBar)` 露出壁纸；普通模式标题留空、相簿详情用相簿名（返回按钮由系统提供）。主体是 `ProgressHeader` 细进度条 + 满幅 `SortDeck`；操作按钮是 `SortSideBar` 浮在卡片右侧的竖排圆形玻璃钮（overlay，不占布局高度）。
+- **动效一律用系统预设**：全仓库不再手写 `spring(response:dampingFraction:)` 与 `easeOut`，改用 iOS 17 的 `.snappy` / `.bouncy` / `.smooth`。需要额外回弹时用 `.bouncy(duration:extraBounce:)`。同理，`sensoryFeedback` 优先于手动 `UIImpactFeedbackGenerator`。
 - **媒体类型筛选**：`MediaFilter`（全部/照片/视频/实况，定义在 `SortModels.swift`）。`SortScreen.photos` 计算属性过滤，`.all` 走快路径零拷贝。**切筛选必须调 `resetCursor()`**（游标回 0、清空撤销栈、清 command/pendingAlbum），否则跨筛选撤销会让游标指错。
 - **卡内播放**：`SortCard` 按媒体类型换内容——视频走 `VideoCardContent`（UIViewRepresentable 包 `AVPlayerLayer`，`videoGravity = .resizeAspectFill` 填满卡片；静音默认开、可点喇叭切换；播到头回卷循环；底部细进度条），实况走 `LivePhotoCardContent`（`PHLivePhotoView`，`contentMode = .scaleAspectFill`，载入后 `replayToken` 自增触发 `startPlayback(.full)`，点按重播）。**只有前置卡加载播放器**（`isFront`），后卡退化为缩略图。`UIViewRepresentable.Context.coordinator` 是只读属性，要记状态得用引用类型 coordinator。点按手势归属：媒体卡点按 = 播放控制，普通照片点按 = 全屏查看（`onOpenViewer`），都在 SortCard 内部。
 - **媒体即卡片（不要去叠材质）**：`SortCard` 现在是 `media.frame(cardSize).clipShape(...).overlay(高光边).shadow(...).overlay(badges)`——**没有** `Rectangle().fill(.regularMaterial)` 底层。曾经的「材质底 + 图片浮层」在 offset/scale 动画中每帧重算 backdrop blur 与阴影，卡片会发飘、露边。占位的玻璃质感由 `AsyncThumbnail(glassPlaceholder: true)` 的 `.ultraThinMaterial` 提供（只在未加载时出现）。
@@ -244,44 +247,45 @@ Previews/
 - 信息架构、文案、手势逻辑与既有动效曲线不经要求不改。
 - Swift 侧改动前先读 `.agents/skills/write-swift`；网页动效改动前先读 `animate` 与 `apple-design`。
 
-## 10. 项目全景速查（2026-11-02 · v0.1.1）
+## 10. 项目全景速查（2026-11-03 · v0.1.2）
 
 **文件规模**（不含 `node_modules/` 与 `.git/`）
 
 | 文件 | 行数 | 职责 |
 | --- | --- | --- |
 | `Evernight/Services/PhotoLibraryService.swift` | 346 | 权限、按月分组、相簿增删改、待删除、累计战果、写入 |
-| `Evernight/Screens/SortScreen.swift` | 300 | 整理页（相簿详情复用）+ 撤销栈 + 分列 + 媒体筛选 + 动作 |
+| `Evernight/Screens/SortScreen.swift` | 299 | 整理页（相簿详情复用）+ 撤销栈 + 分列 + 媒体筛选 + 动作 |
 | `Evernight/Screens/AlbumsScreen.swift` | 291 | 相簿管理：空相簿横幅 / 新建 / 排序 / 长按菜单 |
-| `Evernight/Screens/MineScreen.swift` | 283 | 我的面板（sheet）：深色统计卡 + 设置 |
-| `Evernight/Components/SortDeck.swift` | 257 | 卡片区：跟手 / 飞出 / 下一张渐显入场 / 撤回倒放 |
+| `Evernight/Screens/MineScreen.swift` | 268 | 我的（fullScreenCover，右上 × 退出）+ 深色统计卡 + 设置 |
+| `Evernight/Components/SortDeck.swift` | 258 | 卡片区：跟手 / 飞出 / 下一张渐显入场 / 撤回倒放 |
 | `Evernight/Components/MediaCardContent.swift` | 252 | 视频卡 / 实况卡卡内播放（填满卡片） |
 | `Evernight/Services/SimilarityService.swift` | 221 | dHash 指纹 + 分桶 + 并查集分组 |
 | `Evernight/Screens/SimilarScreen.swift` | 214 | 相似页：年份筛选 + 智能清理 + 分组列表 |
-| `Evernight/Screens/TrashScreen.swift` | 166 | 待删除结算页 + 全屏查看 |
+| `Evernight/Screens/TrashScreen.swift` | 164 | 待删除（系统 sheet）：勾选网格 + 滑动删除条 |
 | `Evernight/Models/SortModels.swift` | 112 | SortMove / DeckCommand / UndoRecord / SortAction / MediaFilter |
+| `Evernight/Components/SwipeDeleteButton.swift` | 111 | 滑动删除条（圆钮 + 轨道填充同一进度） |
 | `Evernight/Components/SortCard.swift` | 110 | 单张卡：媒体即卡片（无材质叠层）+ 空态 + badgeStyle |
 | `Evernight/Design/GlassSurface.swift` | 109 | Liquid Glass 适配 + ContentPanel |
-| `Evernight/Components/SortTopBar.swift` | 103 | 整理页自绘顶栏：月份 + 媒体类型 + 撤回/托盘 |
-| `Evernight/Screens/MainTabView.swift` | 100 | 自定义底栏 + 我的 sheet + 待删除 cover |
 | `Evernight/Components/SimilarGroupCard.swift` | 97 | 相似页的一组卡片 |
+| `Evernight/Screens/MainTabView.swift` | 91 | 自定义底栏 + 我的 zoom cover + 待删除 sheet |
 | `Evernight/Components/ColumnsGrid.swift` | 89 | 分列瀑布流 + 横向滑删 |
 | `Evernight/EvernightApp.swift` | 86 | 入口 + 权限门 + UIState |
+| `Evernight/Components/AppTabBar.swift` | 83 | 底栏 3+1（圆钮是 zoom 转场的源） |
 | `Evernight/Models/LibraryModels.swift` | 74 | PhotoItem / MonthSection / AlbumItem / StorageInfo / Format |
-| `Evernight/Components/AppTabBar.swift` | 65 | 底栏 3+1 |
+| `Evernight/Components/SortToolbar.swift` | 69 | 整理页系统 toolbar：月份 / 媒体类型 / 撤回 / 托盘 |
 | `Evernight/Services/ThumbnailLoader.swift` | 64 | 缩略图加载 + 双缓存 + 同步读缓存 |
 | `Evernight/Design/Theme.swift` | 57 | 颜色圆角令牌 + 壁纸 + Color(hex:) |
 | `Evernight/Components/AsyncThumbnail.swift` | 54 | 缩略图视图（同步缓存 / 玻璃占位 / 高清开关） |
 | `Evernight/Screens/FavoritesScreen.swift` | 51 | 已喜欢网格 |
 | `Evernight/Components/ProgressHeader.swift` | 41 | 整理页细进度条（无玻璃外壳） |
 | `Evernight/Components/SortSideBar.swift` | 38 | 卡片右侧竖排圆形玻璃钮 |
-| `Evernight/Components/MonthMenu.swift` | 32 | 月份切换（系统 Menu） |
+| `Evernight/Components/MonthMenu.swift` | 34 | 月份切换（纯文字 Menu，玻璃交给系统 toolbar） |
 | `Evernight/Components/TrayButton.swift` | 30 | 待删除托盘 |
 | `Evernight/Components/ToastBanner.swift` | 17 | 临时提示 |
 | `project.yml` | 47 | xcodegen 配置（部署目标 iOS 17，0.1 / 14） |
 | `Evernight/Info.plist` | 52 | 权限文案、启动屏、方向（显示名 evernight） |
 
-合计 28 个 Swift 文件、3659 行。
+合计 29 个 Swift 文件、3730 行。
 
 **数据流**（v0.1）
 

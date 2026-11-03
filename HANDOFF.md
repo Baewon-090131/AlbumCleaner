@@ -88,38 +88,40 @@ Evernight/
     Theme.swift                  57   颜色 / 圆角令牌 + 壁纸 + Color(hex:)
     GlassSurface.swift          109   Liquid Glass 入口（GlassGroup / glassSurface / glassButtonStyle）+ ContentPanel
   Components/
-    SortDeck.swift              257   卡片区：跟手 / 飞出 / 下一张渐显入场 / 撤回倒放（动效编排）
+    SortDeck.swift              258   卡片区：跟手 / 飞出 / 下一张渐显入场 / 撤回倒放（动效编排）
     MediaCardContent.swift      252   视频卡（AVPlayerLayer 静音循环）+ 实况卡（PHLivePhotoView）
     SortCard.swift              110   单张卡：媒体即卡片（无材质叠层）+ 空态 + badgeStyle
-    SortTopBar.swift            103   整理页自绘顶栏：月份 + 媒体类型 + 撤回/托盘
+    SortToolbar.swift           ~85   整理页系统 toolbar：月份 / 媒体类型 / 撤回 / 托盘
     SimilarGroupCard.swift       97   相似页的一组卡片
     ColumnsGrid.swift            89   分列瀑布流 + 横向滑删
-    AppTabBar.swift              65   底栏 3+1（胶囊 + 我的圆钮）
+    AppTabBar.swift             ~70   底栏 3+1（胶囊 + 我的圆钮，圆钮是 zoom 转场的源）
+    SwipeDeleteButton.swift     ~108   滑动删除条（圆钮 + 轨道填充同一进度，到终点确认）
     AsyncThumbnail.swift         54   缩略图视图（同步缓存 + 玻璃占位 + highQuality）
     ProgressHeader.swift         41   整理页细进度条（无玻璃外壳）
     SortSideBar.swift            38   卡片右侧竖排圆形玻璃钮
-    MonthMenu.swift              32   月份切换胶囊（系统 Menu）
+    MonthMenu.swift              29   月份切换（纯文字 Menu，玻璃交给系统 toolbar）
     TrayButton.swift             30   待删除托盘（垃圾桶 + 红角标）
     ToastBanner.swift            17   临时提示
   Screens/
-    SortScreen.swift            300   整理页（相簿详情复用）+ 撤销栈 + 分列 + 媒体筛选 + 动作
+    SortScreen.swift            299   整理页（相簿详情复用）+ 撤销栈 + 分列 + 媒体筛选 + 动作
     AlbumsScreen.swift          291   相簿管理：空相簿横幅 / 新建 / 排序 / 长按菜单
-    MineScreen.swift            283   我的面板（sheet）：深色统计卡 + 设置
+    MineScreen.swift            268   我的（fullScreenCover，右上 × 退出）+ 深色统计卡
     SimilarScreen.swift         214   相似页：年份筛选 + 智能清理 + 分组列表
-    TrashScreen.swift           166   待删除（结算页：全选 / 勾选 / 红色删除条）+ 全屏查看
-    MainTabView.swift           100   自定义底栏 + 我的 sheet + 待删除 fullScreenCover
+    TrashScreen.swift           160   待删除（系统 sheet）：勾选网格 + 滑动删除条
+    MainTabView.swift           ~90   自定义底栏 + 我的 zoom cover + 待删除 sheet
     FavoritesScreen.swift        51   已喜欢网格
   WebContent/                        v3 网页实现，不参与构建
 project.yml                      47   xcodegen 配置（0.1 / 构建号 14）
 ```
 
 **用到的系统控件**（这就是"原生化"的实质）：
-`NavigationStack`（相簿页 / 相似页的大标题；整理页已隐藏导航栏改自绘顶栏）、
+`NavigationStack` + 系统 `toolbar`（整理 / 相似 / 相簿 / 我的都用）、
 `Menu`（月份 / 媒体类型 / 排序）、`Toggle`、`Slider`、
 `List(.insetGrouped)`、`ProgressView`、`ContentUnavailableView`、
-`confirmationDialog`（相簿与待删除操作）、`fullScreenCover`（待删除 / 全屏看图 / 已喜欢）、
-`contextMenu`（相簿长按）。**v0.1 起底栏不再用系统 `TabView`**，媒体播放用
-`UIViewRepresentable` 包 `AVPlayerLayer` / `PHLivePhotoView`，整理页顶栏是自绘的。
+`confirmationDialog`、`contextMenu`、`.sheet`（待删除，系统抓握条）、
+`.fullScreenCover` + `.navigationTransition(.zoom)`（我的，从圆钮扩散）、
+`UIViewRepresentable` 包 `AVPlayerLayer` / `PHLivePhotoView`、
+`sensoryFeedback`（滑动删除的确认触感）。动效统一 `.snappy` / `.bouncy` / `.smooth`。
 
 ---
 
@@ -251,7 +253,8 @@ xcodebuild -scheme AlbumCleaner -sdk iphonesimulator build
 
 | 版本 | 提交 | 内容 |
 | --- | --- | --- |
-| v0.1.1 | 本次 | 整理页 UI 按参考视频重写：隐藏导航栏 + `SortTopBar` 自绘顶栏（月份 + 媒体类型筛选 + 撤回/托盘）+ `ProgressHeader` 细进度条 + `SortSideBar` 右侧竖排玻璃钮；卡片去掉 `.regularMaterial` 底层，媒体即卡片；前后卡统一高清 + `ThumbnailLoader.cached(for:)` 同步读缓存，修掉换卡灰块闪烁；`SortDeck.finish` 把复位与数据变更合并进同一事务；新增 `MediaFilter` |
+| v0.1.2 | `3359b90` | UI 原生化：我的改 `fullScreenCover` + iOS 18 `navigationTransition(.zoom)`（从底栏圆钮扩散全屏、右上 × 退出）；待删除改系统 `.sheet`（系统抓握条 + 圆角 28）；新增 `SwipeDeleteButton`（滑动确认删除，到终点变对勾）；整理页顶栏回系统 toolbar（`SortToolbar`，MonthMenu 去自绘玻璃）；全仓库动效换 `.snappy` / `.bouncy` / `.smooth`，滑动删除加 `sensoryFeedback` |
+| v0.1.1 | `14c1850` + `58cf1db` + `484676b` | 整理页按参考视频重写：顶栏 + 媒体类型筛选 + 右侧竖排玻璃钮；卡片去掉 `.regularMaterial` 底层，媒体即卡片；前后卡统一高清 + `ThumbnailLoader.cached(for:)` 同步读缓存，修掉换卡灰块闪烁；`SortDeck.finish` 复位与数据变更合并同一事务；后卡下沉 26→40pt |
 | v0.1 | `e0c75e6` | 更名 evernight（0.1 / 构建号 14）；移植「卡待删」能力：底栏 3+1 + 我的 sheet、卡内播放（视频 / 实况）、原图画质、分列删除（双指收拢 + 左右滑）、待删除结算页（未勾选项放回）、相似页 dHash pHash、相簿管理（空相簿 / 新建 / 长按菜单 / 排序）；新增 `AppTabBar` / `ColumnsGrid` / `MediaCardContent` / `TrayButton` / `SimilarScreen` / `SimilarityService` / `FavoritesScreen` / `SimilarGroupCard` |
 | 整理页动效 | `fea71e8` | 撤回收敛为通用撤销栈（删除 / 下一张 / 收藏 / 存入相簿，限深 50、切月清空）；整理页手势与按钮统一为「滑动分拣」动效，撤回即整套倒放；`SortModels.swift` / `SortCard.swift` / `MonthMenu.swift` 拆出 |
 | 网格统一 | `1631484` | 相簿页改 2 列正方形封面（名称 / 数量居中在下方，去掉卡片底）；回收站改 3 列 1:1 圆角 8（间距 3 / 边距 12）；整理页未动 |
