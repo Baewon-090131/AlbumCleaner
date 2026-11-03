@@ -36,6 +36,8 @@ enum Theme {
     static let cornerIsland: CGFloat = 28
     static let cornerPanel: CGFloat = 28
     static let cornerTile: CGFloat = 20
+    /// 照片卡：比面板略收，配合 16pt 页边距不显笨重
+    static let cornerCard: CGFloat = 28
     static let cornerPlate: CGFloat = 34
 
     /// 壁纸：奶油纸底 + 三处极淡的暖色光斑（琥珀 / 砖 / 橄榄）。

@@ -3,6 +3,9 @@ import SwiftUI
 /// 「我的」面板。从底部栏的圆钮扩散到全屏（`fullScreenCover` + zoom 转场），
 /// 退出用右上角 ×，交互就是入场动画的倒放。
 struct MineScreen: View {
+    /// iOS 26 走全屏 cover，需要右上角 ×；iOS 17–25 是普通 tab，不需要关闭按钮。
+    var showsCloseButton = true
+
     @Environment(PhotoLibraryService.self) private var library
     @Environment(UIState.self) private var ui
     @Environment(\.dismiss) private var dismiss
@@ -21,13 +24,15 @@ struct MineScreen: View {
         list
             .navigationTitle("我的")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
+                if showsCloseButton {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "xmark")
+                        }
+                        .accessibilityLabel("关闭")
                     }
-                    .accessibilityLabel("关闭")
                 }
             }
             .fullScreenCover(isPresented: $showFavorites) {

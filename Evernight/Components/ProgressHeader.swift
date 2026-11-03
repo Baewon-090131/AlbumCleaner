@@ -22,10 +22,10 @@ struct ProgressHeader: View {
                         .fill(tint)
                         .frame(width: max(0, geometry.size.width * progress))
                 }
-                .frame(height: 6)
+                .frame(height: 4)
                 .frame(maxHeight: .infinity)
             }
-            .frame(height: 18)
+            .frame(height: 16)
 
             Text("\(remaining)")
                 .font(.headline.weight(.bold))
@@ -33,7 +33,7 @@ struct ProgressHeader: View {
                 .foregroundStyle(tint)
         }
         .padding(.horizontal, 2)
-        .frame(height: 22)
+        .frame(height: 18)
         .animation(.snappy(duration: 0.35), value: progress)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("已处理 \(processed) 项，共 \(total) 项，剩余 \(remaining) 项")

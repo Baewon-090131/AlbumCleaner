@@ -29,9 +29,9 @@ struct SortCard: View {
     var body: some View {
         media
             .frame(width: cardSize.width, height: cardSize.height)
-            .clipShape(RoundedRectangle(cornerRadius: Theme.cornerPlate, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Theme.cornerCard, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: Theme.cornerPlate, style: .continuous)
+                RoundedRectangle(cornerRadius: Theme.cornerCard, style: .continuous)
                     .strokeBorder(.white.opacity(0.55), lineWidth: 0.5)
             }
             .shadow(color: Theme.ink.opacity(0.18),
