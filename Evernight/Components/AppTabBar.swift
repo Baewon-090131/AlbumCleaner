@@ -12,7 +12,7 @@ struct AppTabBar: View {
     let namespace: Namespace.ID
     let onMine: () -> Void
 
-    @AppStorage("ac_theme") private var themeHex = "#002FA7"
+    @AppStorage("ac_theme_v2") private var themeHex = "#2B4A6F"
 
     var body: some View {
         HStack(spacing: 12) {
@@ -47,7 +47,7 @@ struct AppTabBar: View {
                 Text("我的")
                     .font(.system(size: 9.5, weight: .medium))
             }
-            .foregroundStyle(mineActive ? Color(hex: themeHex) : Color.secondary)
+            .foregroundStyle(mineActive ? Color(hex: themeHex) : Theme.ink2)
             .frame(width: 62, height: 62)
             .contentShape(Circle())
         }
@@ -67,7 +67,7 @@ struct AppTabBar: View {
                 Text(tab.title)
                     .font(.system(size: 9.5, weight: .medium))
             }
-            .foregroundStyle(on ? Color(hex: themeHex) : Color.secondary)
+            .foregroundStyle(on ? Color(hex: themeHex) : Theme.ink2)
             .frame(maxWidth: .infinity)
             .frame(height: 50)
             .background {

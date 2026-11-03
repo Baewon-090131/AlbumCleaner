@@ -29,7 +29,7 @@ struct TrashScreen: View {
             } else {
                 Text("本轮 \(library.trash.count) 项 · 预计释放 \(Format.bytes(library.trashByteCount))")
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.ink2)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 12)
                     .padding(.top, 10)
@@ -77,7 +77,7 @@ struct TrashScreen: View {
                     Image(systemName: checked ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundStyle(checked ? Color.accentColor : .white)
-                        .shadow(color: .black.opacity(0.25), radius: 2)
+                        .shadow(color: Theme.ink.opacity(0.22), radius: 2)
                         .padding(5)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -105,7 +105,7 @@ struct TrashScreen: View {
 
                 Text("未勾选项将放回相册 · 删除项进入系统「最近删除」，30 天内可恢复")
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.ink2)
             }
             .padding(.horizontal, 16)
             .padding(.top, 10)

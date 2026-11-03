@@ -25,7 +25,7 @@ enum AppTab: Hashable, CaseIterable, Identifiable {
 /// 主界面：三个 tab 的内容区 + 自定义底部栏（3 栏玻璃胶囊 +「我的」独立圆钮）。
 /// 不再用系统 TabView——「我的」要单独拿出来：点按后从圆钮扩散到全屏（iOS 18+ 的 zoom 转场）。
 struct MainTabView: View {
-    @AppStorage("ac_theme") private var themeHex = "#002FA7"
+    @AppStorage("ac_theme_v2") private var themeHex = "#2B4A6F"
     @Environment(UIState.self) private var ui
     @State private var selection: AppTab = .sort
     /// 「我的」的 zoom 转场：源是底栏圆钮，目标是全屏 cover，进出共用这一个命名空间。
@@ -34,6 +34,9 @@ struct MainTabView: View {
     var body: some View {
         @Bindable var ui = ui
         ZStack(alignment: .bottom) {
+            // 统一壁纸底：三个 tab 的根视图都是透明容器，透出这一层
+            Theme.wall
+
             tabContent
                 // 给悬浮底栏留位
                 .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 92) }

@@ -14,7 +14,7 @@ struct SortToolbar: ToolbarContent {
     let onSelectMonth: (MonthSection) -> Void
     let onSelectFilter: (MediaFilter) -> Void
 
-    @AppStorage("ac_theme") private var themeHex = "#002FA7"
+    @AppStorage("ac_theme_v2") private var themeHex = "#2B4A6F"
 
     var body: some ToolbarContent {
         if showsMonth {

@@ -91,6 +91,7 @@ extension View {
 
 /// 卡片、分组这类承载阅读的表面。按 HIG，内容层不该用 Liquid Glass，
 /// 这里用偏实的高亮材质把文字托住，避免半透明叠半透明。
+/// 材质本身偏冷，所以压一层暖纸色，让它在奶油底上不发灰。
 struct ContentPanel<Content: View>: View {
     var cornerRadius: CGFloat = Theme.cornerPanel
     @ViewBuilder var content: Content
@@ -99,11 +100,12 @@ struct ContentPanel<Content: View>: View {
         content
             .background(.regularMaterial,
                         in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .background(Theme.card.opacity(0.55),
+                        in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(.white.opacity(0.65), lineWidth: 0.5)
+                    .strokeBorder(Theme.line.opacity(0.55), lineWidth: 0.5)
             )
-            .shadow(color: Color(red: 22 / 255, green: 32 / 255, blue: 72 / 255).opacity(0.10),
-                    radius: 10, y: 6)
+            .shadow(color: Theme.ink.opacity(0.10), radius: 10, y: 6)
     }
 }

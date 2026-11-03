@@ -87,7 +87,7 @@ struct SimilarScreen: View {
                 .tint(Theme.accent)
             Text("正在分析照片 \(Int(similar.progress * 100))%")
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.ink2)
             Text("首次扫描需要逐张计算指纹，之后只增量扫新照片")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
@@ -135,7 +135,7 @@ struct SimilarScreen: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("最多可释放")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.ink2)
                 Text(Format.bytes(totalReclaimable))
                     .font(.title3.bold())
                     .foregroundStyle(Theme.accent)

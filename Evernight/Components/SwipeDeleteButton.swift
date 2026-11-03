@@ -24,7 +24,7 @@ struct SwipeDeleteButton: View {
     /// 填充比圆钮多出来的宽度，避免两者之间露缝。
     private let fillOverlap: CGFloat = 8
 
-    private var fillColor: Color { enabled ? Theme.danger : Color(.systemGray3) }
+    private var fillColor: Color { enabled ? Theme.danger : Theme.line }
 
     private var label: String {
         if confirmed {
@@ -42,7 +42,7 @@ struct SwipeDeleteButton: View {
 
             ZStack(alignment: .topLeading) {
                 Capsule()
-                    .fill(Color(.systemGray6))
+                    .fill(Theme.track)
                     .frame(width: trackWidth, height: trackHeight)
 
                 // 填充：贴左边缘起，起点宽度 = 轨道高（正好是一个圆）
@@ -65,7 +65,7 @@ struct SwipeDeleteButton: View {
                 } else {
                     Text(label)
                         .font(.headline)
-                        .foregroundStyle(progress > 0.5 ? Color.white : Color.secondary)
+                        .foregroundStyle(progress > 0.5 ? Color.white : Theme.ink2)
                         .frame(width: trackWidth, height: trackHeight, alignment: .center)
                         .opacity(1 - progress * 1.4)
                         .allowsHitTesting(false)
@@ -80,7 +80,7 @@ struct SwipeDeleteButton: View {
                             .font(.system(size: 18, weight: .bold))
                             .foregroundStyle(.white)
                     }
-                    .shadow(color: .black.opacity(0.18), radius: 4, y: 2)
+                    .shadow(color: Theme.ink.opacity(0.16), radius: 4, y: 2)
                     .scaleEffect(isDragging ? 1.05 : 1)
                     .offset(x: travel * progress)
                     .opacity(confirmed ? 0 : 1)

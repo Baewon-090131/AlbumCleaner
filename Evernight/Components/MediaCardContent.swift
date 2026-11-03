@@ -59,7 +59,7 @@ struct VideoCardContent: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.white)
                         .padding(8)
-                        .background(.black.opacity(0.42), in: Circle())
+                        .background(Theme.scrim.opacity(0.5), in: Circle())
                 }
                 .buttonStyle(.plain)
                 Spacer()

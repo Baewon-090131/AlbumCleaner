@@ -7,7 +7,7 @@ struct MineScreen: View {
     @Environment(UIState.self) private var ui
     @Environment(\.dismiss) private var dismiss
 
-    @AppStorage("ac_theme") private var themeHex = "#002FA7"
+    @AppStorage("ac_theme_v2") private var themeHex = "#2B4A6F"
     @AppStorage("ac_autoLive") private var autoPlayLive = true
     @AppStorage("ac_autoVideo") private var autoPlayVideo = true
     @AppStorage("ac_videoMuted") private var videoMuted = true
@@ -63,14 +63,14 @@ struct MineScreen: View {
                         Spacer()
                         Text("\(Int(batchSize))")
                             .monospacedDigit()
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Theme.ink2)
                     }
                     Slider(value: $batchSize, in: 10...300, step: 10) {
                         Text("每轮数量")
                     }
                     Text("单轮最高可整理 300 项")
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.ink2)
                 }
                 .padding(.vertical, 2)
             }
@@ -105,7 +105,7 @@ struct MineScreen: View {
                         .font(.footnote.weight(.medium))
                     Text("evernight 0.1 (14)")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.ink2)
                 }
                 .frame(maxWidth: .infinity)
                 .listRowBackground(Color.clear)
@@ -189,7 +189,7 @@ private struct UsageCard: View {
         }
         .padding(16)
         .foregroundStyle(.white)
-        .background(Color(red: 28 / 255, green: 28 / 255, blue: 30 / 255),
+        .background(Theme.dark,
                     in: RoundedRectangle(cornerRadius: Theme.cornerPanel, style: .continuous))
     }
 }
@@ -222,18 +222,18 @@ private struct ThemeColorGrid: View {
     @Binding var selection: String
 
     private let colors: [(id: String, color: Color, name: String)] = [
-        ("#007AFF", .blue, "蓝色"),
-        ("#AF52DE", .purple, "紫色"),
-        ("#34C759", .green, "绿色"),
-        ("#FF9500", .orange, "橙色"),
-        ("#FF3B30", .red, "红色"),
-        ("#FF2D92", Color(red: 1, green: 0.176, blue: 0.573), "粉色"),
-        ("#002FA7", Theme.accent, "北洋蓝"),
-        ("#5856D6", .indigo, "靛蓝"),
-        ("#32ADE6", .cyan, "青色"),
-        ("#30B0C7", Color(red: 0.188, green: 0.69, blue: 0.78), "湖绿"),
-        ("#FFCC00", .yellow, "金色"),
-        ("#636366", .gray, "石墨"),
+        ("#2B4A6F", Color(hex: "#2B4A6F"), "深靛"),
+        ("#A9432F", Color(hex: "#A9432F"), "砖红"),
+        ("#5B7350", Color(hex: "#5B7350"), "橄榄"),
+        ("#B07A2E", Color(hex: "#B07A2E"), "赭黄"),
+        ("#4E6577", Color(hex: "#4E6577"), "灰蓝"),
+        ("#7A5B45", Color(hex: "#7A5B45"), "栗棕"),
+        ("#6B4A5C", Color(hex: "#6B4A5C"), "梅紫"),
+        ("#8A6D3B", Color(hex: "#8A6D3B"), "古金"),
+        ("#3F5E5A", Color(hex: "#3F5E5A"), "松绿"),
+        ("#9C5B3E", Color(hex: "#9C5B3E"), "陶土"),
+        ("#5A5566", Color(hex: "#5A5566"), "烟紫"),
+        ("#2B2620", Color(hex: "#2B2620"), "墨黑"),
     ]
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 6)

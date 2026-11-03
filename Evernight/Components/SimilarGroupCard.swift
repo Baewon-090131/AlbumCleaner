@@ -80,7 +80,7 @@ struct GroupCard: View {
                         Image(systemName: checked ? "checkmark.circle.fill" : "circle")
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(checked ? Theme.danger : .white)
-                            .shadow(color: .black.opacity(0.25), radius: 2)
+                            .shadow(color: Theme.ink.opacity(0.22), radius: 2)
                             .padding(4)
                     }
                 }

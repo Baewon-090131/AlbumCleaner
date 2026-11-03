@@ -54,7 +54,7 @@ private struct LoadingStateView: View {
                 .controlSize(.large)
             Text("正在加载照片库…")
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.ink2)
         }
         .padding(28)
         .glassSurface(cornerRadius: Theme.cornerPanel)
@@ -73,7 +73,7 @@ private struct PermissionStateView: View {
                 .font(.headline)
             Text("在「设置 › 隐私与安全性 › 照片」里允许 Evernight 访问照片后回到这里。")
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.ink2)
                 .multilineTextAlignment(.center)
             Button("重新检查", action: retry)
                 .glassButtonStyle(prominent: true)

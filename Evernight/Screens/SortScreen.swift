@@ -7,7 +7,7 @@ struct SortScreen: View {
     var album: AlbumItem? = nil
 
     @Environment(PhotoLibraryService.self) private var library
-    @AppStorage("ac_theme") private var themeHex = "#002FA7"
+    @AppStorage("ac_theme_v2") private var themeHex = "#2B4A6F"
 
     @State private var selectedMonthID: String?
     @State private var index = 0

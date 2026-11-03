@@ -34,7 +34,7 @@ struct SortCard: View {
                 RoundedRectangle(cornerRadius: Theme.cornerPlate, style: .continuous)
                     .strokeBorder(.white.opacity(0.55), lineWidth: 0.5)
             }
-            .shadow(color: Color(red: 12 / 255, green: 18 / 255, blue: 48 / 255).opacity(0.20),
+            .shadow(color: Theme.ink.opacity(0.18),
                     radius: 12, y: 8)
             .overlay { badges }
             .accessibilityLabel("待整理的照片")
@@ -90,7 +90,7 @@ struct EmptyDeckView: View {
                 .font(.headline)
             Text("删除的照片已移入待删除")
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.ink2)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .glassSurface(cornerRadius: Theme.cornerPlate)
@@ -105,6 +105,6 @@ extension View {
             .foregroundStyle(.white)
             .padding(.horizontal, 11)
             .padding(.vertical, 5)
-            .background(.black.opacity(0.42), in: Capsule())
+            .background(Theme.scrim.opacity(0.5), in: Capsule())
     }
 }

@@ -154,7 +154,7 @@ struct AlbumsScreen: View {
                     .font(.subheadline.weight(.semibold))
                 Text("没有内容，可直接清理")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.ink2)
             }
             Spacer()
             Button("一键删除") { dialog = .deleteEmpty }
@@ -273,7 +273,7 @@ struct AlbumCardView: View {
                     } else {
                         Image(systemName: "photo")
                             .font(.title3)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Theme.ink2)
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -284,7 +284,7 @@ struct AlbumCardView: View {
 
             Text("\(album.count)")
                 .font(.system(size: 13))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.ink2)
                 .monospacedDigit()
         }
     }
