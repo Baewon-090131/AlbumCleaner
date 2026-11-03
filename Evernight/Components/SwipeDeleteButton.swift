@@ -1,13 +1,12 @@
 import SwiftUI
 
-/// 滑动删除条（对齐参考稿「滑动确认」的形态）。
+/// 滑动删除条。形态对齐参考组件（slide-button）：
 ///
-/// 结构只有三层：轨道胶囊、跟随进度的填充、圆钮；文字压在轨道正中。
-/// - 圆钮直径 = 轨道高度 − 两侧各 4pt，**垂直居中**，与轨道左右内边距一致；
-/// - 填充从轨道最左边缘起、高度与轨道相同，和圆钮共用同一个 `progress`，
-///   起点时填充正好是一个圆形（宽 = 高 = 轨道高），不会露出直角边；
-/// - 未到终点松手用 `.bouncy` 弹回起点，不执行；
-/// - 到终点松手确认：箭头变对勾，文字变「已删除 N 项 · 释放 xx MB」。
+/// - 轨道是一条浅灰胶囊，圆钮与轨道同高、贴左边缘起步，拖动时放大 1.05；
+/// - 填充条永远从轨道最左边缘长出来，宽度 = 圆钮位移 + 8（略盖住圆钮接缝）；
+/// - 阈值 0.9，未到阈值松手用 bouncy 回弹归零，不执行；
+/// - 到阈值确认后整体宽度收缩到 66%，圆钮淡出，轨道内换成对勾与删除结果；
+/// - 颜色按需求保留红色。
 struct SwipeDeleteButton: View {
     let count: Int
     let bytes: Int64
@@ -16,13 +15,15 @@ struct SwipeDeleteButton: View {
 
     @State private var progress: CGFloat = 0
     @State private var confirmed = false
+    @State private var isDragging = false
 
-    private let trackHeight: CGFloat = 56
-    /// 圆钮与轨道边缘的内边距，四边一致，保证上下左右都对齐。
-    private let inset: CGFloat = 4
-    private let commitThreshold: CGFloat = 0.92
+    private let trackHeight: CGFloat = 50
+    private let commitThreshold: CGFloat = 0.9
+    /// 完成态相对全宽的占比（参考组件 12rem → 8rem）。
+    private let collapsedRatio: CGFloat = 0.66
+    /// 填充比圆钮多出来的宽度，避免两者之间露缝。
+    private let fillOverlap: CGFloat = 8
 
-    private var knobSize: CGFloat { trackHeight - inset * 2 }
     private var fillColor: Color { enabled ? Theme.danger : Color(.systemGray3) }
 
     private var label: String {
@@ -34,42 +35,58 @@ struct SwipeDeleteButton: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let width = geometry.size.width
-            let travel = max(1, width - inset * 2 - knobSize)
+            let full = geometry.size.width
+            let trackWidth = confirmed ? full * collapsedRatio : full
+            // 圆钮与轨道同高，可移动距离就是轨道长减去圆钮直径
+            let travel = max(1, trackWidth - trackHeight)
 
             ZStack(alignment: .topLeading) {
-                // 轨道
                 Capsule()
-                    .fill(Color(.tertiarySystemFill))
-                    .frame(width: width, height: trackHeight)
+                    .fill(Color(.systemGray6))
+                    .frame(width: trackWidth, height: trackHeight)
 
-                // 填充：从最左边起，起点宽度等于轨道高度 → 正好是一个圆
+                // 填充：贴左边缘起，起点宽度 = 轨道高（正好是一个圆）
                 Capsule()
                     .fill(fillColor)
-                    .frame(width: inset * 2 + knobSize + travel * progress,
+                    .frame(width: min(trackWidth, trackHeight + travel * progress + fillOverlap),
                            height: trackHeight)
 
-                // 文字压在轨道正中；圆钮滑过时会自然盖住左侧
-                Text(label)
-                    .font(.headline)
-                    .foregroundStyle(progress > 0.5 || confirmed ? Color.white : Color.secondary)
-                    .frame(width: width, height: trackHeight, alignment: .center)
-                    .allowsHitTesting(false)
+                if confirmed {
+                    HStack(spacing: 6) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 17, weight: .semibold))
+                        Text(label)
+                            .font(.subheadline.weight(.semibold))
+                            .lineLimit(1)
+                    }
+                    .foregroundStyle(.white)
+                    .frame(width: trackWidth, height: trackHeight, alignment: .center)
+                    .transition(.opacity)
+                } else {
+                    Text(label)
+                        .font(.headline)
+                        .foregroundStyle(progress > 0.5 ? Color.white : Color.secondary)
+                        .frame(width: trackWidth, height: trackHeight, alignment: .center)
+                        .opacity(1 - progress * 1.4)
+                        .allowsHitTesting(false)
+                }
 
-                // 圆钮：用 offset 显式定位，避免不同 alignment 造成上下不齐
+                // 圆钮：贴左边缘起步，用 offset 显式定位保证上下左右对齐
                 Circle()
                     .fill(fillColor)
-                    .frame(width: knobSize, height: knobSize)
+                    .frame(width: trackHeight, height: trackHeight)
                     .overlay {
-                        Image(systemName: confirmed ? "checkmark" : "arrow.right")
-                            .font(.system(size: 17, weight: .bold))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 18, weight: .bold))
                             .foregroundStyle(.white)
-                            .contentTransition(.symbolEffect(.replace))
                     }
-                    .shadow(color: .black.opacity(0.12), radius: 2, y: 1)
-                    .offset(x: inset + travel * progress, y: inset)
+                    .shadow(color: .black.opacity(0.18), radius: 4, y: 2)
+                    .scaleEffect(isDragging ? 1.05 : 1)
+                    .offset(x: travel * progress)
+                    .opacity(confirmed ? 0 : 1)
             }
-            .frame(width: width, height: trackHeight)
+            .frame(width: trackWidth, height: trackHeight)
+            .frame(width: full, height: trackHeight, alignment: .center)
             .contentShape(Capsule())
             .gesture(dragGesture(travel: travel))
         }
@@ -89,15 +106,16 @@ struct SwipeDeleteButton: View {
         DragGesture(minimumDistance: 2)
             .onChanged { value in
                 guard enabled, !confirmed else { return }
+                isDragging = true
                 progress = min(1, max(0, value.translation.width / travel))
             }
             .onEnded { _ in
                 guard enabled, !confirmed else { return }
+                isDragging = false
                 if progress >= commitThreshold {
                     confirm()
                 } else {
-                    // 阻尼回起点：带额外回弹，松手后先弹一下再停住，不执行删除
-                    withAnimation(.bouncy(duration: 0.42, extraBounce: 0.2)) {
+                    withAnimation(.bouncy(duration: 0.3, extraBounce: 0.12)) {
                         progress = 0
                     }
                 }
@@ -105,8 +123,10 @@ struct SwipeDeleteButton: View {
     }
 
     private func confirm() {
-        withAnimation(.snappy(duration: 0.28)) { progress = 1 }
-        confirmed = true
+        withAnimation(.snappy(duration: 0.32)) {
+            progress = 1
+            confirmed = true
+        }
         // 让「已删除 …」与对勾先落稳，再执行真正的删除
         Task {
             try? await Task.sleep(for: .milliseconds(450))
