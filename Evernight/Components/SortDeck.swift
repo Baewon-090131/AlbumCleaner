@@ -146,10 +146,10 @@ private extension SortDeck {
     /// 删除 / 下一张 / 存入相簿：当前卡飞出屏幕，下一张在同一个 Spring 里
     /// 从 0.94 缩小态放大到 1.0、从下沉位归位，并同步渐显。
     func playFlyOut(_ move: SortMove) {
-        withAnimation(.easeOut(duration: leaveDuration)) {
+        withAnimation(.smooth(duration: leaveDuration)) {
             frontOffset = flyTarget(move)
         }
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) {
+        withAnimation(.snappy(duration: 0.42)) {
             backScale = 1
             backLift = 0
             backOpacity = 1
@@ -162,7 +162,7 @@ private extension SortDeck {
 
     /// 收藏：只有下滑手势会走到这里——不飞出、不推进，弹回原位。
     func playFavorite() {
-        withAnimation(.spring(response: 0.30, dampingFraction: 0.70)) {
+        withAnimation(.bouncy(duration: 0.3)) {
             frontOffset = .zero
         }
         Task {
@@ -188,11 +188,11 @@ private extension SortDeck {
             frontScale = 1
             backScale = 1
         }
-        withAnimation(.easeOut(duration: leaveDuration)) {
+        withAnimation(.smooth(duration: leaveDuration)) {
             frontOffset = .zero
             backOffset = .zero
         }
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) {
+        withAnimation(.snappy(duration: 0.42)) {
             backScale = 0.94
             backLift = 40
             backOpacity = 0
@@ -205,12 +205,12 @@ private extension SortDeck {
 
     /// 撤「收藏」：它当初没有飞出，倒放就是让当前卡弹一下。
     func playFavoriteUndo() {
-        withAnimation(.spring(response: 0.24, dampingFraction: 0.55)) {
+        withAnimation(.bouncy(duration: 0.24, extraBounce: 0.15)) {
             frontScale = 0.94
         }
         Task {
             try? await Task.sleep(for: .seconds(0.14))
-            withAnimation(.spring(response: 0.30, dampingFraction: 0.72)) {
+            withAnimation(.snappy(duration: 0.3)) {
                 frontScale = 1
             }
             try? await Task.sleep(for: .seconds(0.26))
@@ -221,7 +221,7 @@ private extension SortDeck {
     // MARK: - 收尾
 
     func springBack() {
-        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+        withAnimation(.snappy(duration: 0.32)) {
             frontOffset = .zero
         }
     }

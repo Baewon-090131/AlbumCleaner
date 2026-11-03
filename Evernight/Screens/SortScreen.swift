@@ -1,13 +1,12 @@
 import SwiftUI
 
 /// 整理页。`album` 为 nil 时是「整理」tab（按月整理），否则是某个相簿的整理页。
-/// 布局按参考视频：顶栏一行（月份 + 媒体类型 + 撤回/待删除）→ 细进度条 → 满幅卡片，
-/// 操作按钮浮在卡片右侧。导航栏隐藏，改由自绘顶栏承担，避免上下各堆三层把卡片挤小。
+/// 顶栏交给系统 toolbar（月份 + 媒体类型 + 撤回/待删除），下面是细进度条与满幅卡片，
+/// 操作按钮浮在卡片右侧。
 struct SortScreen: View {
     var album: AlbumItem? = nil
 
     @Environment(PhotoLibraryService.self) private var library
-    @Environment(\.dismiss) private var dismiss
     @AppStorage("ac_theme") private var themeHex = "#002FA7"
     /// 右侧竖排钮的玻璃形态在「四按钮 ↔ 三按钮」之间变形时共用这个命名空间
     @Namespace private var actionNamespace
@@ -66,18 +65,6 @@ struct SortScreen: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            SortTopBar(
-                months: library.months,
-                selectedMonthID: month?.id,
-                filter: mediaFilter,
-                canUndo: !undoStack.isEmpty,
-                albumName: isAlbumMode ? (album?.name ?? "相簿") : nil,
-                onSelectMonth: selectMonth,
-                onSelectFilter: selectFilter,
-                onUndo: { request(.undo) },
-                onBack: { dismiss() }
-            )
-
             ProgressHeader(
                 processed: index,
                 total: photos.count,
@@ -120,8 +107,20 @@ struct SortScreen: View {
             MagnifyGesture()
                 .onEnded { value in handlePinch(value.magnification) }
         )
-        // 自绘顶栏取代导航栏，避免大标题与顶栏叠成两层挤占卡片高度
-        .toolbar(.hidden, for: .navigationBar)
+        // 顶栏交给系统 toolbar（Liquid Glass 由系统绘制）；标题留空，相簿详情用相簿名
+        .navigationTitle(isAlbumMode ? (album?.name ?? "相簿") : "")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar {
+            SortToolbar(months: library.months,
+                        selectedMonthID: month?.id,
+                        filter: mediaFilter,
+                        canUndo: !undoStack.isEmpty,
+                        showsMonth: !isAlbumMode,
+                        onSelectMonth: selectMonth,
+                        onSelectFilter: selectFilter,
+                        onUndo: { request(.undo) })
+        }
         .fullScreenCover(item: $viewerPhoto) { PhotoViewerScreen(photo: $0) }
         .confirmationDialog("存入相簿", isPresented: $showAlbumPicker, titleVisibility: .visible) {
             ForEach(library.albums) { target in
@@ -132,7 +131,7 @@ struct SortScreen: View {
         .overlay(alignment: .top) {
             if let toast {
                 ToastBanner(text: toast)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.85), value: toast)
+                    .animation(.snappy(duration: 0.3), value: toast)
             }
         }
         .task(id: album?.id) {
@@ -273,7 +272,7 @@ private extension SortScreen {
     /// 双指收拢进分列、张开退回单卡。相簿详情不支持分列（它的删除不走月份游标）。
     func handlePinch(_ magnification: CGFloat) {
         guard !isAlbumMode else { return }
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+        withAnimation(.snappy(duration: 0.35)) {
             if magnification < 0.82, columnCount < 3 {
                 columnCount += 1
             } else if magnification > 1.22, columnCount > 1 {
@@ -290,11 +289,11 @@ private extension SortScreen {
     }
 
     func show(_ message: String) {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { toast = message }
+        withAnimation(.snappy(duration: 0.3)) { toast = message }
         Task {
             try? await Task.sleep(for: .seconds(1.3))
             guard toast == message else { return }
-            withAnimation(.easeOut(duration: 0.2)) { toast = nil }
+            withAnimation(.smooth(duration: 0.2)) { toast = nil }
         }
     }
 }

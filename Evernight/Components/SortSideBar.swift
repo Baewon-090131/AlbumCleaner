@@ -29,7 +29,7 @@ struct SortSideBar: View {
                 }
             }
         }
-        .animation(.spring(response: 0.32, dampingFraction: 0.86), value: actions)
+        .animation(.snappy(duration: 0.32), value: actions)
     }
 
     private func isEnabled(_ action: SortAction) -> Bool {

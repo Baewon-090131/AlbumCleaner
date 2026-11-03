@@ -39,7 +39,7 @@ struct AsyncThumbnail: View {
                                                               highQuality: highQuality)
             guard let upgraded, upgraded !== image else { return }
             // 只在后台补齐时淡入替换，不做「先清空再加载」
-            withAnimation(.easeOut(duration: 0.12)) { image = upgraded }
+            withAnimation(.smooth(duration: 0.12)) { image = upgraded }
         }
     }
 

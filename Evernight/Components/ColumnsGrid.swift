@@ -76,13 +76,13 @@ private struct ColumnCell: View {
                 if abs(offset) > threshold {
                     flying = true
                     let target: CGFloat = offset > 0 ? 600 : -600
-                    withAnimation(.easeOut(duration: 0.22)) { offset = target }
+                    withAnimation(.smooth(duration: 0.22)) { offset = target }
                     // 飞出播完再真正改数据，和卡片区的「先动效后数据」保持一致
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
                         onMarkDelete(photo)
                     }
                 } else {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { offset = 0 }
+                    withAnimation(.snappy(duration: 0.3)) { offset = 0 }
                 }
             }
     }

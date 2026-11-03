@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// 整理页左上角的月份切换：外观是玻璃胶囊，选项面板交给系统的 `Menu`。
-/// 内边距与玻璃背景放在 label 内部，保证整个胶囊都是可点区域。
+/// 整理页工具栏的月份切换：选项面板交给系统的 `Menu`。
+/// 外观完全交给系统 toolbar（Liquid Glass 由系统按规范绘制），这里不叠任何自绘材质。
 struct MonthMenu: View {
     let months: [MonthSection]
     let selectedID: String?
@@ -28,10 +28,6 @@ struct MonthMenu: View {
                     .font(.caption2.weight(.semibold))
             }
             .font(.subheadline.weight(.medium))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .contentShape(Capsule())
-            .glassSurface(cornerRadius: 17, interactive: true)
         }
         .accessibilityLabel("选择月份")
     }

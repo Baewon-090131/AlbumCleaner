@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// 待删除（原回收站）：分列滑删 / 单卡上滑删除都汇入这里。
-/// 勾选网格 + 底部红色删除条；确认后勾选项进系统「最近删除」，未勾选项放回相册。
+/// 待删除（作为 sheet 呈现）：分列滑删 / 单卡上滑删除都汇入这里。
+/// 抓握条由系统 sheet 提供；顶部是系统导航栏（完成 / 全选），底部是一条「滑动删除」。
 struct TrashScreen: View {
     @Environment(PhotoLibraryService.self) private var library
     @Environment(\.dismiss) private var dismiss
@@ -32,7 +32,7 @@ struct TrashScreen: View {
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 12)
-                    .padding(.top, 4)
+                    .padding(.top, 10)
 
                 LazyVGrid(columns: columns, spacing: 3) {
                     ForEach(library.trash) { item in
@@ -44,6 +44,7 @@ struct TrashScreen: View {
             }
         }
         .navigationTitle("待删除")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button("完成") { dismiss() }
@@ -88,22 +89,19 @@ struct TrashScreen: View {
     private var deleteBar: some View {
         if !library.trash.isEmpty {
             VStack(spacing: 6) {
-                Button {
-                    confirmDeletion()
-                } label: {
+                if isDeleting {
                     HStack(spacing: 8) {
-                        if isDeleting { ProgressView().tint(.white) }
-                        Text(isDeleting ? "正在删除…" : "彻底删除 \(checkedItems.count) 项 · 释放 \(Format.bytes(checkedBytes))")
-                            .font(.headline)
+                        ProgressView()
+                        Text("正在删除…").font(.headline)
                     }
-                    .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(checkedItems.isEmpty ? Color.gray : Theme.danger,
-                                in: RoundedRectangle(cornerRadius: 25, style: .continuous))
+                    .frame(height: 56)
+                } else {
+                    SwipeDeleteButton(count: checkedItems.count,
+                                      bytes: checkedBytes,
+                                      enabled: !checkedItems.isEmpty,
+                                      onConfirm: confirmDeletion)
                 }
-                .buttonStyle(.plain)
-                .disabled(checkedItems.isEmpty || isDeleting)
 
                 Text("未勾选项将放回相册 · 删除项进入系统「最近删除」，30 天内可恢复")
                     .font(.caption2)

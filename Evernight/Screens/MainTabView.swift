@@ -23,13 +23,13 @@ enum AppTab: Hashable, CaseIterable, Identifiable {
 }
 
 /// 主界面：三个 tab 的内容区 + 自定义底部栏（3 栏玻璃胶囊 +「我的」独立圆钮）。
-/// 不再用系统 TabView——「我的」要单独拿出来，点按后从底部上滑覆盖当前页。
+/// 不再用系统 TabView——「我的」要单独拿出来：点按后从圆钮扩散到全屏（iOS 18+ 的 zoom 转场）。
 struct MainTabView: View {
     @AppStorage("ac_theme") private var themeHex = "#002FA7"
     @Environment(UIState.self) private var ui
     @State private var selection: AppTab = .sort
-    /// 「我的」面板的跟手下拉距离；松手超过阈值就关掉。
-    @State private var mineDrag: CGFloat = 0
+    /// 「我的」的 zoom 转场：源是底栏圆钮，目标是全屏 cover，进出共用这一个命名空间。
+    @Namespace private var mineNamespace
 
     var body: some View {
         @Bindable var ui = ui
@@ -38,22 +38,15 @@ struct MainTabView: View {
                 // 给悬浮底栏留位
                 .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 92) }
 
-            if ui.showMine {
-                mineSheet
-                    .transition(.move(edge: .bottom))
-            }
-
-            AppTabBar(selection: $selection, mineActive: ui.showMine) {
-                withAnimation(.spring(response: 0.38, dampingFraction: 0.88)) {
-                    ui.showMine.toggle()
-                    mineDrag = 0
-                }
+            AppTabBar(selection: $selection,
+                      mineActive: ui.showMine,
+                      namespace: mineNamespace) {
+                ui.showMine = true
             }
         }
         .tint(Color(hex: themeHex))
-        .fullScreenCover(isPresented: $ui.showTrash) {
-            NavigationStack { TrashScreen() }
-        }
+        .fullScreenCover(isPresented: $ui.showMine) { mineCover }
+        .sheet(isPresented: $ui.showTrash) { trashSheet }
     }
 
     /// 三个 tab 常驻、只切显隐：整理页的游标与撤销栈、相似页的扫描结果都不因切换丢失。
@@ -74,27 +67,25 @@ struct MainTabView: View {
         }
     }
 
-    /// 「我的」：从底部上滑覆盖，顶部留一道圆角缝；抓握条下拉可关。
-    private var mineSheet: some View {
-        MineScreen(onClose: closeMine,
-                   onDrag: { delta in mineDrag = max(0, delta) },
-                   onDragEnd: { delta in
-                       if delta > 110 { closeMine() } else {
-                           withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) { mineDrag = 0 }
-                       }
-                   })
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(.systemBackground))
-            .clipShape(UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28))
-            .shadow(color: .black.opacity(0.18), radius: 20, y: -6)
-            .padding(.top, 28)
-            .offset(y: mineDrag)
+    /// 「我的」：从底栏圆钮扩散到全屏；iOS 18 以下是普通的全屏覆盖。
+    @ViewBuilder
+    private var mineCover: some View {
+        if #available(iOS 18.0, *) {
+            NavigationStack { MineScreen() }
+                .background(Theme.wall)
+                .navigationTransition(.zoom(sourceID: AppTabBar.mineTransitionID, in: mineNamespace))
+        } else {
+            NavigationStack { MineScreen() }
+                .background(Theme.wall)
+        }
     }
 
-    private func closeMine() {
-        withAnimation(.spring(response: 0.36, dampingFraction: 0.9)) {
-            ui.showMine = false
-            mineDrag = 0
-        }
+    /// 待删除：系统 sheet，抓握条与圆角交给系统，进场 / 退场都是标准 sheet 动效。
+    private var trashSheet: some View {
+        NavigationStack { TrashScreen() }
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+            .presentationCornerRadius(Theme.cornerIsland)
+            .presentationBackground { Theme.wall }
     }
 }

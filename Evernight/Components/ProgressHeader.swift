@@ -34,7 +34,7 @@ struct ProgressHeader: View {
         }
         .padding(.horizontal, 2)
         .frame(height: 22)
-        .animation(.spring(response: 0.35, dampingFraction: 0.9), value: progress)
+        .animation(.snappy(duration: 0.35), value: progress)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("已处理 \(processed) 项，共 \(total) 项，剩余 \(remaining) 项")
     }

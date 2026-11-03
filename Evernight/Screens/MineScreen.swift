@@ -1,15 +1,11 @@
 import SwiftUI
 
-/// 「我的」面板。不再是 tab，而是从底部上滑覆盖的 sheet：
-/// 顶部抓握条下拉关闭，内容仍是系统 List（insetGrouped）。
+/// 「我的」面板。从底部栏的圆钮扩散到全屏（`fullScreenCover` + zoom 转场），
+/// 退出用右上角 ×，交互就是入场动画的倒放。
 struct MineScreen: View {
-    let onClose: () -> Void
-    /// 抓握区跟手下拉：实时位移与松手判定都交给外层（MainTabView）。
-    let onDrag: (CGFloat) -> Void
-    let onDragEnd: (CGFloat) -> Void
-
     @Environment(PhotoLibraryService.self) private var library
     @Environment(UIState.self) private var ui
+    @Environment(\.dismiss) private var dismiss
 
     @AppStorage("ac_theme") private var themeHex = "#002FA7"
     @AppStorage("ac_autoLive") private var autoPlayLive = true
@@ -22,43 +18,28 @@ struct MineScreen: View {
     @State private var favoriteCount = 0
 
     var body: some View {
-        VStack(spacing: 0) {
-            grabber
-            list
-        }
-        .fullScreenCover(isPresented: $showFavorites) {
-            NavigationStack { FavoritesScreen() }
-        }
-        .alert("缓存已清理", isPresented: $showCacheCleared) {
-            Button("好", role: .cancel) {}
-        }
-        .task {
-            library.refreshStorage()
-            favoriteCount = library.favoritePhotos().count
-        }
-    }
-
-    /// 抓握条 + 大标题；只有这一片响应下拉手势，下面 List 的滚动不受影响。
-    private var grabber: some View {
-        VStack(spacing: 10) {
-            Capsule()
-                .fill(Color(.systemGray4))
-                .frame(width: 40, height: 5)
-                .padding(.top, 10)
-            HStack {
-                Text("我的")
-                    .font(.largeTitle.bold())
-                Spacer()
+        list
+            .navigationTitle("我的")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .accessibilityLabel("关闭")
+                }
             }
-            .padding(.horizontal, 20)
-        }
-        .padding(.bottom, 6)
-        .contentShape(Rectangle())
-        .gesture(
-            DragGesture(minimumDistance: 4)
-                .onChanged { onDrag($0.translation.height) }
-                .onEnded { onDragEnd($0.translation.height) }
-        )
+            .fullScreenCover(isPresented: $showFavorites) {
+                NavigationStack { FavoritesScreen() }
+            }
+            .alert("缓存已清理", isPresented: $showCacheCleared) {
+                Button("好", role: .cancel) {}
+            }
+            .task {
+                library.refreshStorage()
+                favoriteCount = library.favoritePhotos().count
+            }
     }
 
     private var list: some View {
@@ -70,10 +51,7 @@ struct MineScreen: View {
                           pendingCount: library.trash.count,
                           storage: library.storage,
                           onShowFavorites: { showFavorites = true },
-                          onShowTrash: {
-                              onClose()
-                              ui.showTrash = true
-                          })
+                          onShowTrash: { openTrash() })
                     .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
                     .listRowBackground(Color.clear)
             }
@@ -135,8 +113,15 @@ struct MineScreen: View {
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
-        // 底部留位给悬浮底栏
-        .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 92) }
+    }
+
+    /// 「待清理」：先关掉我的，等转场收尾再开待删除 sheet，避免同时呈现两个 presentation。
+    private func openTrash() {
+        ui.showMine = false
+        Task {
+            try? await Task.sleep(for: .milliseconds(360))
+            ui.showTrash = true
+        }
     }
 }
 

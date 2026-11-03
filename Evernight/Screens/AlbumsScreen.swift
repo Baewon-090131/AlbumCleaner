@@ -101,7 +101,7 @@ struct AlbumsScreen: View {
         .overlay(alignment: .top) {
             if let toast {
                 ToastBanner(text: toast)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.85), value: toast)
+                    .animation(.snappy(duration: 0.3), value: toast)
             }
         }
         .alert("新建相簿", isPresented: dialogBinding(for: .create)) {
@@ -249,11 +249,11 @@ struct AlbumsScreen: View {
     }
 
     private func show(_ message: String) {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { toast = message }
+        withAnimation(.snappy(duration: 0.3)) { toast = message }
         Task {
             try? await Task.sleep(for: .seconds(1.3))
             guard toast == message else { return }
-            withAnimation(.easeOut(duration: 0.2)) { toast = nil }
+            withAnimation(.smooth(duration: 0.2)) { toast = nil }
         }
     }
 }
