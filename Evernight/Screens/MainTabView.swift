@@ -22,23 +22,22 @@ enum AppTab: Hashable, CaseIterable, Identifiable {
     }
 }
 
-/// 主界面：三个 tab 的内容区 + 底部一行（3 栏玻璃胶囊 +「我的」独立圆形玻璃钮）。
+/// 主界面：三个 tab 的内容区 + 底部一块四合一玻璃胶囊（整理 / 相似 / 相簿 / 我的）。
 ///
-/// 为什么不用系统 `TabView`：系统 tab bar 是整体渲染的，**没有公开 API** 能在它右侧
-/// 再并排放一个独立圆钮（`tabViewBottomAccessory` 只能显示在底栏上方或内联）。
-/// 所以底栏用一个容器承载，玻璃走 Apple 官方的 `glassEffect` / `GlassEffectContainer`
-/// —— 材质由系统渲染，只是布局由我们决定。
+/// 为什么不用系统 `TabView`：iOS 26 的 `TabView` 只有 3 个 tab 加 `TabRole.prominent`
+/// 才能做 N+1（iOS 27 才有 `TabRole.prominent`）。当前 CI 的 Xcode 26.6 编不了 iOS 27
+/// 的 Beta API，所以四个入口收进同一块玻璃，材质仍走官方 `glassEffect`。
+/// 「我的」第 4 个按钮点按后照样从按钮位置 zoom 扩散到全屏。
 struct MainTabView: View {
     @AppStorage("ac_theme_v2") private var themeHex = "#2B4A6F"
     @Environment(UIState.self) private var ui
     @State private var selection: AppTab = .sort
-    /// 「我的」的 zoom 转场：源是底栏圆钮，目标是全屏 cover。
+    /// 「我的」的 zoom 转场：源是胶囊里第 4 个按钮，目标是全屏 cover。
     @Namespace private var mineNamespace
 
     private static let mineTransitionID = "mine"
-    /// 底栏占位：圆钮 62 + 下边距 10 + 呼吸 20
+    /// 底栏占位：胶囊 62（6 内边距 + 50 按钮 + 6）+ 下边距 10 + 呼吸 20
     private static let barReserve: CGFloat = 92
-    private static let knobSize: CGFloat = 62
 
     var body: some View {
         @Bindable var ui = ui
@@ -76,27 +75,18 @@ struct MainTabView: View {
 
     // MARK: - 底栏
 
+    /// 四合一胶囊：一块玻璃包住四个按钮，与系统 tab bar 同一结构。
     private var bottomBar: some View {
-        GlassGroup(spacing: 12) {
-            HStack(spacing: 10) {
-                tabPill
-                mineKnob
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 10)
-    }
-
-    /// 三栏胶囊：一块玻璃包住三个按钮（系统 tab bar 正是这个结构）。
-    private var tabPill: some View {
         HStack(spacing: 2) {
             ForEach(AppTab.allCases) { tab in
                 tabButton(tab)
             }
+            mineButton
         }
         .padding(6)
-        .frame(maxWidth: .infinity)
         .glassSurface(cornerRadius: 36)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 10)
     }
 
     private func tabButton(_ tab: AppTab) -> some View {
@@ -122,38 +112,39 @@ struct MainTabView: View {
         .accessibilityAddTraits(isOn ? [.isSelected] : [])
     }
 
-    /// 「我的」：独立圆形玻璃，与胶囊同一行。
+    /// 「我的」：胶囊里的第 4 个按钮，形态与另外三个一致；它是弹出面板而不是 tab，
+    /// 所以不带选中态。zoom 转场的源就挂在这个按钮上。
     @ViewBuilder
-    private var mineKnob: some View {
+    private var mineButton: some View {
         if #available(iOS 18.0, *) {
-            mineButton.matchedTransitionSource(id: Self.mineTransitionID, in: mineNamespace)
+            mineTapButton.matchedTransitionSource(id: Self.mineTransitionID, in: mineNamespace)
         } else {
-            mineButton
+            mineTapButton
         }
     }
 
-    private var mineButton: some View {
+    private var mineTapButton: some View {
         Button {
             ui.showMine = true
         } label: {
             VStack(spacing: 3) {
                 Image(systemName: "person.crop.circle.fill")
-                    .font(.system(size: 24))
+                    .font(.system(size: 19))
                 Text("我的")
                     .font(.system(size: 9.5, weight: .medium))
             }
-            .foregroundStyle(ui.showMine ? Color(hex: themeHex) : Theme.ink2)
-            .frame(width: Self.knobSize, height: Self.knobSize)
-            .contentShape(Circle())
+            .foregroundStyle(Theme.ink2)
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
         .buttonStyle(.plain)
-        .glassSurface(cornerRadius: Self.knobSize / 2, interactive: true)
         .accessibilityLabel("我的")
     }
 
     // MARK: - 呈现
 
-    /// 「我的」：从底栏圆钮扩散到全屏；退出用右上角 ×，转场自动倒放。
+    /// 「我的」：从胶囊第 4 个按钮扩散到全屏；退出用右上角 ×，转场自动倒放。
     @ViewBuilder
     private var mineCover: some View {
         if #available(iOS 18.0, *) {

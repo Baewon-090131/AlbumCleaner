@@ -2,23 +2,6 @@ import SwiftUI
 
 // MARK: - Liquid Glass 入口
 
-/// 把多个玻璃元素交给系统合并。
-///
-/// 相邻的 Liquid Glass 形状会互相融合成一块，所以**不要**再给它们套一层玻璃外框——
-/// 玻璃叠玻璃既不符合 HIG，也会让文字对比度塌掉。操作岛上那一排按钮就走这里。
-struct GlassGroup<Content: View>: View {
-    var spacing: CGFloat = 10
-    @ViewBuilder var content: Content
-
-    var body: some View {
-        if #available(iOS 26.0, *) {
-            GlassEffectContainer(spacing: spacing) { content }
-        } else {
-            content
-        }
-    }
-}
-
 extension View {
     /// 单个浮动玻璃面（进度胶囊、加载页、提示卡）。
     @ViewBuilder

@@ -9,7 +9,7 @@
 ## 0. 三十秒了解
 
 iOS 相册整理应用，交互参考 Slidebox 与「卡待删」。**SwiftUI 原生，纯本地，不联网**。
-底栏四格：整理 / 相似 / 相簿收在玻璃胶囊里，「我的」是独立圆钮（点按从底部上滑覆盖）。
+底栏四格：整理 / 相似 / 相簿 / 我的同在一片玻璃胶囊里（我的点按从该按钮 zoom 扩散到全屏）。
 整理页四向滑动手势（上滑删除 / 左滑下一张 / 右滑撤回 / 下滑收藏）+ 双指收拢进分列瀑布流（左右滑直删）。
 
 | 项 | 值 |
@@ -94,7 +94,7 @@ Evernight/
     SortToolbar.swift           ~85   整理页系统 toolbar：月份 / 媒体类型 / 撤回 / 托盘
     SimilarGroupCard.swift       97   相似页的一组卡片
     ColumnsGrid.swift            89   分列瀑布流 + 横向滑删
-    AppTabBar.swift             ~70   底栏 3+1（胶囊 + 我的圆钮，圆钮是 zoom 转场的源）
+    AppTabBar.swift             （已删，底栏并入 MainTabView）
     SwipeDeleteButton.swift     ~108   滑动删除条（圆钮 + 轨道填充同一进度，到终点确认）
     AsyncThumbnail.swift         54   缩略图视图（同步缓存 + 玻璃占位 + highQuality）
     ProgressHeader.swift         41   整理页细进度条（无玻璃外壳）
@@ -108,7 +108,7 @@ Evernight/
     MineScreen.swift            268   我的（fullScreenCover，右上 × 退出）+ 深色统计卡
     SimilarScreen.swift         214   相似页：年份筛选 + 智能清理 + 分组列表
     TrashScreen.swift           160   待删除（系统 sheet）：勾选网格 + 滑动删除条
-    MainTabView.swift           ~90   自定义底栏 + 我的 zoom cover + 待删除 sheet
+    MainTabView.swift           ~168  四合一底栏胶囊 + 我的 zoom cover + 待删除 sheet
     FavoritesScreen.swift        51   已喜欢网格
   WebContent/                        v3 网页实现，不参与构建
 project.yml                      47   xcodegen 配置（0.1 / 构建号 14）
@@ -141,7 +141,7 @@ project.yml                      47   xcodegen 配置（0.1 / 构建号 14）
 | 视频 / 实况卡内播放 | `MediaCardContent` → `requestAVAsset` / `requestLivePhoto` |
 | 相似分组 | `SimilarityService.scan` → dHash 指纹 → 分桶 + 并查集 → 删除走 `moveToTrash` |
 | 相簿管理 | `createAlbum` / `renameAlbum` / `deleteAlbums` / `deleteAlbumWithPhotos` / `moveAllPhotos` → 直写系统相册 |
-| 待删除 / 我的弹出 | `TrayButton` / 底栏圆钮 → `UIState.showTrash` / `showMine` → `MainTabView` 弹出 |
+| 待删除 / 我的弹出 | `TrayButton` / 底栏「我的」按钮 → `UIState.showTrash` / `showMine` → `MainTabView` 弹出 |
 | 缩略图 | `ThumbnailLoader` → `PHCachingImageManager.requestImage`，按 `identifier\|size` 缓存 |
 | 存储占用 | `readStorage` → volumeTotalCapacity / volumeAvailableCapacityForImportantUsage |
 | 主题色 | `@AppStorage("ac_theme")` + `Color(hex:)`，`MainTabView` 用 `.tint` 应用 |

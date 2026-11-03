@@ -8,8 +8,8 @@
 一款 iOS 相册整理应用，交互参考 Slidebox 与「卡待删」：
 
 - **形态（v4.0 起）**：**纯 SwiftUI 原生应用**，没有 WebView、没有 React。相册数据直接来自 Photos framework。
-- **信息架构（v0.1 起）**：底栏是自定义的「3 栏玻璃胶囊（整理 / 相似 / 相簿）+ 独立圆形『我的』按钮」（`Components/AppTabBar.swift`），不再是系统 `TabView`；「我的」点按后**从圆钮扩散到全屏**（`fullScreenCover` + iOS 18 的 `navigationTransition(.zoom)`），右上角 × 退出、退出即入场倒放。三个 tab 常驻只切显隐（`opacity` + `allowsHitTesting`），整理页游标与撤销栈、相似页扫描结果不因切换丢失。待删除是**系统 sheet**（`presentationDetents([.large])` + 系统抓握条），由全局 `UIState.showTrash` 触发。
-- **核心手势**：整理页上滑删除 / 左滑下一张 / 右滑撤回 / 下滑收藏（`DragGesture`）；**卡片上不放任何按钮**（右侧竖排钮已删——玻璃钮压在照片上视觉冲突严重），操作只靠手势；**双指收拢进分列模式**（2 / 3 列瀑布流），分列里任意一张左右滑即标记删除。删除先进应用内「待删除」，待删除里的「彻底删除」才动系统相册。
+- **信息架构（v0.1 起）**：底栏是自定义的**四合一玻璃胶囊**（整理 / 相似 / 相簿 / 我的，四个按钮同在一行、同属一块 `glassEffect`），不再是系统 `TabView`；「我的」是胶囊里第 4 个按钮，点按后**从该按钮扩散到全屏**（`fullScreenCover` + iOS 18 的 `navigationTransition(.zoom)`），右上角 × 退出、退出即入场倒放。三个 tab 常驻只切显隐（`opacity` + `allowsHitTesting`），整理页游标与撤销栈、相似页扫描结果不因切换丢失。待删除是**系统 sheet**（`presentationDetents([.large])` + 系统抓握条），由全局 `UIState.showTrash` 触发。
+- **核心手势（v0.1.3 起）**：整理页的卡片是**一排挂在绳上的拍立得相纸**（`PolaroidDeck`），中间那张即当前照片。**左右拖动绳子**浏览（只改游标、不进撤销栈，松手按惯性吸附到最近一张）；**上滑**把当前那张从绳上摘下送进「待删除」（`SandDissolve`：照片按 50×40 约 2000 粒拆开、每粒取原像素颜色向上飘散，相纸同时自下而上被 mask 擦掉，0.8s 后下一张用 `.smooth(0.3)` 从右侧补位）；**下滑**收藏；**双指收拢**进分列模式（2 / 3 列瀑布流），分列里任意一张左右滑即标记删除。**卡片上不放任何按钮**；撤回改为**顶栏按钮**（左右拖动不再承担「下一张 / 撤回」）。删除先进应用内「待删除」，待删除里的「彻底删除」才动系统相册。
 - **构建**：GitHub Actions 出 IPA（`.github/workflows/build.yml`），或本地 `xcodegen generate` + Xcode。**最低 iOS 17.0**（`@Observable`、`ContentUnavailableView` 等要求）。
 - **`Evernight/WebContent/` 是 v3 的网页实现，不参与构建**（`project.yml` 已移除引用），保留只作对照。
 
@@ -30,12 +30,14 @@ Evernight/
     Theme.swift                  颜色 / 圆角令牌 + 壁纸 + Color(hex:)
     GlassSurface.swift           Liquid Glass 适配层 + ContentPanel（内容层材质）
   Components/
-    SortDeck.swift               卡片区：跟手 / 飞出 / 下一张渐显入场 / 撤回倒放（动效编排）
-    SortCard.swift               单张卡片视觉 + 空态 + badgeStyle（媒体内容走 MediaCardContent）
+    SortDeck.swift               拍立得挂绳卡片区：绳子排布 / 拖动吸附 / 摘下飞出 / 撤回挂回
+    SortCard.swift               拍立得相纸视觉（白边 + 日期 note + 木夹）+ 空态
+    SandDissolve.swift           碎沙消失：约 2000 粒取原像素色向上飘散
+    ConfettiBurst.swift          待删除完成的彩纸喷发（Canvas 粒子）
     MediaCardContent.swift       视频卡（AVPlayerLayer 静音循环）+ 实况卡（PHLivePhotoView）
     ColumnsGrid.swift            分列瀑布流：双指收拢进入，左右滑标记删除
     SortActionBar.swift          底部操作岛
-    AppTabBar.swift              自定义底栏：3 栏玻璃胶囊 + 我的独立圆钮
+    AppTabBar.swift              （已删，底栏并入 MainTabView）
     TrayButton.swift             待删除托盘（垃圾桶 + 红角标），各页右上共用
     SimilarGroupCard.swift       相似页的一组：缩略图行 + 勾选 + 组底删除条
     ProgressHeader.swift         整理页顶部进度胶囊
@@ -43,7 +45,7 @@ Evernight/
     AsyncThumbnail.swift         缩略图视图（highQuality 开关给前置大卡）
     ToastBanner.swift            临时提示
   Screens/
-    MainTabView.swift            自定义底栏 + 我的 sheet + 回收站 fullScreenCover
+    MainTabView.swift            四合一底栏胶囊 + 我的 zoom cover + 待删除 sheet
     SortScreen.swift             整理页（相簿详情复用）+ 撤销栈 + 分列模式 + 动作
     SimilarScreen.swift          相似页：年份筛选 + 智能清理 + 分组列表
     AlbumsScreen.swift           相簿管理：空相簿横幅 / 新建 / 排序 / 长按菜单
@@ -87,9 +89,8 @@ rg -n "^import UIKit" Evernight --glob "*.swift"                           # 只
 **Liquid Glass 的用法（2026-10-08 修正过一次，别再退回旧写法）**：
 
 - 用系统的 `glassEffect(_:in:)`，不要自己拿 `.ultraThinMaterial` 拼。
-- **多个玻璃元素要包在 `GlassGroup`（`GlassEffectContainer`）里**，相邻形状会自己融合成一整块。操作岛就是这么做的：每个按钮各自一块玻璃，靠容器合并成一条岛。
-- **不要再给那组玻璃套一层玻璃外框**。玻璃叠玻璃既不符合 HIG，文字对比度也会塌——第一版就是这么写错的。
-- 会变形的玻璃用 `glassSurface(cornerRadius:morphID:in:)`，同一个 `@Namespace` 下相同 id 的形状会平滑变形（操作岛四按钮 ↔ 相簿详情三按钮）。
+- **同一块玻璃里放多个按钮，不要套外框**。玻璃叠玻璃既不符合 HIG，文字对比度也会塌——第一版就是这么写错的。当前底栏就是一块 `glassEffect` 包住四个按钮。（历史上相邻独立玻璃块要靠 `GlassEffectContainer` 融合，v0.1.2 四合一后容器已移除。）
+- 会变形的玻璃用 `glassSurface(cornerRadius:morphID:in:)`，同一个 `@Namespace` 下相同 id 的形状会平滑变形。
 - 可点的地方要 `.interactive()`；静态容器（加载页、进度条）不要加。
 - 按钮优先 `.glassButtonStyle()`（内部是 `.glass` / `.glassProminent`），低版本自动退 `.bordered`。
 - `.clear` 变体只在玻璃压在照片、视频这类视觉丰富的背景上时用；当前没有这种场景，所以没用。
@@ -120,17 +121,17 @@ rg -n "^import UIKit" Evernight --glob "*.swift"                           # 只
 
 **v0.1 新机制**：
 
-- **底栏 3+1 与「我的」zoom**：`MainTabView` 用 `ZStack(alignment: .bottom)` 叠「tab 内容 + AppTabBar」。三个 tab 常驻（`opacity` 切显隐），不要用 switch 重建——会丢整理页撤销栈。「我的」是 `fullScreenCover` + `.navigationTransition(.zoom(sourceID:in:))`（iOS 18+，iOS 17 退普通全屏），源 id `AppTabBar.mineTransitionID` 挂在底栏圆钮的 `matchedTransitionSource` 上；**不要**再自绘 sheet 并用 offset 做下拉——那样底部会露空。退出走右上角 ×（`dismiss()`），转场自动倒放。
+- **四合一底栏与「我的」zoom**：`MainTabView` 用 `ZStack(alignment: .bottom)` 叠「tab 内容 + 底栏胶囊」。四个按钮（整理 / 相似 / 相簿 / 我的）都在**同一块** `glassEffect` 里，中间不夹第二块玻璃。三个 tab 常驻（`opacity` 切显隐），不要用 switch 重建——会丢整理页撤销栈。「我的」是第 4 个按钮，走 `fullScreenCover` + `.navigationTransition(.zoom(sourceID:in:))`（iOS 18+，iOS 17 退普通全屏），源 id `MainTabView.mineTransitionID` 挂在它的 `matchedTransitionSource` 上；**不要**再自绘 sheet 并用 offset 做下拉——那样底部会露空。退出走右上角 ×（`dismiss()`），转场自动倒放。**为什么不用系统 `TabView`**：`TabRole.prominent`（N+1 底栏）是 iOS 27 Beta API，CI 的 Xcode 26.6 没有 iOS 27 SDK，编不过；等 runner 升到 Xcode 27 再换成 `Tab(role: .prominent)`。
 - **待删除是系统 sheet**：`MainTabView` 用 `.sheet` + `presentationDetents([.large])` + `presentationDragIndicator(.visible)` + `presentationCornerRadius(28)` + `presentationBackground { Theme.wall }`。抓握条与进出场动效全交给系统。**别再用 `fullScreenCover`**——那样没有抓握条，也不符合 sheet 语义。
-- **滑动删除**：`Components/SwipeDeleteButton.swift`。轨道高 50 的浅灰胶囊，圆钮与轨道同高、贴左边缘起步（拖动时放大 1.05），填充条从**轨道最左边缘**长出来、宽度 = 圆钮位移 + 8（盖住接缝、不会露直角边）。文字压在轨道正中（`frame(width:height:alignment:.center)`，不要用 `padding(.leading:)`），随拖动淡出。阈值 **0.9**，未到阈值松手用 `.bouncy(duration:extraBounce:)` 归零且不执行；确认后整体宽度**收缩到 66%**、圆钮淡出、轨道内换成对勾 + 「已删除 N 项 · 释放 xx MB」，450ms 后才回调真正删除，并 `.sensoryFeedback(.impact(weight: .heavy))`。颜色固定红色 `Theme.danger`。
+- **滑动删除**：`Components/SwipeDeleteButton.swift`。轨道高 50 的浅灰胶囊，圆钮与轨道同高、贴左边缘起步（拖动时放大 1.05），填充条从**轨道最左边缘**长出来、宽度 = 圆钮位移 + 8（盖住接缝、不会露直角边）。文字压在轨道正中（`frame(width:height:alignment:.center)`，不要用 `padding(.leading:)`），随拖动淡出。阈值 **0.9**，未到阈值松手用 `.bouncy(duration:extraBounce:)` 归零且不执行。**到阈值后保持满轨、不收缩、不显示转圈**；外部删除完成给出 `result` 才收缩到 66%、圆钮淡出、轨道内换成对勾 + 「已删除 N 项 · 释放 xx MB」，并从滑轨中间向上喷 100 张彩纸（`ConfettiBurst`：三种形状、五色主题色、±36°、重力 + 空气阻力 + 翻面变暗，2.5s 后各自淡出）。删除失败时 `result` 仍为 nil，按钮自动退回起点可重滑。颜色固定红色 `Theme.danger`。
 - **待删除托盘**：`UIState`（`@Observable`，RootView 创建经 environment 下传）持有 `showTrash` / `showMine`。各页右上角的 `TrayButton` 只写 `ui.showTrash = true`，`MainTabView` 用 **`.sheet`** 弹出。**别再用 `navigationDestination` 弹回收站**——自定义底栏不会随 push 隐藏。
-- **整理页顶栏回系统 toolbar**：`SortToolbar`（`ToolbarContent`）拆成独立 `ToolbarItem`：月份、媒体类型、待删除。**不要在 toolbar 里叠自绘玻璃**——系统会按 Liquid Glass 规范给每个 item 绘制背景，叠一层就是玻璃叠玻璃。`MonthMenu` 因此只保留纯文字 label。导航栏用 `.toolbarBackground(.hidden, for: .navigationBar)` 露出壁纸；普通模式标题留空、相簿详情用相簿名（返回按钮由系统提供）。主体是 `ProgressHeader` 细进度条 + 满幅 `SortDeck`。**卡片区域不放任何按钮**：删除 / 下一张 / 撤回 / 收藏全部走四向手势（分列模式误删后切回单卡右滑即可撤回）。
+- **整理页顶栏回系统 toolbar**：`SortToolbar`（`ToolbarContent`）拆成独立 `ToolbarItem`：月份、媒体类型、待删除、**撤回**。**不要在 toolbar 里叠自绘玻璃**——系统会按 Liquid Glass 规范给每个 item 绘制背景，叠一层就是玻璃叠玻璃。`MonthMenu` 因此只保留纯文字 label。导航栏用 `.toolbarBackground(.hidden, for: .navigationBar)` 露出壁纸；普通模式标题留空、相簿详情用相簿名（返回按钮由系统提供）。主体是 `ProgressHeader` 细进度条 + 满幅 `PolaroidDeck`。**卡片区域不放任何按钮**：删除走上滑、收藏走下滑、浏览走左右拖绳子，撤回走顶栏按钮。
 - **动效一律用系统预设**：全仓库不再手写 `spring(response:dampingFraction:)` 与 `easeOut`，改用 iOS 17 的 `.snappy` / `.bouncy` / `.smooth`。需要额外回弹时用 `.bouncy(duration:extraBounce:)`。同理，`sensoryFeedback` 优先于手动 `UIImpactFeedbackGenerator`。
 - **媒体类型筛选**：`MediaFilter`（全部/照片/视频/实况，定义在 `SortModels.swift`）。`SortScreen.photos` 计算属性过滤，`.all` 走快路径零拷贝。**切筛选必须调 `resetCursor()`**（游标回 0、清空撤销栈、清 command/pendingAlbum），否则跨筛选撤销会让游标指错。
-- **卡内播放**：`SortCard` 按媒体类型换内容——视频走 `VideoCardContent`（UIViewRepresentable 包 `AVPlayerLayer`，`videoGravity = .resizeAspectFill` 填满卡片；静音默认开、可点喇叭切换；播到头回卷循环；底部细进度条），实况走 `LivePhotoCardContent`（`PHLivePhotoView`，`contentMode = .scaleAspectFill`，载入后 `replayToken` 自增触发 `startPlayback(.full)`，点按重播）。**只有前置卡加载播放器**（`isFront`），后卡退化为缩略图。`UIViewRepresentable.Context.coordinator` 是只读属性，要记状态得用引用类型 coordinator。点按手势归属：媒体卡点按 = 播放控制，普通照片点按 = 全屏查看（`onOpenViewer`），都在 SortCard 内部。
-- **媒体即卡片（不要去叠材质）**：`SortCard` 现在是 `media.frame(cardSize).clipShape(...).overlay(高光边).shadow(...).overlay(badges)`——**没有** `Rectangle().fill(.regularMaterial)` 底层。曾经的「材质底 + 图片浮层」在 offset/scale 动画中每帧重算 backdrop blur 与阴影，卡片会发飘、露边。占位的玻璃质感由 `AsyncThumbnail(glassPlaceholder: true)` 的 `.ultraThinMaterial` 提供（只在未加载时出现）。
+- **卡内播放**：`PolaroidCard` 按媒体类型换内容——视频走 `VideoCardContent`（UIViewRepresentable 包 `AVPlayerLayer`，`videoGravity = .resizeAspectFill` 填满照片窗口；静音默认开、可点喇叭切换；播到头回卷循环；底部细进度条），实况走 `LivePhotoCardContent`（`PHLivePhotoView`，`contentMode = .scaleAspectFill`，载入后 `replayToken` 自增触发 `startPlayback(.full)`，点按重播）。**只有中间那张加载播放器**（`isFront`），两侧退化为缩略图。`UIViewRepresentable.Context.coordinator` 是只读属性，要记状态得用引用类型 coordinator。点按手势归属：媒体卡点按 = 播放控制，普通照片点按 = 全屏查看（`onOpenViewer`），都在 `PolaroidCard` 内部。
+- **相纸即卡片（不要去叠材质）**：`PolaroidCard` 是 `VStack(照片窗口 + note) → .background(Theme.card) → .overlay(木夹) → 两层 shadow`——**没有** `.regularMaterial` 或玻璃底层。投影只加在相纸这一层，拖动时不会每帧重采样背景、也就不会发飘。`glassPlaceholder` 在相纸里已关闭（方窗留白要的是纸色，不是玻璃）。
 - **原图画质 + 零帧闪烁**：`AsyncThumbnail(highQuality: true)` 把请求尺寸乘 `displayScale × 1.5`（单边封顶 2800px），走 `ThumbnailLoader.fullCache`（只留 8 张）。**前后卡必须用同一 `highQuality`**，否则换位时缓存 key 不同必然 miss。`AsyncThumbnail` 在 body 里**同步**读 `ThumbnailLoader.cached(for:)`（`image ?? cached`）——`.task` 只负责后台补齐、淡入替换，首次显示不经过 `.task`，所以换卡不会闪灰块。网格缩略图别加这个开关、也别开 `glassPlaceholder`（几十个 material 太重）。
-- **动效复位与数据变更同一事务**：`SortDeck.finish()` 里 `withoutAnimation { reset(); isPlaying = false; onFinished(move) }` 三件事一起做。**别拆开**——拆开后 `reset()` 会把已飞出的卡瞬移回中央、把刚顶上的卡透明掉，而数据变更晚一轮，就会渲染出中间帧。`SortScreen.finish` 因此不再套 `withoutAnimation`。
+- **动效复位与数据变更同一事务**：`PolaroidDeck.finish()` 里 `withoutAnimation { reset(); isPlaying = false; onFinished(move) }` 三件事一起做。**别拆开**——拆开后 `reset()` 会把已飞出的相纸瞬移回原位、把挂回的那张清掉，而数据变更晚一轮，就会渲染出中间帧。`SortScreen.finish` 因此不再套 `withoutAnimation`。
 - **分列删除**：`SortScreen.columnCount`（1/2/3），`MagnifyGesture().onEnded` 收拢 <0.82 加列、张开 >1.22 减列（相簿详情不支持分列——它的删除不走月份游标）。瀑布流在 `ColumnsGrid`：最短列优先分配；单元格用 `simultaneousGesture` 做横向滑删（|dx| > |dy|×1.2 才接管，70pt 过阈值，飞出 0.22s 后才调 `onMarkDelete`，与卡片区「先动效后数据」一致）。分列时右侧竖排钮隐藏，撤回在顶栏。
 - **相似页**：`SimilarityService` 在 RootView 常驻（environment）。指纹 = 64×64 缩略图 → 9×8 灰度 → dHash；16 位分段分桶找候选对（桶 >60 跳过，防全白全黑误判风暴）；汉明 ≤ 7 并查集成组；组内最优按「像素数 + 文件MB」打分。指纹存 UserDefaults（`ac_similar_hash_v1`），增量扫描。视频不参与。删除一律进「待删除」，不直接动系统相册。
 - **待删除结算页**：默认全勾（`unchecked` 集合记取消项），红条「彻底删除 N 项 · 释放 xx MB」。`deleteFromSystem` 返回 Bool：**成功后才把未勾选项 `restore` 放回相册**（参照「卡待删」语义）；用户取消系统弹窗则一切保持原样。删除成功时落账 `totalCleaned` / `totalFreedBytes`（UserDefaults），给「我的」统计卡。
@@ -140,10 +141,10 @@ rg -n "^import UIKit" Evernight --glob "*.swift"                           # 只
 
 - 数据源是 `PhotoLibraryService`（`@Observable` + `@MainActor`），在 `RootView` 用 `@State` 持有，往下用 `.environment(library)` 传；视图不自己存 PHAsset 列表副本。
 - 缩略图走 `ThumbnailLoader`（NSCache + `withCheckedContinuation` 包 `PHImageManager`，`degraded` 中间帧直接丢弃），视图侧是 `AsyncThumbnail` + `.task(id:)`。
-- 整理页**手势与按钮共用一条动效通道**：手势在 `SortDeck` 里跟手并按 90pt 判方向（下滑收藏只要 40pt），松手不自己改数据，只把结论交给外层；外层写 `SortScreen.command`（`DeckCommand`，带递增 token 以便 `.onChange` 认出同一种动作），`SortDeck.onChange(of: command)` 播完动效后**在同一个 `withoutAnimation` 事务里**复位动效状态、置 `isPlaying = false`、回调 `onFinished`，`SortScreen` 这时才改 `index` / 压栈 / 写 Photos。**顺序与事务边界都不能换**，否则会看到新卡从屏外飞回来或旧卡闪回中央。卡片尺寸按 `PhotoItem.ratio` 算并夹在 0.32–3.2。
+- 整理页**手势与数据共用一条动效通道**：手势在 `PolaroidDeck` 里跟手（垂直 90pt 摘下、下滑 40pt 收藏、水平只浏览），松手不自己改数据，只把结论交给外层；外层写 `SortScreen.command`（`DeckCommand`，带递增 token 以便 `.onChange` 认出同一种动作），`PolaroidDeck.onChange(of: command)` 播完动效后**在同一个 `withoutAnimation` 事务里**复位动效状态、置 `isPlaying = false`、回调 `onFinished`，`SortScreen` 这时才改 `index` / 压栈 / 写 Photos。**顺序与事务边界都不能换**，否则会看到相纸从屏外飞回来或闪回原处。相纸尺寸按 `PhotoItem.ratio` 算并夹在 0.32–3.2。
 - **`Transaction(disablesAnimations:)` 这个初始化器不存在**，复位动效状态一律走 `withoutAnimation`（`var transaction = Transaction(); transaction.disablesAnimations = true` + `withTransaction`）。
-- 卡片区是**双层**：前置卡 + 后方 0.94 待命卡。**下沉量必须大于「0.94 缩放造成的底边上收」**（竖图约 28pt），否则后卡底边会被前卡盖住、露不出来；现在用 40pt（露约 12pt 一条边）。前一卡飞出时后方卡用 `spring(0.42, 0.78)` 从 0.94 放大到 1.0、归位到 0、**并同步渐显**（缩放 / 位移 / 透明度共用同一个 Spring）。全程 `isPlaying` 期间不受理新操作。
-- **撤回是通用撤销栈，不是只撤删除**：`UndoRecord` 记「操作类型 + 照片 + 操作前游标」，限深 50、切月清空。语义：删除→`restore` 按创建日期插回原月份原位且游标回到删除前；下一张→游标退一张；收藏→`setFavorite(false)` 且游标不动；存入相簿→`library.remove(_:from:)` 且游标退回上一张。动效上按 `UndoRecord.origin` **倒放**：当前卡从被拖到的位置退回后方 0.94 并下沉、渐隐，被撤那张从当初飞出去的方向飞回正面。
+- 卡片区是**一排拍立得相纸挂在一条下垂的绳上**（`PolaroidDeck`），只渲染当前前后各 3 张窗口，整月照片不会全量挂上去。相纸宽窄由照片比例决定（竖图按原比例、更窄更高；横图进正方形窗口、照片 `aspectFit` 留白），排布用**半宽累加**算每张的中心偏移。左右拖动只写 `lineOffset`，松手按「起点位移 + 惯性投影」找最近一张用 `.snappy` 吸附，落定后游标与偏移在同一个 `withoutAnimation` 事务里换。拖动时相纸绕木夹轻微摆动（角度按拖动速度给，松手 `.bouncy` 归零）。**不要**把整月照片一次性塞进 `ForEach`——那是几百个缩略图。
+- **撤回是通用撤销栈，不是只撤删除**：`UndoRecord` 记「操作类型 + 照片 + 操作前游标」，限深 50、切月清空。语义：删除→`restore` 按创建日期插回原月份原位且游标回到删除前；收藏→`setFavorite(false)` 且游标不动；存入相簿→`library.remove(_:from:)` 且游标退回上一张。撤删除 / 撤存入时被撤那张作为 `ghost` 临时挂回绳上（从上方 -320 落下 + 渐显），播完再由数据变更接管；撤收藏只让当前相纸回弹。**左右拖动浏览不进撤销栈**（早先的 `.advance` 记录因此不再产生）。
 - 相簿详情复用 `SortScreen(album:)`：动作集只传 `[.undo, .delete, .next]`，顶栏左侧是返回 + 相簿名（导航栏已隐藏，`SortTopBar` 自绘）。
 - 主题色走 `@AppStorage("ac_theme")` + `Color(hex:)`，`MainTabView` 用 `.tint` 应用；`@AppStorage` 直接落 UserDefaults，不再有 localStorage。
 - 相簿照片只在 `.task(id: album?.id)` 里拉一次。**别把它写成计算属性**——那会让每次重绘都遍历整个相簿。
@@ -264,12 +265,11 @@ Previews/
 | `Evernight/Screens/TrashScreen.swift` | 164 | 待删除（系统 sheet）：勾选网格 + 滑动删除条 |
 | `Evernight/Components/SwipeDeleteButton.swift` | 116 | 滑动删除条（圆钮 + 轨道填充同一进度） |
 | `Evernight/Components/SortCard.swift` | 110 | 单张卡：媒体即卡片（无材质叠层）+ 空态 + badgeStyle |
-| `Evernight/Design/GlassSurface.swift` | 109 | Liquid Glass 适配 + ContentPanel |
+| `Evernight/Design/GlassSurface.swift` | 94 | Liquid Glass 适配 + ContentPanel |
 | `Evernight/Components/SimilarGroupCard.swift` | 97 | 相似页的一组卡片 |
-| `Evernight/Screens/MainTabView.swift` | 91 | 自定义底栏 + 我的 zoom cover + 待删除 sheet |
+| `Evernight/Screens/MainTabView.swift` | 168 | 四合一底栏胶囊 + 我的 zoom cover + 待删除 sheet |
 | `Evernight/Components/ColumnsGrid.swift` | 89 | 分列瀑布流 + 横向滑删 |
 | `Evernight/EvernightApp.swift` | 86 | 入口 + 权限门 + UIState |
-| `Evernight/Components/AppTabBar.swift` | 83 | 底栏 3+1（圆钮是 zoom 转场的源） |
 | `Evernight/Models/SortModels.swift` | 78 | SortMove / DeckCommand / UndoRecord / MediaFilter |
 | `Evernight/Models/LibraryModels.swift` | 74 | PhotoItem / MonthSection / AlbumItem / StorageInfo / Format |
 | `Evernight/Services/ThumbnailLoader.swift` | 64 | 缩略图加载 + 双缓存 + 同步读缓存 |
@@ -284,7 +284,7 @@ Previews/
 | `project.yml` | 47 | xcodegen 配置（部署目标 iOS 17，0.1 / 14） |
 | `Evernight/Info.plist` | 52 | 权限文案、启动屏、方向（显示名 evernight） |
 
-合计 28 个 Swift 文件、3627 行。
+合计 27 个 Swift 文件、3666 行。
 
 **数据流**（v0.1）
 
@@ -317,7 +317,7 @@ Previews/
 
 | 项 | 状态 |
 | --- | --- |
-| v0.1 功能 | 底栏 3+1 / 我的 sheet / 卡内播放 / 原图画质 / 分列删除 / 待删除结算 / 相似 pHash / 相簿管理全部落地 |
+| v0.1 功能 | 四合一底栏（整理 / 相似 / 相簿 / 我的 + zoom）/ 卡内播放 / 原图画质 / 分列删除 / 待删除结算 / 相似 pHash / 相簿管理全部落地 |
 | 整理页 UI（v0.1.1） | 自绘顶栏 + 细进度条 + 右侧竖排玻璃钮；媒体即卡片（无材质叠层）；前后卡统一高清 + 同步读缓存，换卡不闪灰块 |
 | WebView 残留 | `Evernight/**/*.swift` 里已无 `WKWebView` / `photoApp` / `evaluateJavaScript` |
 | 打包范围 | `project.yml` 不再引用 `WebContent`，网页资源不进 bundle |

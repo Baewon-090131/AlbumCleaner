@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// 整理页。`album` 为 nil 时是「整理」tab（按月整理），否则是某个相簿的整理页。
-/// 顶栏只有月份 / 媒体类型 / 待删除三个入口，**卡片上不放任何按钮**：
-/// 删除、下一张、撤回、收藏全部靠四向手势，避免玻璃钮压在照片上产生视觉冲突。
+/// 卡片是一排挂在绳上的拍立得相纸：左右拖绳子浏览，上滑摘下删除，下滑收藏。
+/// 卡片上不放任何按钮；撤回的入口在顶栏（左右拖动只改浏览位置，不再承担「下一张 / 撤回」）。
 struct SortScreen: View {
     var album: AlbumItem? = nil
 
@@ -51,12 +51,6 @@ struct SortScreen: View {
         index < photos.count ? photos[index] : nil
     }
 
-    /// 后方待命的那张：当前卡飞出后由它顶上。
-    private var upcoming: PhotoItem? {
-        let next = index + 1
-        return next < photos.count ? photos[next] : nil
-    }
-
     var body: some View {
         VStack(spacing: 10) {
             ProgressHeader(
@@ -67,13 +61,12 @@ struct SortScreen: View {
             )
 
             if columnCount == 1 {
-                SortDeck(
-                    photo: current,
-                    nextPhoto: upcoming,
-                    sizeLabel: current.map { Format.bytes(library.fileSize(of: $0)) } ?? "",
-                    nextSizeLabel: upcoming.map { Format.bytes(library.fileSize(of: $0)) } ?? "",
+                PolaroidDeck(
+                    photos: photos,
+                    index: $index,
                     command: command,
                     isPlaying: $isPlaying,
+                    sizeLabel: { Format.bytes(library.fileSize(of: $0)) },
                     onSwipe: { request($0) },
                     onFinished: finish,
                     onTap: { viewerPhoto = $0 },
@@ -103,8 +96,10 @@ struct SortScreen: View {
                         selectedMonthID: month?.id,
                         filter: mediaFilter,
                         showsMonth: !isAlbumMode,
+                        canUndo: columnCount == 1 && !undoStack.isEmpty,
                         onSelectMonth: selectMonth,
-                        onSelectFilter: selectFilter)
+                        onSelectFilter: selectFilter,
+                        onUndo: { _ = request(.undo) })
         }
         .fullScreenCover(item: $viewerPhoto) { PhotoViewerScreen(photo: $0) }
         .confirmationDialog("存入相簿", isPresented: $showAlbumPicker, titleVisibility: .visible) {
@@ -126,6 +121,11 @@ struct SortScreen: View {
                 return
             }
             albumPhotos = library.photos(in: album)
+        }
+        .onChange(of: photos.count) { _, new in
+            // 删掉最后一张时游标会停在数组末尾之外，回退一格
+            guard new > 0, index >= new else { return }
+            index = new - 1
         }
     }
 }
@@ -174,7 +174,7 @@ private extension SortScreen {
         return true
     }
 
-    /// 卡片区播完动效后回调；复位与数据变更已在同一个无动画事务里（见 `SortDeck.finish`）。
+    /// 卡片区播完动效后回调；复位与数据变更已在同一个无动画事务里（见 `PolaroidDeck.finish`）。
     func finish(_ move: SortMove) {
         command = nil
         apply(move)

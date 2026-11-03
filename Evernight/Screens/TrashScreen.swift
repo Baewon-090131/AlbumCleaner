@@ -9,6 +9,10 @@ struct TrashScreen: View {
     /// 默认全部勾选，这里只记被取消勾选的。
     @State private var unchecked: Set<String> = []
     @State private var isDeleting = false
+    /// 删除完成的结果：滑轨据此收缩并显示「已删除 N 项 · 释放 …」。
+    @State private var result: DeleteResult?
+    /// 彩纸开始时刻；非 nil 时从滑轨中间向上喷。
+    @State private var confettiStart: Date?
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 3), count: 3)
 
@@ -87,21 +91,15 @@ struct TrashScreen: View {
 
     @ViewBuilder
     private var deleteBar: some View {
-        if !library.trash.isEmpty {
+        if !library.trash.isEmpty || result != nil {
             VStack(spacing: 6) {
-                if isDeleting {
-                    HStack(spacing: 8) {
-                        ProgressView()
-                        Text("正在删除…").font(.headline)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                } else {
-                    SwipeDeleteButton(count: checkedItems.count,
-                                      bytes: checkedBytes,
-                                      enabled: !checkedItems.isEmpty,
-                                      onConfirm: confirmDeletion)
-                }
+                // 删除期间不显示转圈：滑轨保持满轨，等结果回来才收缩
+                SwipeDeleteButton(count: checkedItems.count,
+                                  bytes: checkedBytes,
+                                  enabled: !checkedItems.isEmpty,
+                                  isDeleting: isDeleting,
+                                  result: result,
+                                  onConfirm: confirmDeletion)
 
                 Text("未勾选项将放回相册 · 删除项进入系统「最近删除」，30 天内可恢复")
                     .font(.caption2)
@@ -111,12 +109,21 @@ struct TrashScreen: View {
             .padding(.top, 10)
             .padding(.bottom, 6)
             .background(.bar)
+            .overlay(alignment: .bottom) {
+                if let confettiStart {
+                    ConfettiBurst(start: confettiStart)
+                        .frame(height: 420)
+                        .offset(y: -30)
+                }
+            }
         }
     }
 
     private func confirmDeletion() {
         let targets = checkedItems
         guard !targets.isEmpty else { return }
+        let totalCount = targets.count
+        let totalBytes = checkedBytes
         isDeleting = true
         Task {
             let ok = await library.deleteFromSystem(targets)
@@ -126,6 +133,16 @@ struct TrashScreen: View {
             let restored = library.trash.filter { unchecked.contains($0.id) }
             for item in restored { library.restore(item) }
             unchecked.removeAll()
+
+            withAnimation(.snappy(duration: 0.4)) {
+                result = DeleteResult(count: totalCount, bytes: totalBytes)
+            }
+            confettiStart = .now
+
+            // 彩纸播完再收场；待删除已空时直接退出
+            try? await Task.sleep(for: .seconds(3.4))
+            confettiStart = nil
+            result = nil
             if library.trash.isEmpty { dismiss() }
         }
     }
