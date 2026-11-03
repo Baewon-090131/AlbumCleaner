@@ -139,7 +139,7 @@ rg -n "^import UIKit" Evernight --glob "*.swift"                           # 只
 - 缩略图走 `ThumbnailLoader`（NSCache + `withCheckedContinuation` 包 `PHImageManager`，`degraded` 中间帧直接丢弃），视图侧是 `AsyncThumbnail` + `.task(id:)`。
 - 整理页**手势与按钮共用一条动效通道**：手势在 `SortDeck` 里跟手并按 90pt 判方向（下滑收藏只要 40pt），松手不自己改数据，只把结论交给外层；外层写 `SortScreen.command`（`DeckCommand`，带递增 token 以便 `.onChange` 认出同一种动作），`SortDeck.onChange(of: command)` 播完动效后**在同一个 `withoutAnimation` 事务里**复位动效状态、置 `isPlaying = false`、回调 `onFinished`，`SortScreen` 这时才改 `index` / 压栈 / 写 Photos。**顺序与事务边界都不能换**，否则会看到新卡从屏外飞回来或旧卡闪回中央。卡片尺寸按 `PhotoItem.ratio` 算并夹在 0.32–3.2。
 - **`Transaction(disablesAnimations:)` 这个初始化器不存在**，复位动效状态一律走 `withoutAnimation`（`var transaction = Transaction(); transaction.disablesAnimations = true` + `withTransaction`）。
-- 卡片区是**双层**：前置卡 + 后方 0.94 待命卡（**向下沉 26pt**，让底边露出一条，对应参考视频）；前一卡飞出时后方卡用 `spring(0.42, 0.78)` 从 0.94 放大到 1.0、归位到 0、**并同步渐显**（缩放 / 位移 / 透明度共用同一个 Spring）。全程 `isPlaying` 期间不受理新操作。
+- 卡片区是**双层**：前置卡 + 后方 0.94 待命卡。**下沉量必须大于「0.94 缩放造成的底边上收」**（竖图约 28pt），否则后卡底边会被前卡盖住、露不出来；现在用 40pt（露约 12pt 一条边）。前一卡飞出时后方卡用 `spring(0.42, 0.78)` 从 0.94 放大到 1.0、归位到 0、**并同步渐显**（缩放 / 位移 / 透明度共用同一个 Spring）。全程 `isPlaying` 期间不受理新操作。
 - **撤回是通用撤销栈，不是只撤删除**：`UndoRecord` 记「操作类型 + 照片 + 操作前游标」，限深 50、切月清空。语义：删除→`restore` 按创建日期插回原月份原位且游标回到删除前；下一张→游标退一张；收藏→`setFavorite(false)` 且游标不动；存入相簿→`library.remove(_:from:)` 且游标退回上一张。动效上按 `UndoRecord.origin` **倒放**：当前卡从被拖到的位置退回后方 0.94 并下沉、渐隐，被撤那张从当初飞出去的方向飞回正面。
 - 相簿详情复用 `SortScreen(album:)`：动作集只传 `[.undo, .delete, .next]`，顶栏左侧是返回 + 相簿名（导航栏已隐藏，`SortTopBar` 自绘）。
 - 主题色走 `@AppStorage("ac_theme")` + `Color(hex:)`，`MainTabView` 用 `.tint` 应用；`@AppStorage` 直接落 UserDefaults，不再有 localStorage。

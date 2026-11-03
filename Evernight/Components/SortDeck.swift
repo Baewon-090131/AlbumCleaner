@@ -8,7 +8,7 @@ func withoutAnimation(_ work: () -> Void) {
     withTransaction(transaction, work)
 }
 
-/// 卡片区：当前卡跟手平移、超过阈值飞出屏幕；下一张卡先在后方 0.94 处、向下沉 26pt 透明待命，
+/// 卡片区：当前卡跟手平移、超过阈值飞出屏幕；下一张卡先在后方 0.94 处、向下沉 40pt 透明待命，
 /// 前一张飞出时用同一个 Spring 放大到 1.0、归位并同步渐显。撤回则把整套分拣动效倒着放一遍——
 /// 当前卡缩回 0.94 并下沉、渐隐退场，被撤那张从它当初飞出去的方向飞回正面。
 ///
@@ -32,8 +32,9 @@ struct SortDeck: View {
     @State private var frontScale: CGFloat = 1
     @State private var backOffset: CGSize = .zero
     @State private var backScale: CGFloat = 0.94
-    /// 后卡待命时向下沉的量：让底边露出一条，对应参考视频里「下一张在下面露出一角」。
-    @State private var backLift: CGFloat = 26
+    /// 后卡待命时向下沉的量。必须大于「0.94 缩放导致的底边上收」（竖图约 28pt），
+    /// 否则底边会被前卡盖住、露不出来。40pt 下露出约 12pt 的一条边。
+    @State private var backLift: CGFloat = 40
     /// 后置卡的渐显：待命时全透明，顶上来时与放大同步显现。
     @State private var backOpacity: CGFloat = 0
     /// 撤回时前置的「飞回来」那张；其余时候为 nil。
@@ -193,7 +194,7 @@ private extension SortDeck {
         }
         withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) {
             backScale = 0.94
-            backLift = 26
+            backLift = 40
             backOpacity = 0
         }
         Task {
@@ -240,7 +241,7 @@ private extension SortDeck {
         frontScale = 1
         backOffset = .zero
         backScale = 0.94
-        backLift = 26
+        backLift = 40
         backOpacity = 0
         incoming = nil
     }
