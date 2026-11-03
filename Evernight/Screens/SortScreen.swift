@@ -1,15 +1,13 @@
 import SwiftUI
 
 /// 整理页。`album` 为 nil 时是「整理」tab（按月整理），否则是某个相簿的整理页。
-/// 顶栏交给系统 toolbar（月份 + 媒体类型 + 撤回/待删除），下面是细进度条与满幅卡片，
-/// 操作按钮浮在卡片右侧。
+/// 顶栏只有月份 / 媒体类型 / 待删除三个入口，**卡片上不放任何按钮**：
+/// 删除、下一张、撤回、收藏全部靠四向手势，避免玻璃钮压在照片上产生视觉冲突。
 struct SortScreen: View {
     var album: AlbumItem? = nil
 
     @Environment(PhotoLibraryService.self) private var library
     @AppStorage("ac_theme") private var themeHex = "#002FA7"
-    /// 右侧竖排钮的玻璃形态在「四按钮 ↔ 三按钮」之间变形时共用这个命名空间
-    @Namespace private var actionNamespace
 
     @State private var selectedMonthID: String?
     @State private var index = 0
@@ -59,10 +57,6 @@ struct SortScreen: View {
         return next < photos.count ? photos[next] : nil
     }
 
-    private var actions: [SortAction] {
-        isAlbumMode ? [.undo, .delete, .next] : SortAction.allCases
-    }
-
     var body: some View {
         VStack(spacing: 10) {
             ProgressHeader(
@@ -84,14 +78,6 @@ struct SortScreen: View {
                     onFinished: finish,
                     onTap: { viewerPhoto = $0 }
                 )
-                .overlay(alignment: .trailing) {
-                    SortSideBar(actions: actions,
-                                canUndo: !undoStack.isEmpty,
-                                hasPhoto: current != nil,
-                                namespace: actionNamespace,
-                                onAction: handleAction)
-                        .padding(.trailing, 4)
-                }
             } else {
                 ColumnsGrid(
                     photos: photos,
@@ -115,11 +101,9 @@ struct SortScreen: View {
             SortToolbar(months: library.months,
                         selectedMonthID: month?.id,
                         filter: mediaFilter,
-                        canUndo: !undoStack.isEmpty,
                         showsMonth: !isAlbumMode,
                         onSelectMonth: selectMonth,
-                        onSelectFilter: selectFilter,
-                        onUndo: { request(.undo) })
+                        onSelectFilter: selectFilter)
         }
         .fullScreenCover(item: $viewerPhoto) { PhotoViewerScreen(photo: $0) }
         .confirmationDialog("存入相簿", isPresented: $showAlbumPicker, titleVisibility: .visible) {
@@ -167,16 +151,7 @@ private extension SortScreen {
         pendingAlbum = nil
     }
 
-    func handleAction(_ action: SortAction) {
-        switch action {
-        case .undo: request(.undo)
-        case .delete: request(.delete)
-        case .next: request(.next)
-        case .album: showAlbumPicker = true
-        }
-    }
-
-    /// 手势与按钮都走这里：只写 command，动效和数据变更都等卡片区播完再收尾。
+    /// 手势是唯一入口：只写 command，动效和数据变更都等卡片区播完再收尾。
     /// 返回是否受理——撤回但没有可撤的步骤时不受理，卡片原地弹回。
     @discardableResult
     func request(_ move: SortMove) -> Bool {

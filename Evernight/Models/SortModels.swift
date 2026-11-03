@@ -49,40 +49,6 @@ enum UndoRecord {
     }
 }
 
-/// 底部操作岛的四个按钮。
-enum SortAction: String, CaseIterable, Identifiable {
-    case undo, delete, next, album
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .undo: "撤回"
-        case .delete: "删除"
-        case .next: "下一张"
-        case .album: "相簿"
-        }
-    }
-
-    var symbol: String {
-        switch self {
-        case .undo: "arrow.uturn.backward"
-        case .delete: "trash"
-        case .next: "forward.end"
-        case .album: "photo.stack"
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .undo: Theme.warning
-        case .delete: Theme.danger
-        case .next: Theme.info
-        case .album: Theme.accent
-        }
-    }
-}
-
 /// 整理页顶部的媒体类型筛选（对应参考视频的「照片 ▾」胶囊）。
 enum MediaFilter: String, CaseIterable, Identifiable {
     case all = "全部"
