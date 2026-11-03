@@ -100,6 +100,7 @@ struct MainTabView: View {
 
     // MARK: - 「我的」入口
 
+    @ViewBuilder
     private var mineAccessory: some View {
         if #available(iOS 18.0, *) {
             accessoryButton.matchedTransitionSource(id: Self.mineTransitionID, in: mineNamespace)
