@@ -76,7 +76,8 @@ struct SortScreen: View {
                     isPlaying: $isPlaying,
                     onSwipe: { request($0) },
                     onFinished: finish,
-                    onTap: { viewerPhoto = $0 }
+                    onTap: { viewerPhoto = $0 },
+                    onAddToAlbum: { showAlbumPicker = true }
                 )
             } else {
                 ColumnsGrid(

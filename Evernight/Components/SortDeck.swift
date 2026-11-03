@@ -27,6 +27,8 @@ struct SortDeck: View {
     let onSwipe: (SortMove) -> Bool
     let onFinished: (SortMove) -> Void
     let onTap: (PhotoItem) -> Void
+    /// 长按卡片 → 「存入相簿」。卡片上没有按钮，这是存入相簿的唯一入口。
+    let onAddToAlbum: () -> Void
 
     @State private var frontOffset: CGSize = .zero
     @State private var frontScale: CGFloat = 1
@@ -73,6 +75,13 @@ struct SortDeck: View {
                         .scaleEffect(frontScale)
                         .rotationEffect(.degrees(frontOffset.width / 26))
                         .gesture(dragGesture)
+                        .contextMenu {
+                            Button {
+                                onAddToAlbum()
+                            } label: {
+                                Label("存入相簿", systemImage: "photo.stack")
+                            }
+                        }
                 }
 
                 if photo == nil && incoming == nil {
