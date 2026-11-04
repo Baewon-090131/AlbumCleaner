@@ -143,7 +143,7 @@ private extension PolaroidDeck {
                               control: CGPoint(x: width / 2, y: cordTop + sag * 2))
         }
         .stroke(Theme.ink3, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
-        .frame(width: width, height: cordTop + sag * 2 + 4)
+        .frame(width: width, height: max(0, cordTop + sag * 2 + 4))
         .allowsHitTesting(false)
     }
 
@@ -192,7 +192,6 @@ private extension PolaroidDeck {
             .offset(x: centerX - metrics.paper.width / 2,
                     y: topY + (isGhost ? ghostLift : (isCurrent ? frontLift.height : 0)))
             .opacity(isGhost ? ghostOpacity : 1)
-            .saturation(isCurrent ? 1 : 0.85)
             .zIndex(isCurrent ? 0 : -1)
             .contextMenu {
                 if isCurrent, !isGhost {
@@ -271,14 +270,16 @@ private extension PolaroidDeck {
         guard photos.indices.contains(next) else { return springBack() }
 
         let spacing = neighborSpacing()
-        withoutAnimation {
-            lastSelfIndex = next
-            index = next
-            dragOffset += forward ? spacing : -spacing
-            dragAngle = 0
-            frontLift = .zero
+        lastSelfIndex = next
+        index = next
+        dragOffset += forward ? spacing : -spacing
+        dragAngle = 0
+        frontLift = .zero
+        // 隔一拍再归零：保证动画起点就是补偿后的连续位置，
+        // 否则两次赋值被合进同一帧，切张瞬间会看到位置跳一下。
+        Task { @MainActor in
+            withAnimation(.smooth(duration: 0.3)) { dragOffset = 0 }
         }
-        withAnimation(.smooth(duration: 0.3)) { dragOffset = 0 }
     }
 
     /// 外部改游标时让新卡从指定方向滑进来。

@@ -6,6 +6,8 @@ import SwiftUI
 /// 位移用带阻尼的解析解（不是逐帧积分），所以掉帧时轨迹也不会走样。
 struct ConfettiBurst: View {
     let start: Date
+    /// 发射点距画布底边的距离：铺满全屏时可以把它抬到滑轨的位置。
+    var originFromBottom: CGFloat = 0
 
     @State private var particles = ConfettiParticle.make(count: 100)
 
@@ -18,7 +20,7 @@ struct ConfettiBurst: View {
             let elapsed = timeline.date.timeIntervalSince(start)
             Canvas { context, size in
                 guard elapsed < duration else { return }
-                let origin = CGPoint(x: size.width / 2, y: size.height)
+                let origin = CGPoint(x: size.width / 2, y: size.height - originFromBottom)
 
                 for particle in particles {
                     let t = elapsed - particle.delay

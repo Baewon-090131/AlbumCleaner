@@ -62,6 +62,14 @@ struct TrashScreen: View {
             }
         }
         .safeAreaInset(edge: .bottom) { deleteBar }
+        // 彩纸铺满整屏：滑轨那点高度会让纸片还没落下就被裁掉
+        .overlay {
+            if let confettiStart {
+                ConfettiBurst(start: confettiStart, originFromBottom: 96)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+            }
+        }
     }
 
     private func cell(_ item: PhotoItem) -> some View {
@@ -109,13 +117,6 @@ struct TrashScreen: View {
             .padding(.top, 10)
             .padding(.bottom, 6)
             .background(.bar)
-            .overlay(alignment: .bottom) {
-                if let confettiStart {
-                    ConfettiBurst(start: confettiStart)
-                        .frame(height: 420)
-                        .offset(y: -30)
-                }
-            }
         }
     }
 

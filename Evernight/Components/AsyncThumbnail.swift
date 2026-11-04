@@ -13,6 +13,8 @@ struct AsyncThumbnail: View {
     var highQuality = false
     /// 卡片里用玻璃占位（加载前的空卡片也是「玻璃」），网格里保持实色，避免几十上百个 material 太重。
     var glassPlaceholder = false
+    /// 指定占位底色：相纸里用它铺纸色，缓存 miss 的那一帧也不会露出一块灰。
+    var placeholderColor: Color?
 
     @Environment(\.displayScale) private var displayScale
     @State private var image: UIImage?
@@ -28,6 +30,8 @@ struct AsyncThumbnail: View {
                 Image(uiImage: displayed)
                     .resizable()
                     .aspectRatio(contentMode: contentMode)
+            } else if let placeholderColor {
+                Rectangle().fill(placeholderColor)
             } else if glassPlaceholder {
                 Rectangle().fill(.ultraThinMaterial)
             } else {

@@ -28,7 +28,7 @@ struct DebugScreen: View {
             }
 
             Section("绳子") {
-                tuner("绳子距顶", value: $cordTop, range: 0...140, format: "%.0f", suffix: "pt")
+                tuner("绳子距顶", value: $cordTop, range: -260...140, format: "%.0f", suffix: "pt")
                 tuner("绳子下垂", value: $sag, range: 0...80, format: "%.0f", suffix: "pt")
                 tuner("邻卡露出", value: $peek, range: 0...120, format: "%.0f", suffix: "pt")
             }

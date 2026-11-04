@@ -91,7 +91,8 @@ struct PolaroidCard: View {
             // 方形窗口里的横图必须 fit，否则会被裁掉两侧、破坏原始比例
             AsyncThumbnail(asset: photo.asset, targetSize: metrics.photo,
                            contentMode: isSquare ? .fit : .fill,
-                           highQuality: true)
+                           highQuality: true,
+                           placeholderColor: Theme.card)
                 .background(Theme.card)
                 .onTapGesture { onOpenViewer() }
         }
