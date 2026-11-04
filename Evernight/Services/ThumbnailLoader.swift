@@ -16,7 +16,7 @@ final class ThumbnailLoader: @unchecked Sendable {
         // 大卡约 7~8MB 一张，16 张 ≈ 120MB：足够覆盖前后各几张的来回切换，
         // 又不会把整机内存吃掉。原先只留 8 张，快速连滑时旧图被挤掉，
         // 切回来必然 miss，就会闪一帧灰块。
-        fullCache.countLimit = 16
+        fullCache.countLimit = 24
     }
 
     /// 请求指定尺寸的缩略图；degraded 的中间帧直接丢掉，避免闪一次低清图。

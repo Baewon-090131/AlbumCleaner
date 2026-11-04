@@ -79,13 +79,12 @@ struct PolaroidDeck: View {
                 // 前后各两张全部提前渲染：相邻两张可见（各露 peek），
                 // 再往外两张停在屏外，只为把图片和播放器先加载好，
                 // 切过去时不会再闪一帧。
-                ForEach(-2...2, id: \.self) { offset in
+                // 前 10 张、后 5 张全部提前挂好，切过去时不用等加载
+                ForEach(-10...5, id: \.self) { offset in
                     if let photo = photo(at: offset) {
                         card(offset == 0 ? (ghost ?? photo) : photo,
                              direction: offset,
                              in: size)
-                            // 每张照片有独立的视图身份：切张时不复用上一张的
-                            // `@State image`，直接从各自的缓存里同步取图
                             .id(photo.id)
                     }
                 }
@@ -96,24 +95,27 @@ struct PolaroidDeck: View {
 
                 cord(width: size.width)
                     .zIndex(1)
-
-                // 木夹跟着卡片走，压在绳子上
-                peg(in: size)
-                    .zIndex(2)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             // 整组（绳子 + 木夹 + 相纸）一起上提，抵消上方多出来的留白
             .offset(y: -CGFloat(topShift))
             .contentShape(Rectangle())
             .gesture(dragGesture)
-            .onAppear { deckSize = size }
-            .onChange(of: size) { _, new in deckSize = new }
+            .onAppear {
+                deckSize = size
+                prefetch(in: size)
+            }
+            .onChange(of: size) { _, new in
+                deckSize = new
+                prefetch(in: new)
+            }
         }
         .onChange(of: command) { _, value in
             guard let value else { return }
             play(value)
         }
         .onChange(of: index) { old, new in
+            prefetch(in: deckSize)
             if let pending = lastSelfIndex, pending == new {
                 lastSelfIndex = nil
                 return
@@ -158,33 +160,14 @@ private extension PolaroidDeck {
     /// 邻卡在屏幕边缘露出的宽度。
     var peek: CGFloat { CGFloat(peekValue) }
 
-    @ViewBuilder
-    func peg(in size: CGSize) -> some View {
-        let centerX = size.width / 2 + dragOffset
-        let cordPoint = cordY(centerX, width: size.width)
-        let topY = cardTopY(centerX: centerX, photo: currentPhoto, in: size)
-        let ropeLength = topY - cordPoint - 12
-
-        ZStack(alignment: .topLeading) {
-            // 矮相纸靠一根吊绳从绳上垂下来，视觉上仍是「挂着」，只是垂到了中间
-            if hangEnabled, ropeLength > 4 {
-                Rectangle()
-                    .fill(Theme.ink3)
-                    .frame(width: 1.2, height: ropeLength)
-                    .offset(x: centerX - 0.6, y: cordPoint)
-            }
-            PolaroidPeg()
-                .offset(x: centerX - 5, y: topY - 12)
-        }
-        .allowsHitTesting(false)
-    }
-
-    /// 相纸顶边的 y：默认贴着绳子，开了吊绳后改成卡片区垂直居中。
-    func cardTopY(centerX: CGFloat, photo: PhotoItem?, in size: CGSize) -> CGFloat {
+    /// 相纸顶边的 y：邻卡贴着绳子；当前卡（开了吊绳时）落在
+    /// 「绳中点 → tab 栏上边界」这条垂线段的中点。
+    func cardTopY(centerX: CGFloat, photo: PhotoItem?, isCurrent: Bool, in size: CGSize) -> CGFloat {
         let attached = cordY(centerX, width: size.width) + cordGap
-        guard hangEnabled, let photo else { return attached }
+        guard hangEnabled, isCurrent, let photo else { return attached }
         let height = PolaroidMetrics.make(for: photo, bounds: size, paperScale: CGFloat(paperScale)).paper.height
-        return max(attached, (size.height - height) / 2)
+        let middle = (cordY(size.width / 2, width: size.width) + size.height) / 2
+        return max(attached, middle - height / 2)
     }
 
     /// - Parameter direction: 0 = 当前卡，±1 = 左右邻卡（露出 peek），±2 = 屏外预热。
@@ -199,13 +182,10 @@ private extension PolaroidDeck {
         // 整组 1:1 跟手；切张时靠位移补偿保证落点连续
         let centerX = baseX + dragOffset
         // 相纸顶边落在绳子下方，木夹跨在绳上、下半截压在纸上
-        let topY = cardTopY(centerX: centerX, photo: photo, in: size)
+        let topY = cardTopY(centerX: centerX, photo: photo, isCurrent: isCurrent, in: size)
 
-        // 详情打开时，两侧相纸向屏幕外抽走，中间的交给详情层（这里先隐去）
-        let detailShift: CGFloat = {
-            guard detailActive, !isCurrent else { return 0 }
-            return (direction > 0 ? 1 : -1) * size.width * 1.3
-        }()
+        // 详情打开时中间那张交给详情层接管（原地放大），两侧保持不动
+        let detailShift: CGFloat = 0
 
         PolaroidCard(photo: photo,
                      metrics: metrics,
@@ -227,6 +207,24 @@ private extension PolaroidDeck {
                         .frame(width: metrics.photo.width, height: metrics.photo.height)
                         .offset(x: metrics.pad, y: metrics.pad)
                 }
+            }
+            .overlay(alignment: .topLeading) {
+                // 每张相纸都带自己的木夹；当前卡如果被吊绳垂下来，再补一段竖线
+                ZStack(alignment: .topLeading) {
+                    if hangEnabled, isCurrent {
+                        let rope = topY - cordGap - cordY(centerX, width: size.width)
+                        if rope > 4 {
+                            Rectangle()
+                                .fill(Theme.ink3)
+                                .frame(width: 1.2, height: rope)
+                                .offset(x: metrics.paper.width / 2 - 0.6,
+                                        y: -cordGap - rope)
+                        }
+                    }
+                    PolaroidPeg()
+                        .offset(x: metrics.paper.width / 2 - 5, y: -12)
+                }
+                .allowsHitTesting(false)
             }
             .rotationEffect(.radians(isCurrent ? dragAngle : 0), anchor: .top)
             .offset(x: centerX - metrics.paper.width / 2 + detailShift,
@@ -321,6 +319,26 @@ private extension PolaroidDeck {
     func paperWidth(at offset: Int, in size: CGSize) -> CGFloat {
         guard let photo = photo(at: offset) else { return 0 }
         return PolaroidMetrics.make(for: photo, bounds: size, paperScale: CGFloat(paperScale)).paper.width
+    }
+
+    /// 把前 10 张、后 5 张的大图全部拉进缓存。视图虽然已经挂着，
+    /// 但 `AsyncThumbnail` 的请求是异步的；这里主动把它们拉完，
+    /// 滑过去时缓存必然命中，不会出现占位或拉伸。
+    func prefetch(in size: CGSize) {
+        guard size.width > 0 else { return }
+        for offset in -10...5 {
+            guard let photo = photo(at: offset) else { continue }
+            let metrics = PolaroidMetrics.make(for: photo, bounds: size, paperScale: CGFloat(paperScale))
+            let request = CGSize(
+                width: min(metrics.photo.width * displayScale * 1.5, 2800),
+                height: min(metrics.photo.height * displayScale * 1.5, 2800)
+            )
+            Task {
+                _ = await ThumbnailLoader.shared.image(for: photo.asset,
+                                                       targetSize: request,
+                                                       highQuality: true)
+            }
+        }
     }
 
     /// 跟手切张：游标立刻改掉，同时把整组位移补偿一个「相邻中心距」，
