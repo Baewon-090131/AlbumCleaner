@@ -8,7 +8,7 @@ struct GlassDeck: View {
     let sizeLabel: (PhotoItem) -> String
     let onSwipe: (SortMove) -> Bool
     let onFinished: (SortMove) -> Void
-    let onTap: (PhotoItem) -> Void
+    let onTap: (PhotoItem, CGRect) -> Void
     let onAddToAlbum: () -> Void
 
     @AppStorage("ac_dbg_paper") private var paperScale: Double = 0.90
@@ -59,7 +59,12 @@ private extension GlassDeck {
                             metrics: metrics,
                             sizeLabel: sizeLabel(photo),
                             isFront: true,
-                            onOpenViewer: { onTap(photo) })
+                            onOpenViewer: {
+                                onTap(photo, CGRect(x: (size.width - metrics.paper.width) / 2,
+                                                    y: (size.height - metrics.paper.height) / 2,
+                                                    width: metrics.paper.width,
+                                                    height: metrics.paper.height))
+                            })
             .frame(width: metrics.paper.width, height: metrics.paper.height)
     }
 

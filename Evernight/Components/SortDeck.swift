@@ -26,7 +26,7 @@ struct PolaroidDeck: View {
     /// 手势判定结果；返回是否受理（撤回但栈空时返回 false，卡片归位）。
     let onSwipe: (SortMove) -> Bool
     let onFinished: (SortMove) -> Void
-    let onTap: (PhotoItem) -> Void
+    let onTap: (PhotoItem, CGRect) -> Void
     let onAddToAlbum: () -> Void
 
     /// 水平偏移：负 = 卡片向左滑（看下一张）。
@@ -204,7 +204,14 @@ private extension PolaroidDeck {
                      sizeLabel: isCurrent && !isGhost ? sizeLabel(photo) : "",
                      isFront: !isGhost,
                      erase: isCurrent ? eraseProgress : 0,
-                     onOpenViewer: { if isCurrent { onTap(photo) } })
+                     onOpenViewer: {
+                         if isCurrent {
+                             onTap(photo, CGRect(x: centerX - metrics.paper.width / 2,
+                                                 y: topY - CGFloat(topShift),
+                                                 width: metrics.paper.width,
+                                                 height: metrics.paper.height))
+                         }
+                     })
             .frame(width: metrics.paper.width, height: metrics.paper.height)
             .overlay(alignment: .topLeading) {
                 if isCurrent, let sand {

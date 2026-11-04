@@ -17,6 +17,8 @@ struct SortScreen: View {
     @State private var toast: String?
     @State private var showAlbumPicker = false
     @State private var viewerPhoto: PhotoItem?
+    /// 点开时相纸在屏幕上的位置，用来做「以左上角为锚点」的放大转场。
+    @State private var viewerFrame: CGRect = .zero
     /// 分列模式：1 = 单卡，2 / 3 = 瀑布流分列（双指收拢切换）。相簿详情不支持分列。
     @State private var columnCount = 1
     /// 媒体类型筛选：照片 / 视频 / 实况 / 全部。相簿详情不显示。
@@ -73,7 +75,7 @@ struct SortScreen: View {
                         sizeLabel: { Format.bytes(library.fileSize(of: $0)) },
                         onSwipe: { request($0) },
                         onFinished: finish,
-                        onTap: { viewerPhoto = $0 },
+                        onTap: { photo, frame in viewerFrame = frame; viewerPhoto = photo },
                         onAddToAlbum: { showAlbumPicker = true }
                     )
                     .zIndex(1)
@@ -86,7 +88,7 @@ struct SortScreen: View {
                         sizeLabel: { Format.bytes(library.fileSize(of: $0)) },
                         onSwipe: { request($0) },
                         onFinished: finish,
-                        onTap: { viewerPhoto = $0 },
+                        onTap: { photo, frame in viewerFrame = frame; viewerPhoto = photo },
                         onAddToAlbum: { showAlbumPicker = true }
                     )
                     .zIndex(1)
@@ -121,7 +123,7 @@ struct SortScreen: View {
                         onSelectFilter: selectFilter,
                         onUndo: { _ = request(.undo) })
         }
-        .fullScreenCover(item: $viewerPhoto) { PhotoViewerScreen(photo: $0) }
+        .overlay { if let photo = viewerPhoto { PhotoDetailView(photo: photo, startFrame: viewerFrame) { viewerPhoto = nil }.zIndex(10) } }
         .confirmationDialog("存入相簿", isPresented: $showAlbumPicker, titleVisibility: .visible) {
             ForEach(library.albums) { target in
                 Button(target.name) { addCurrentPhoto(to: target) }
