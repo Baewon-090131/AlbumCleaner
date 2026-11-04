@@ -56,6 +56,8 @@ struct PolaroidDeck: View {
     @AppStorage("ac_dbg_sag") private var sagValue: Double = 24
     @AppStorage("ac_dbg_peek") private var peekValue: Double = 26
 
+    @Environment(\.displayScale) private var displayScale
+
     /// 绳子的挂高（从卡片区顶部算）。
     var cordTop: CGFloat { CGFloat(cordTopValue) }
     /// 绳子中点的下垂量。
@@ -78,6 +80,9 @@ struct PolaroidDeck: View {
                         card(offset == 0 ? (ghost ?? photo) : photo,
                              direction: offset,
                              in: size)
+                            // 每张照片有独立的视图身份：切张时不复用上一张的
+                            // `@State image`，直接从各自的缓存里同步取图
+                            .id(photo.id)
                     }
                 }
                 if currentPhoto == nil {
@@ -330,7 +335,13 @@ private extension PolaroidDeck {
         }
         if let photo = currentPhoto, deckSize != .zero {
             let metrics = PolaroidMetrics.make(for: photo, bounds: deckSize, paperScale: CGFloat(paperScale))
-            sand = SandSampler.burst(for: photo, targetSize: metrics.photo)
+            // 缓存 key 必须与 `AsyncThumbnail` 用的一致（按 displayScale × 1.5 放大、单边封顶 2800），
+            // 否则永远 miss，采不到颜色、一粒沙都不会出现。
+            let request = CGSize(
+                width: min(metrics.photo.width * displayScale * 1.5, 2800),
+                height: min(metrics.photo.height * displayScale * 1.5, 2800)
+            )
+            sand = SandSampler.burst(for: photo, targetSize: request)
         }
         withAnimation(.smooth(duration: 0.78)) { eraseProgress = 1 }
         Task {

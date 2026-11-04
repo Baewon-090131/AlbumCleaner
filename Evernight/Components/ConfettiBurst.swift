@@ -11,7 +11,6 @@ struct ConfettiBurst: View {
 
     @State private var particles = ConfettiParticle.make(count: 100)
 
-    private let drag: CGFloat = 1.3      // 水平方向的空气阻力系数
     private let duration: Double = 3.3
 
     var body: some View {
@@ -26,24 +25,21 @@ struct ConfettiBurst: View {
                     guard t > 0 else { continue }
 
                     let tc = CGFloat(t)
-                    let damp = CGFloat(exp(-Double(drag) * t))
-                    let x = origin.x
-                        + particle.vx / drag * (1 - damp)
-                        + CGFloat(sin(t * 2.2 + particle.phase)) * 14 * min(tc, 1.2)
 
-                    // 0.26s 快速冲上去，之后在空气阻力下缓慢回落。
-                    // 纯抛物线在 2.5s 内会飞出屏幕，所以下落段用「低终端速度」近似。
-                    let rise = -particle.vy * 0.5
-                    let peakT: CGFloat = 0.26
-                    let yOffset: CGFloat
-                    if tc < peakT {
-                        let p = tc / peakT
-                        yOffset = -rise * (1 - pow(1 - p, 2))
-                    } else {
-                        let u = min(tc - peakT, 2.2)
-                        yOffset = -rise + 0.5 * 130 * u * u
-                    }
-                    let y = origin.y + yOffset
+                    // 照 canvas-confetti 的逐帧积分（60fps）写闭式解：
+                    // 每帧 vx *= decay、vy *= decay 后 vy += gravity，位置 += 速度。
+                    // 这样初速够大就能冲到屏幕顶部，再被重力一段段拉回来。
+                    let n = tc * 60
+                    let d: CGFloat = 0.95
+                    let g: CGFloat = 0.5
+                    let terminal = g / (1 - d)
+                    let decayN = pow(d, n)
+                    let ramp = d * (1 - decayN) / (1 - d)
+
+                    let x = origin.x
+                        + particle.vx * ramp
+                        + CGFloat(sin(t * 2.4 + particle.phase)) * 12 * min(tc, 1.5)
+                    let y = origin.y + (particle.vy - terminal) * ramp + terminal * n
 
                     let alpha = fade(t: t, start: particle.fadeStart)
                     guard alpha > 0 else { continue }
@@ -102,10 +98,10 @@ private struct ConfettiParticle {
     static func make(count: Int) -> [ConfettiParticle] {
         let palette = [Theme.accent, Theme.danger, Theme.success, Theme.warning, Theme.info]
         return (0..<count).map { _ in
-            let speed = CGFloat.random(in: 420...640)
+            let speed = CGFloat.random(in: 40...56)
             let angle = Double.random(in: (90 - 36)...(90 + 36)) * .pi / 180
             return ConfettiParticle(
-                vx: CGFloat(cos(angle)) * speed,
+                vx: CGFloat(cos(angle)) * speed * 0.42,
                 vy: -CGFloat(sin(angle)) * speed,
                 color: palette.randomElement() ?? Theme.accent,
                 shape: Int.random(in: 0...2),
@@ -113,7 +109,7 @@ private struct ConfettiParticle {
                 spin: Double.random(in: -9...9),
                 phase: Double.random(in: 0...(.pi * 2)),
                 delay: Double.random(in: 0...0.08),
-                fadeStart: Double.random(in: 2.2...2.8)
+                fadeStart: Double.random(in: 2.0...2.6)
             )
         }
     }

@@ -74,7 +74,6 @@ struct SortScreen: View {
                     onTap: { viewerPhoto = $0 },
                     onAddToAlbum: { showAlbumPicker = true }
                 )
-                .padding(.top, 28)
                 .zIndex(1)
             } else {
                 ColumnsGrid(
