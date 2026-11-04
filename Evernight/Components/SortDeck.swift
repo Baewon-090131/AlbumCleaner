@@ -50,11 +50,13 @@ struct PolaroidDeck: View {
 
     /// 以下五项是「我的 → Debug 模式」里可调的布局参数，直接落 UserDefaults，
     /// 整理页与调试面板读写同一组 key，滑钮一动卡片区立刻重绘。
-    @AppStorage("ac_dbg_paper") private var paperScale: Double = 0.66
+    @AppStorage("ac_dbg_paper") private var paperScale: Double = 0.90
     @AppStorage("ac_dbg_shift") private var topShift: Double = 48
-    @AppStorage("ac_dbg_cord") private var cordTopValue: Double = 64
-    @AppStorage("ac_dbg_sag") private var sagValue: Double = 24
-    @AppStorage("ac_dbg_peek") private var peekValue: Double = 26
+    @AppStorage("ac_dbg_cord") private var cordTopValue: Double = 26
+    @AppStorage("ac_dbg_sag") private var sagValue: Double = 15
+    @AppStorage("ac_dbg_peek") private var peekValue: Double = 0
+    /// 矮相纸自动下移到卡片区中央，靠一根吊绳挂在绳子上（仅「挂绳相纸」主题可用）。
+    @AppStorage("ac_dbg_hang") private var hangEnabled = true
 
     @Environment(\.displayScale) private var displayScale
 
@@ -157,9 +159,30 @@ private extension PolaroidDeck {
     @ViewBuilder
     func peg(in size: CGSize) -> some View {
         let centerX = size.width / 2 + dragOffset
-        PolaroidPeg()
-            .offset(x: centerX - 5, y: cordY(centerX, width: size.width) - 12)
-            .allowsHitTesting(false)
+        let cordPoint = cordY(centerX, width: size.width)
+        let topY = cardTopY(centerX: centerX, photo: currentPhoto, in: size)
+        let ropeLength = topY - cordPoint - 12
+
+        ZStack(alignment: .topLeading) {
+            // 矮相纸靠一根吊绳从绳上垂下来，视觉上仍是「挂着」，只是垂到了中间
+            if hangEnabled, ropeLength > 4 {
+                Rectangle()
+                    .fill(Theme.ink3)
+                    .frame(width: 1.2, height: ropeLength)
+                    .offset(x: centerX - 0.6, y: cordPoint)
+            }
+            PolaroidPeg()
+                .offset(x: centerX - 5, y: topY - 12)
+        }
+        .allowsHitTesting(false)
+    }
+
+    /// 相纸顶边的 y：默认贴着绳子，开了吊绳后改成卡片区垂直居中。
+    func cardTopY(centerX: CGFloat, photo: PhotoItem?, in size: CGSize) -> CGFloat {
+        let attached = cordY(centerX, width: size.width) + cordGap
+        guard hangEnabled, let photo else { return attached }
+        let height = PolaroidMetrics.make(for: photo, bounds: size, paperScale: CGFloat(paperScale)).paper.height
+        return max(attached, (size.height - height) / 2)
     }
 
     /// - Parameter direction: 0 = 当前卡，±1 = 左右邻卡（露出 peek），±2 = 屏外预热。
@@ -174,7 +197,7 @@ private extension PolaroidDeck {
         // 整组 1:1 跟手；切张时靠位移补偿保证落点连续
         let centerX = baseX + dragOffset
         // 相纸顶边落在绳子下方，木夹跨在绳上、下半截压在纸上
-        let topY = cordY(centerX, width: size.width) + cordGap
+        let topY = cardTopY(centerX: centerX, photo: photo, in: size)
 
         PolaroidCard(photo: photo,
                      metrics: metrics,

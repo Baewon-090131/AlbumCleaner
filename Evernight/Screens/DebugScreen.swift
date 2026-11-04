@@ -4,11 +4,12 @@ import SwiftUI
 /// 与 `PolaroidDeck` 的 `@AppStorage` 共用同一组 key，
 /// 所以滑钮一动整理页立刻重绘，返回即可看到实际效果。
 struct DebugScreen: View {
-    @AppStorage("ac_dbg_paper") private var paperScale = 0.66
+    @AppStorage("ac_dbg_paper") private var paperScale = 0.90
     @AppStorage("ac_dbg_shift") private var topShift = 48.0
-    @AppStorage("ac_dbg_cord") private var cordTop = 64.0
-    @AppStorage("ac_dbg_sag") private var sag = 24.0
-    @AppStorage("ac_dbg_peek") private var peek = 26.0
+    @AppStorage("ac_dbg_cord") private var cordTop = 26.0
+    @AppStorage("ac_dbg_sag") private var sag = 15.0
+    @AppStorage("ac_dbg_peek") private var peek = 0.0
+    @AppStorage("ac_dbg_hang") private var hang = true
 
     var body: some View {
         List {
@@ -31,12 +32,13 @@ struct DebugScreen: View {
                 tuner("绳子中点距顶", value: $cordTop, range: -80...300, format: "%.0f", suffix: "pt")
                 tuner("绳子下垂", value: $sag, range: 0...80, format: "%.0f", suffix: "pt")
                 tuner("邻卡露出", value: $peek, range: 0...120, format: "%.0f", suffix: "pt")
+                Toggle("矮图自动吊绳", isOn: $hang)
             }
 
             Section {
                 Button("恢复默认值", role: .destructive) { reset() }
             } footer: {
-                Text("默认值：宽度 0.66 · 上提 48 · 中点距顶 64 · 下垂 24 · 露出 26")
+                Text("默认值：宽度 0.90 · 上提 48 · 中点距顶 26 · 下垂 15 · 露出 0")
             }
         }
         .navigationTitle("Debug 精调")
@@ -125,10 +127,11 @@ private extension DebugScreen {
     }
 
     func reset() {
-        paperScale = 0.66
+        paperScale = 0.90
         topShift = 48
-        cordTop = 64
-        sag = 24
-        peek = 26
+        cordTop = 26
+        sag = 15
+        peek = 0
+        hang = true
     }
 }
