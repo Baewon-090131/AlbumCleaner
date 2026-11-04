@@ -85,7 +85,6 @@ struct PolaroidDeck: View {
                         card(offset == 0 ? (ghost ?? photo) : photo,
                              direction: offset,
                              in: size)
-                            .id(photo.id)
                     }
                 }
                 if currentPhoto == nil {
@@ -144,6 +143,13 @@ private extension PolaroidDeck {
     func cordY(_ x: CGFloat, width: CGFloat) -> CGFloat {
         let t = min(max(x / max(width, 1), 0), 1)
         return cordTop - sag + 4 * sag * t * (1 - t)
+    }
+
+    /// 绳在 x 处的切线角：相纸绕木夹转这个角度就正好贴着绳弯。
+    func cordTilt(_ x: CGFloat, width: CGFloat) -> Double {
+        let t = min(max(x / max(width, 1), 0), 1)
+        let slope = 4 * sag * (1 - 2 * t) / max(width, 1)
+        return Double(atan(slope))
     }
 
     func cord(width: CGFloat) -> some View {
@@ -226,7 +232,8 @@ private extension PolaroidDeck {
                 }
                 .allowsHitTesting(false)
             }
-            .rotationEffect(.radians(isCurrent ? dragAngle : 0), anchor: .top)
+            // 相纸与木夹一起贴着绳子弯曲，而不是固定左右歪
+            .rotationEffect(.radians(cordTilt(centerX, width: size.width)), anchor: .top)
             .offset(x: centerX - metrics.paper.width / 2 + detailShift,
                     y: topY + (isGhost ? ghostLift : (isCurrent ? frontLift.height : 0)))
             .opacity(detailActive && isCurrent ? 0 : (isGhost ? ghostOpacity : 1))

@@ -1,11 +1,12 @@
 import Photos
 import SwiftUI
 
-/// 照片缩略图。加载完成前占位，避免卡片上闪一次空块。
+/// 照片缩略图。加载完成前用占位色，避免卡片上闪一次空块。
 /// `highQuality` 给整理页大卡用：按屏幕物理像素放大 1.5 倍请求，对齐原生相册的清晰度。
 ///
-/// **同步读缓存**是关键：图片在 body 求值时先查 NSCache，视图重建（换卡时前后卡互换）
-/// 能立刻拿到已有图片，不会经过 `.task` 的下一轮，因此不会闪一帧灰色占位。
+/// **不在视图里存 UIImage**：图片永远从 `ThumbnailLoader` 的缓存按 `asset` 同步取。
+/// 这样切张时视图可以安全复用（不需要 `.id` 强制重建），
+/// 既不会显示上一张的旧图被拉伸，也不会因为重建 16 次而顿一下。
 struct AsyncThumbnail: View {
     let asset: PHAsset
     var targetSize: CGSize
@@ -17,11 +18,13 @@ struct AsyncThumbnail: View {
     var placeholderColor: Color?
 
     @Environment(\.displayScale) private var displayScale
-    @State private var image: UIImage?
+    /// 后台补齐完成后让它自增，触发一次重读缓存。
+    @State private var reloadToken = 0
 
     private var displayed: UIImage? {
-        image ?? ThumbnailLoader.shared.cached(for: asset, targetSize: requestSize,
-                                               highQuality: highQuality)
+        _ = reloadToken
+        return ThumbnailLoader.shared.cached(for: asset, targetSize: requestSize,
+                                             highQuality: highQuality)
     }
 
     var body: some View {
@@ -39,11 +42,9 @@ struct AsyncThumbnail: View {
             }
         }
         .task(id: asset.localIdentifier) {
-            let upgraded = await ThumbnailLoader.shared.image(for: asset, targetSize: requestSize,
-                                                              highQuality: highQuality)
-            guard let upgraded, upgraded !== image else { return }
-            // 只在后台补齐时淡入替换，不做「先清空再加载」
-            withAnimation(.smooth(duration: 0.12)) { image = upgraded }
+            _ = await ThumbnailLoader.shared.image(for: asset, targetSize: requestSize,
+                                                   highQuality: highQuality)
+            reloadToken += 1
         }
     }
 
