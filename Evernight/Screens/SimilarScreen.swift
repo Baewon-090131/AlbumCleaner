@@ -57,6 +57,7 @@ struct SimilarScreen: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 24)
         }
+        .background { Theme.wall }
         .navigationTitle("相似")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) { TrayButton() }

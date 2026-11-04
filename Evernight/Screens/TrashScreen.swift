@@ -47,6 +47,7 @@ struct TrashScreen: View {
                 .padding(.bottom, 120)
             }
         }
+        .background { Theme.wall }
         .navigationTitle("待删除")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

@@ -137,6 +137,7 @@ struct SortScreen: View {
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 6)
+        .background { Theme.wall }
         .gesture(
             // 双指收拢进分列（最多 3 列），张开退回单卡；相簿详情不分列
             MagnifyGesture()

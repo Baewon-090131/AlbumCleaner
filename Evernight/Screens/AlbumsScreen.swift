@@ -65,6 +65,7 @@ struct AlbumsScreen: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 24)
         }
+        .background { Theme.wall }
         .navigationTitle("相簿")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
