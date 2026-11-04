@@ -9,7 +9,7 @@
 
 - **形态（v4.0 起）**：**纯 SwiftUI 原生应用**，没有 WebView、没有 React。相册数据直接来自 Photos framework。
 - **信息架构（v0.1 起）**：底栏是自定义的**四合一玻璃胶囊**（整理 / 相似 / 相簿 / 我的，四个按钮同在一行、同属一块 `glassEffect`），不再是系统 `TabView`；「我的」是胶囊里第 4 个按钮，点按后**从该按钮扩散到全屏**（`fullScreenCover` + iOS 18 的 `navigationTransition(.zoom)`），右上角 × 退出、退出即入场倒放。三个 tab 常驻只切显隐（`opacity` + `allowsHitTesting`），整理页游标与撤销栈、相似页扫描结果不因切换丢失。待删除是**系统 sheet**（`presentationDetents([.large])` + 系统抓握条），由全局 `UIState.showTrash` 触发。
-- **核心手势（v0.1.3 起）**：整理页**一次只挂一张**拍立得相纸（`PolaroidDeck`），吊在一条下垂的绳子上——绳子在卡片上方横过，木夹压在绳上并伸到相纸顶边。**左右拖动**相纸沿绳滑动并绕木夹摆动，松手过 90pt 切上一张 / 下一张（只改游标、不进撤销栈），旧卡飞出、新卡从反方向滑入；**上滑**把当前那张从绳上摘下送进「待删除」（`SandDissolve`：照片按 50×40 约 2000 粒拆开、每粒取原像素颜色向上飘散，相纸同时自下而上被 mask 擦掉，0.8s 后下一张用 `.smooth(0.3)` 从右侧补位）；**下滑**收藏；**双指收拢**进分列模式。**卡片上不放任何按钮**；撤回改为**顶栏按钮**。删除先进应用内「待删除」，待删除里的「彻底删除」才动系统相册。
+- **核心手势（v0.1.3 起）**：整理页只挂当前一张拍立得相纸（`PolaroidDeck`，左右各露 26pt 邻卡），吊在一条下垂的绳子上——绳子在卡片上方横过，木夹压在绳上并伸到相纸顶边。**左右拖动**相纸沿绳滑动并绕木夹摆动，松手过 90pt 切上一张 / 下一张（只改游标、不进撤销栈），旧卡飞出、新卡从反方向滑入；**上滑**把当前那张从绳上摘下送进「待删除」（`SandDissolve`：照片按 50×30 约 1500 粒拆开、每粒取原像素颜色向上飘散，相纸原地自下而上被 mask 擦掉，0.8s 后下一张用 `.smooth(0.3)` 从右侧补位）；**下滑**收藏；**双指收拢**进分列模式。**卡片上不放任何按钮**；撤回改为**顶栏按钮**。删除先进应用内「待删除」，待删除里的「彻底删除」才动系统相册。
 - **构建**：GitHub Actions 出 IPA（`.github/workflows/build.yml`），或本地 `xcodegen generate` + Xcode。**最低 iOS 17.0**（`@Observable`、`ContentUnavailableView` 等要求）。
 - **`Evernight/WebContent/` 是 v3 的网页实现，不参与构建**（`project.yml` 已移除引用），保留只作对照。
 
@@ -143,7 +143,7 @@ rg -n "^import UIKit" Evernight --glob "*.swift"                           # 只
 - 缩略图走 `ThumbnailLoader`（NSCache + `withCheckedContinuation` 包 `PHImageManager`，`degraded` 中间帧直接丢弃），视图侧是 `AsyncThumbnail` + `.task(id:)`。
 - 整理页**手势与数据共用一条动效通道**：手势在 `PolaroidDeck` 里跟手（垂直 90pt 摘下、下滑 40pt 收藏、水平只浏览），松手不自己改数据，只把结论交给外层；外层写 `SortScreen.command`（`DeckCommand`，带递增 token 以便 `.onChange` 认出同一种动作），`PolaroidDeck.onChange(of: command)` 播完动效后**在同一个 `withoutAnimation` 事务里**复位动效状态、置 `isPlaying = false`、回调 `onFinished`，`SortScreen` 这时才改 `index` / 压栈 / 写 Photos。**顺序与事务边界都不能换**，否则会看到相纸从屏外飞回来或闪回原处。相纸尺寸按 `PhotoItem.ratio` 算并夹在 0.32–3.2。
 - **`Transaction(disablesAnimations:)` 这个初始化器不存在**，复位动效状态一律走 `withoutAnimation`（`var transaction = Transaction(); transaction.disablesAnimations = true` + `withTransaction`）。
-- 卡片区**一次只渲染一张**（`PolaroidDeck`），整月照片不会全量挂上去。相纸宽窄由照片比例决定（竖图按原比例、更窄更高；横图进正方形窗口、照片 `aspectFit` 留白）。层级是**卡片在最下、绳子居中、木夹最上**（`zIndex` 0 / 1 / 2）：相纸顶边落在绳子下方 8pt，木夹从绳子上方 12pt 一直伸到相纸顶边，所以看着是「夹」在绳上；**别把木夹放回 `PolaroidCard` 内部**，那样它会被相纸盖住、绳子也会被不透明纸面挡住，就看不出挂着了。左右拖动只写 `dragOffset`（两端 150pt 橡皮筋），松手过 90pt 才切张：旧卡 0.22s 飞出，数据变更后再用 `.smooth(0.3)` 让新卡从反方向滑入。拖动时相纸绕木夹轻微摆动（角度按位移给，松手归零）。
+- 卡片区**只渲染当前一张 + 左右各一张邻卡**（`PolaroidDeck`），邻卡各在屏幕边缘露出 26pt，整月照片不会全量挂上去。相纸宽窄由照片比例决定（竖图按原比例、更窄更高；横图进正方形窗口、照片 `aspectFit` 留白）。层级是**卡片在最下、绳子居中、木夹最上**（`zIndex` 0 / 1 / 2）：相纸顶边落在绳子下方 8pt，木夹从绳子上方 12pt 一直伸到相纸顶边，所以看着是「夹」在绳上；**别把木夹放回 `PolaroidCard` 内部**，那样它会被相纸盖住、绳子也会被不透明纸面挡住，就看不出挂着了。左右拖动时当前卡严格跟手（两端 150pt 橡皮筋）、邻卡只跟 0.55，松手过 90pt 才切张：旧卡 0.22s 飞出，数据变更后再用 `.smooth(0.3)` 让新卡从反方向滑入。拖动时相纸绕木夹轻微摆动（角度按位移给，松手归零）。
 - **撤回是通用撤销栈，不是只撤删除**：`UndoRecord` 记「操作类型 + 照片 + 操作前游标」，限深 50、切月清空。语义：删除→`restore` 按创建日期插回原月份原位且游标回到删除前；收藏→`setFavorite(false)` 且游标不动；存入相簿→`library.remove(_:from:)` 且游标退回上一张。撤删除 / 撤存入时被撤那张作为 `ghost` 临时挂回绳上（从上方 -320 落下 + 渐显），播完再由数据变更接管；撤收藏只让当前相纸回弹。**左右拖动浏览不进撤销栈**（早先的 `.advance` 记录因此不再产生）。
 - 相簿详情复用 `SortScreen(album:)`：动作集只传 `[.undo, .delete, .next]`，顶栏左侧是返回 + 相簿名（导航栏已隐藏，`SortTopBar` 自绘）。
 - 主题色走 `@AppStorage("ac_theme")` + `Color(hex:)`，`MainTabView` 用 `.tint` 应用；`@AppStorage` 直接落 UserDefaults，不再有 localStorage。

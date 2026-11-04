@@ -18,7 +18,7 @@ struct SandBurst {
     let life: Double = 0.8
 }
 
-/// 碎沙画布：整张照片按 50 × 40（约 2000 粒）拆开，底部先动、向上飘、
+/// 碎沙画布：整张照片按 50 × 30（约 1500 粒）拆开，底部先动、向上飘、
 /// 边飘边缩小，最后 0.1s 左右淡出。
 struct SandCanvas: View {
     let burst: SandBurst
@@ -63,7 +63,7 @@ enum SandSampler {
               let cg = image.cgImage else { return nil }
 
         let cols = 50
-        let rows = 40
+        let rows = 30
         var buffer = [UInt8](repeating: 0, count: cols * rows * 4)
 
         buffer.withUnsafeMutableBytes { raw in
@@ -72,7 +72,8 @@ enum SandSampler {
                                       bitsPerComponent: 8,
                                       bytesPerRow: cols * 4,
                                       space: CGColorSpaceCreateDeviceRGB(),
-                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return }
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+                                          | CGBitmapInfo.byteOrder32Big.rawValue) else { return }
             // 翻转 y 轴，让 buffer 的第 0 行对应照片顶部
             ctx.translateBy(x: 0, y: CGFloat(rows))
             ctx.scaleBy(x: 1, y: -1)

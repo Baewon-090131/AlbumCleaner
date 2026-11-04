@@ -62,9 +62,16 @@ struct PolaroidDeck: View {
         GeometryReader { geometry in
             let size = geometry.size
             ZStack(alignment: .topLeading) {
+                // 左右各挂一张，只在屏幕边缘露出一点，显得绳子是连续的
+                if let previous = previousPhoto {
+                    card(previous, direction: -1, in: size)
+                }
+                if let next = nextPhoto {
+                    card(next, direction: 1, in: size)
+                }
                 if let photo = ghost ?? currentPhoto {
-                    card(photo, in: size)
-                } else {
+                    card(photo, direction: 0, in: size)
+                } else if previousPhoto == nil, nextPhoto == nil {
                     EmptyDeckView()
                         .frame(width: size.width, height: size.height)
                 }
@@ -92,8 +99,8 @@ struct PolaroidDeck: View {
                 return
             }
             guard old != new else { return }
-            // 外部改游标（撤回）：新卡从对应方向滑进来
-            enter(from: new > old ? -1 : 1)
+            // 外部改游标（撤回）：游标前进时新卡从右边进来，后退时从左边进来
+            enter(from: new > old ? 1 : -1)
         }
     }
 }
@@ -103,6 +110,14 @@ struct PolaroidDeck: View {
 private extension PolaroidDeck {
     var currentPhoto: PhotoItem? {
         photos.indices.contains(index) ? photos[index] : nil
+    }
+
+    var previousPhoto: PhotoItem? {
+        photos.indices.contains(index - 1) ? photos[index - 1] : nil
+    }
+
+    var nextPhoto: PhotoItem? {
+        photos.indices.contains(index + 1) ? photos[index + 1] : nil
     }
 
     /// 绳子上 x 处的挂点高度（二次曲线）。
@@ -122,43 +137,55 @@ private extension PolaroidDeck {
         .allowsHitTesting(false)
     }
 
+    /// 邻卡在屏幕边缘露出的宽度。
+    var peek: CGFloat { 26 }
+
     @ViewBuilder
     func peg(in size: CGSize) -> some View {
-        let centerX = size.width / 2 - dragOffset
+        let centerX = size.width / 2 + dragOffset
         PolaroidPeg()
             .offset(x: centerX - 5, y: cordY(centerX, width: size.width) - 12)
             .allowsHitTesting(false)
     }
 
+    /// - Parameter direction: 0 = 当前卡，-1 / 1 = 左右邻卡。
     @ViewBuilder
-    func card(_ photo: PhotoItem, in size: CGSize) -> some View {
+    func card(_ photo: PhotoItem, direction: CGFloat, in size: CGSize) -> some View {
         let metrics = PolaroidMetrics.make(for: photo, bounds: size)
-        let isGhost = ghost != nil
-        let centerX = size.width / 2 - dragOffset
+        let isCurrent = direction == 0
+        let isGhost = isCurrent && ghost != nil
+        let width = metrics.paper.width
+        // 邻卡的中心放在「让它在屏幕边缘露出 peek」的位置上
+        let baseX: CGFloat = isCurrent
+            ? size.width / 2
+            : size.width / 2 + direction * (size.width / 2 + width / 2 - peek)
+        // 当前卡严格跟手；邻卡只跟随一部分，保持绳子整体的滑动感
+        let centerX = baseX + dragOffset * (isCurrent ? 1 : 0.55)
         // 相纸顶边落在绳子下方，木夹跨在绳上、下半截压在纸上
         let topY = cordY(centerX, width: size.width) + cordGap
 
         PolaroidCard(photo: photo,
                      metrics: metrics,
-                     sizeLabel: isGhost ? "" : sizeLabel(photo),
-                     isFront: !isGhost,
-                     erase: eraseProgress,
-                     onOpenViewer: { onTap(photo) })
+                     sizeLabel: isCurrent && !isGhost ? sizeLabel(photo) : "",
+                     isFront: isCurrent && !isGhost,
+                     erase: isCurrent ? eraseProgress : 0,
+                     onOpenViewer: { if isCurrent { onTap(photo) } })
             .frame(width: metrics.paper.width, height: metrics.paper.height)
             .overlay(alignment: .topLeading) {
-                if let sand {
+                if isCurrent, let sand {
                     SandCanvas(burst: sand)
                         .frame(width: metrics.photo.width, height: metrics.photo.height)
                         .offset(x: metrics.pad, y: metrics.pad)
                 }
             }
-            .rotationEffect(.radians(dragAngle), anchor: .top)
+            .rotationEffect(.radians(isCurrent ? dragAngle : 0), anchor: .top)
             .offset(x: centerX - metrics.paper.width / 2,
-                    y: topY + (isGhost ? ghostLift : frontLift.height))
+                    y: topY + (isGhost ? ghostLift : (isCurrent ? frontLift.height : 0)))
             .opacity(isGhost ? ghostOpacity : 1)
-            .zIndex(0)
+            .saturation(isCurrent ? 1 : 0.85)
+            .zIndex(isCurrent ? 0 : -1)
             .contextMenu {
-                if !isGhost {
+                if isCurrent, !isGhost {
                     Button {
                         onAddToAlbum()
                     } label: {
@@ -182,7 +209,8 @@ private extension PolaroidDeck {
                     dragOffset = rubber(translation.width)
                     dragAngle = min(max(Double(translation.width) * 0.0006, -0.06), 0.06)
                 } else {
-                    frontLift = CGSize(width: 0, height: translation.height)
+                    // 只让下滑有一点跟手反馈；**上滑不要移动卡片**，松手后原地消散
+                    frontLift = CGSize(width: 0, height: max(0, translation.height) * 0.5)
                 }
             }
             .onEnded { value in
@@ -281,9 +309,14 @@ private extension PolaroidDeck {
         }
     }
 
-    /// 摘下：相纸按像素碎成约 2000 粒沙向上飘散，同时卡片从下往上被擦掉。
+    /// 摘下：相纸**原地**碎成约 1500 粒沙向上飘散，同时卡片从下往上被擦掉。
     func playTakeOff(_ move: SortMove) {
         isPlaying = true
+        withoutAnimation {
+            frontLift = .zero
+            dragOffset = 0
+            dragAngle = 0
+        }
         if let photo = currentPhoto, deckSize != .zero {
             let metrics = PolaroidMetrics.make(for: photo, bounds: deckSize)
             sand = SandSampler.burst(for: photo, targetSize: metrics.photo)
