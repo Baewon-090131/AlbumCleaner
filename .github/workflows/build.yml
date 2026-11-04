@@ -5,10 +5,6 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
-# 发 Release 资产需要写权限（artifact 下载会被再套一层 zip，Release 资产是原文件）
-permissions:
-  contents: write
-
 jobs:
   build:
     runs-on: macos-latest
@@ -93,20 +89,3 @@ jobs:
         name: AlbumCleaner-ipa
         path: AlbumCleaner.ipa
         retention-days: 30
-
-    # Actions artifact 下载永远是 zip；Release 资产才能直接下 .ipa。
-    # 固定用 latest 这个 tag 滚动覆盖，下载链接长期不变。
-    - name: Publish IPA to Release
-      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-      env:
-        GH_TOKEN: ${{ github.token }}
-      run: |
-        if gh release view latest >/dev/null 2>&1; then
-          gh release upload latest AlbumCleaner.ipa --clobber
-          gh release edit latest --notes "Build #${{ github.run_number }} · ${{ github.sha }}"
-        else
-          gh release create latest AlbumCleaner.ipa \
-            --title "Latest build" \
-            --prerelease \
-            --notes "Build #${{ github.run_number }} · ${{ github.sha }}"
-        fi
