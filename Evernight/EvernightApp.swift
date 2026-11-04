@@ -15,6 +15,11 @@ struct EvernightApp: App {
 final class UIState {
     var showTrash = false
     var showMine = false
+    /// 点开的照片详情。放在全局而不是某个页面里，
+    /// 这样它才能盖在底栏之上、并让底栏跟着背景一起模糊。
+    var detailPhoto: PhotoItem?
+    /// 点击时相纸在屏幕上的矩形，详情页以它的左上角为锚点放大。
+    var detailFrame: CGRect = .zero
 }
 
 /// 顶层：壁纸 + 权限门 + 主界面。数据源在这里创建，往下用 environment 传。

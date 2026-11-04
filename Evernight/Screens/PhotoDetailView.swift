@@ -22,11 +22,16 @@ struct PhotoDetailView: View {
     var body: some View {
         GeometryReader { geo in
             let screen = geo.size
-            let cardWidth = min(screen.width * 0.88, 460)
-            let cardHeight = min(cardWidth * 1.16, screen.height * 0.66)
-            let startScale = startFrame.width > 1 ? startFrame.width / cardWidth : 0.42
+            // 按相纸原始比例放大到刚好装进屏幕：不变形、也不裁切
+            let startW = max(startFrame.width, 80)
+            let startH = max(startFrame.height, 100)
+            let grow = max(min(screen.width * 0.96 / startW,
+                               (screen.height - 130) / startH), 1)
+            let cardWidth = startW * grow
+            let cardHeight = startH * grow
+            let startScale = startW / cardWidth
             let targetX = (screen.width - cardWidth) / 2
-            let targetY = max(48, (screen.height - cardHeight) / 2 - 34)
+            let targetY = max(40, (screen.height - cardHeight) / 2 - 24)
 
             ZStack(alignment: .topLeading) {
                 Color.black.opacity(appeared ? 0.30 : 0)

@@ -28,6 +28,8 @@ struct PolaroidDeck: View {
     let onFinished: (SortMove) -> Void
     let onTap: (PhotoItem, CGRect) -> Void
     let onAddToAlbum: () -> Void
+    /// 详情页打开：两侧卡片向外抽走，当前卡交给详情层接管（避免两层重复）。
+    var detailActive = false
 
     /// 水平偏移：负 = 卡片向左滑（看下一张）。
     @State private var dragOffset: CGFloat = 0
@@ -199,6 +201,12 @@ private extension PolaroidDeck {
         // 相纸顶边落在绳子下方，木夹跨在绳上、下半截压在纸上
         let topY = cardTopY(centerX: centerX, photo: photo, in: size)
 
+        // 详情打开时，两侧相纸向屏幕外抽走，中间的交给详情层（这里先隐去）
+        let detailShift: CGFloat = {
+            guard detailActive, !isCurrent else { return 0 }
+            return (direction > 0 ? 1 : -1) * size.width * 1.3
+        }()
+
         PolaroidCard(photo: photo,
                      metrics: metrics,
                      sizeLabel: isCurrent && !isGhost ? sizeLabel(photo) : "",
@@ -221,9 +229,10 @@ private extension PolaroidDeck {
                 }
             }
             .rotationEffect(.radians(isCurrent ? dragAngle : 0), anchor: .top)
-            .offset(x: centerX - metrics.paper.width / 2,
+            .offset(x: centerX - metrics.paper.width / 2 + detailShift,
                     y: topY + (isGhost ? ghostLift : (isCurrent ? frontLift.height : 0)))
-            .opacity(isGhost ? ghostOpacity : 1)
+            .opacity(detailActive && isCurrent ? 0 : (isGhost ? ghostOpacity : 1))
+            .animation(.smooth(duration: 0.32), value: detailActive)
             .zIndex(isCurrent ? 0 : -1)
             .contextMenu {
                 if isCurrent, !isGhost {

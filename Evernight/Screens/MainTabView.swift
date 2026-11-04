@@ -48,9 +48,20 @@ struct MainTabView: View {
                 .safeAreaInset(edge: .bottom) {
                     Color.clear.frame(height: Self.barReserve)
                 }
+                .blur(radius: ui.detailPhoto != nil ? 25 : 0)
 
             bottomBar
+                .blur(radius: ui.detailPhoto != nil ? 25 : 0)
+
+            // 详情放在这一层：能盖住底栏，底栏也会跟着背景一起模糊
+            if let photo = ui.detailPhoto {
+                PhotoDetailView(photo: photo, startFrame: ui.detailFrame) {
+                    ui.detailPhoto = nil
+                }
+                .zIndex(4)
+            }
         }
+        .animation(.smooth(duration: 0.3), value: ui.detailPhoto?.id)
         .tint(Color(hex: themeHex))
         .fullScreenCover(isPresented: $ui.showMine) { mineCover }
         .sheet(isPresented: $ui.showTrash) { trashSheet }

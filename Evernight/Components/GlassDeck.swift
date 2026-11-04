@@ -10,6 +10,8 @@ struct GlassDeck: View {
     let onFinished: (SortMove) -> Void
     let onTap: (PhotoItem, CGRect) -> Void
     let onAddToAlbum: () -> Void
+    /// 详情页打开时把卡片交给详情层，避免两层画面重复。
+    var detailActive = false
 
     @AppStorage("ac_dbg_paper") private var paperScale: Double = 0.90
 
@@ -32,7 +34,7 @@ struct GlassDeck: View {
                 if let photo = current {
                     card(photo, in: size)
                         .offset(offset)
-                        .opacity(fade)
+                        .opacity(detailActive ? 0 : fade)
                         .gesture(dragGesture)
                         .contextMenu {
                             Button {
