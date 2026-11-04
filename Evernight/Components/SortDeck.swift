@@ -343,9 +343,10 @@ private extension PolaroidDeck {
             )
             sand = SandSampler.burst(for: photo, targetSize: request)
         }
-        withAnimation(.smooth(duration: 0.78)) { eraseProgress = 1 }
+        // 相纸自下而上被擦掉，沙粒也按同一个方向逐段生成（底部先走）
+        withAnimation(.smooth(duration: 0.72)) { eraseProgress = 1 }
         Task {
-            try? await Task.sleep(for: .seconds(0.82))
+            try? await Task.sleep(for: .seconds(1.0))
             finish(move)
         }
     }

@@ -1,3 +1,4 @@
+import Photos
 import SwiftUI
 
 /// 一粒沙：归一化起始坐标 + 它原来那个像素的颜色。
@@ -15,7 +16,7 @@ struct SandGrain {
 struct SandBurst {
     let grains: [SandGrain]
     let start: Date
-    let life: Double = 0.8
+    let life: Double = 1.2
 }
 
 /// 碎沙画布：整张照片按 50 × 30（约 1500 粒）拆开，底部先动、向上飘、
@@ -32,15 +33,18 @@ struct SandCanvas: View {
                     let t = elapsed - grain.delay
                     guard t > 0 else { continue }
 
-                    let progress = t / burst.life
+                    // 每粒都有自己 0.75s 的寿命：晚开始的那些也能完整飘完
+                    let p = t / 0.75
+                    guard p < 1 else { continue }
+
                     let x = grain.nx * size.width
                         + grain.drift * CGFloat(t)
                         + CGFloat(sin(t * 22 + grain.phase)) * 5
                     let y = grain.ny * size.height - grain.rise * CGFloat(t)
                     guard y > -24 else { continue }
 
-                    let scale = 1 - CGFloat(progress) * 0.65
-                    let alpha = progress > 0.86 ? max(0, 1 - (progress - 0.86) / 0.14) : 1
+                    let scale = 1 - CGFloat(p) * 0.72
+                    let alpha = p > 0.78 ? max(0, 1 - (p - 0.78) / 0.22) : 1
                     guard alpha > 0 else { continue }
 
                     let side = size.width * 0.026 * scale
@@ -54,13 +58,16 @@ struct SandCanvas: View {
     }
 }
 
-/// 把缩略图缩到 50 × 40，逐像素取色，生成沙粒。
+/// 把缩略图缩到 50 × 30，逐像素取色，生成沙粒。
 enum SandSampler {
     static func burst(for photo: PhotoItem, targetSize: CGSize) -> SandBurst? {
-        guard let image = ThumbnailLoader.shared.cached(for: photo.asset,
-                                                        targetSize: targetSize,
-                                                        highQuality: true),
-              let cg = image.cgImage else { return nil }
+        // 先读卡片缓存；万一 miss（比如刚启动就删），当场同步拉一张小图兜底，
+        // 否则采不到颜色、一粒沙都出不来。
+        let image = ThumbnailLoader.shared.cached(for: photo.asset,
+                                                  targetSize: targetSize,
+                                                  highQuality: true)
+            ?? syncThumbnail(for: photo.asset)
+        guard let image, let cg = image.cgImage else { return nil }
 
         let cols = 50
         let rows = 30
@@ -98,10 +105,29 @@ enum SandSampler {
                     rise: CGFloat.random(in: 380...620),
                     drift: CGFloat.random(in: -70...70),
                     phase: Double.random(in: 0...(.pi * 2)),
-                    delay: Double(1 - ny) * 0.12 + Double.random(in: 0...0.04)
+                    delay: Double(1 - ny) * 0.42 + Double.random(in: 0...0.04)
                 ))
             }
         }
         return SandBurst(grains: grains, start: .now)
+    }
+
+    /// 缓存 miss 时的兜底：同步请求一张 96×96 的小图，只为拿到颜色分布。
+    /// `isSynchronous` 会阻塞主线程几十毫秒，但只在没有缓存时发生一次。
+    private static func syncThumbnail(for asset: PHAsset) -> UIImage? {
+        let options = PHImageRequestOptions()
+        options.isSynchronous = true
+        options.deliveryMode = .fastFormat
+        options.resizeMode = .fast
+        options.isNetworkAccessAllowed = false
+
+        var result: UIImage?
+        PHImageManager.default().requestImage(for: asset,
+                                              targetSize: CGSize(width: 96, height: 96),
+                                              contentMode: .aspectFill,
+                                              options: options) { image, _ in
+            result = image
+        }
+        return result
     }
 }
