@@ -13,14 +13,26 @@ struct PolaroidMetrics {
         CGSize(width: photo.width + pad * 2, height: photo.height + pad + noteHeight)
     }
 
-    /// 所有相纸共用**同一个外框规格**（4:3 横窗），照片一律 `aspectFit`。
-    /// 统一规格有两个好处：切张时相纸尺寸不变（不会跳、不会被拉伸），
-    /// 缓存 key 恒定（前后各两张预热必然命中）；扁图也不会再出现大片留白。
+    /// 相纸**按照片原始比例**长（竖图窄高、横图宽矮），只对极端比例做收口，
+    /// 保证相纸不会细成一条、也不会长成一门板。照片用 `aspectFit`，
+    /// 窗口与比例一致时没有留白；只有接近 16:9 这类更扁的图会留很窄的一条。
     static func make(for photo: PhotoItem, bounds: CGSize, paperScale: CGFloat = 0.56) -> PolaroidMetrics {
         let paperWidth = min(max(bounds.width * paperScale, 110), max(110, bounds.width - 24))
-        let photoWidth = paperWidth - 18
-        let photoHeight = min(photoWidth * 3 / 4, max(bounds.height * 0.52, 140))
-        return PolaroidMetrics(photo: CGSize(width: photoWidth, height: photoHeight))
+        let baseWidth = paperWidth - 18
+        let ratio = min(max(photo.ratio, 0.42), 2.2)
+        let maxHeight = max(bounds.height * 0.52, 150)
+        let minHeight = baseWidth * 0.6
+
+        var height = baseWidth / ratio
+        var width = baseWidth
+        if height > maxHeight {
+            height = maxHeight
+            width = height * ratio
+        }
+        if height < minHeight {
+            height = minHeight
+        }
+        return PolaroidMetrics(photo: CGSize(width: width, height: height))
     }
 }
 
