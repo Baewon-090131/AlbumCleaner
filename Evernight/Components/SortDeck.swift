@@ -186,7 +186,7 @@ private extension PolaroidDeck {
         PolaroidCard(photo: photo,
                      metrics: metrics,
                      sizeLabel: isCurrent && !isGhost ? sizeLabel(photo) : "",
-                     isFront: isCurrent && !isGhost,
+                     isFront: !isGhost,
                      erase: isCurrent ? eraseProgress : 0,
                      onOpenViewer: { if isCurrent { onTap(photo) } })
             .frame(width: metrics.paper.width, height: metrics.paper.height)
