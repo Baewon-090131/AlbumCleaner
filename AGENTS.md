@@ -9,7 +9,7 @@
 
 - **形态（v4.0 起）**：**纯 SwiftUI 原生应用**，没有 WebView、没有 React。相册数据直接来自 Photos framework。
 - **信息架构（v0.1 起）**：底栏是自定义的**四合一玻璃胶囊**（整理 / 相似 / 相簿 / 我的，四个按钮同在一行、同属一块 `glassEffect`），不再是系统 `TabView`；「我的」是胶囊里第 4 个按钮，点按后**从该按钮扩散到全屏**（`fullScreenCover` + iOS 18 的 `navigationTransition(.zoom)`），右上角 × 退出、退出即入场倒放。三个 tab 常驻只切显隐（`opacity` + `allowsHitTesting`），整理页游标与撤销栈、相似页扫描结果不因切换丢失。待删除是**系统 sheet**（`presentationDetents([.large])` + 系统抓握条），由全局 `UIState.showTrash` 触发。
-- **核心手势（v0.1.3 起）**：整理页只挂当前一张拍立得相纸（`PolaroidDeck`，左右各露 26pt 邻卡），吊在一条下垂的绳子上——绳子在卡片上方横过，木夹压在绳上并伸到相纸顶边。**左右拖动**相纸沿绳滑动并绕木夹摆动，松手过 90pt 立刻切上一张 / 下一张（三张卡 1:1 跟手，切张时用「相邻中心距」补偿位移，落点连续后再 `.smooth(0.3)` 归位；**浏览不播飞出动画**，只改游标、不进撤销栈）；**上滑**把当前那张从绳上摘下送进「待删除」（`SandDissolve`：照片按 50×30 约 1500 粒拆开、每粒取原像素颜色向上飘散，相纸原地自下而上被 mask 擦掉，0.8s 后下一张用 `.smooth(0.3)` 从右侧补位）；**下滑**收藏；**双指收拢**进分列模式。**卡片上不放任何按钮**；撤回改为**顶栏按钮**。删除先进应用内「待删除」，待删除里的「彻底删除」才动系统相册。
+- **核心手势（v0.1.3 起）**：整理页挂一条下垂的绳子，**前后各两张相纸都提前渲染**（±1 在屏幕边缘各露 26pt，±2 停在屏外只做图片/播放器预热，切过去不闪）——绳子在卡片上方横过，木夹压在绳上并伸到相纸顶边。**左右拖动**相纸沿绳滑动并绕木夹摆动，松手过 90pt 立刻切上一张 / 下一张（三张卡 1:1 跟手，切张时用「相邻中心距」补偿位移，落点连续后再 `.smooth(0.3)` 归位；**浏览不播飞出动画**，只改游标、不进撤销栈）；**上滑**把当前那张从绳上摘下送进「待删除」（`SandDissolve`：照片按 50×30 约 1500 粒拆开、每粒取原像素颜色向上飘散，相纸原地自下而上被 mask 擦掉，0.8s 后下一张用 `.smooth(0.3)` 从右侧补位）；**下滑**收藏；**双指收拢**进分列模式。**卡片上不放任何按钮**；撤回改为**顶栏按钮**。删除先进应用内「待删除」，待删除里的「彻底删除」才动系统相册。
 - **构建**：GitHub Actions 出 IPA（`.github/workflows/build.yml`），或本地 `xcodegen generate` + Xcode。**最低 iOS 17.0**（`@Observable`、`ContentUnavailableView` 等要求）。
 - **`Evernight/WebContent/` 是 v3 的网页实现，不参与构建**（`project.yml` 已移除引用），保留只作对照。
 
@@ -136,7 +136,7 @@ rg -n "^import UIKit" Evernight --glob "*.swift"                           # 只
 - **相似页**：`SimilarityService` 在 RootView 常驻（environment）。指纹 = 64×64 缩略图 → 9×8 灰度 → dHash；16 位分段分桶找候选对（桶 >60 跳过，防全白全黑误判风暴）；汉明 ≤ 7 并查集成组；组内最优按「像素数 + 文件MB」打分。指纹存 UserDefaults（`ac_similar_hash_v1`），增量扫描。视频不参与。删除一律进「待删除」，不直接动系统相册。
 - **待删除结算页**：默认全勾（`unchecked` 集合记取消项），红条「彻底删除 N 项 · 释放 xx MB」。`deleteFromSystem` 返回 Bool：**成功后才把未勾选项 `restore` 放回相册**（参照「卡待删」语义）；用户取消系统弹窗则一切保持原样。删除成功时落账 `totalCleaned` / `totalFreedBytes`（UserDefaults），给「我的」统计卡。
 - **`fileSizeCache` 必须 `@ObservationIgnored`**：`fileSize(of:)` 会在视图求值 body 时被调用（整理页给相纸算体积标签）。缓存是 `@Observable` 类的普通存储属性时，写缓存会触发 `ObservationRegistrar.willSet`，在 SwiftUI 更新事务里改状态 → `AG::Graph::value_set` 断言失败 → `abort()`（SIGABRT）。真机上表现为「上滑删除必闪退」，crash log 里能看到 `PhotoLibraryService.fileSize(of:)` 与 `PolaroidDeck.card` 在同一栈里。
-- **Debug 模式（布局调参）**：`MineScreen` →「开发者」→ `DebugScreen`。五个滑钮直接写 `UserDefaults`（`ac_dbg_paper` / `ac_dbg_shift` / `ac_dbg_cord` / `ac_dbg_sag` / `ac_dbg_peek`），`PolaroidDeck` 用同名 `@AppStorage` 读，所以滑钮一动整理页立刻重绘。面板里有一张缩小的示意稿（绳 + 主相纸 + 两片露边邻卡），用于不离开面板时粗调。**新增可调参数时，key、默认值、`reset()` 三处要一起加**，默认值必须等于「没调过参数时的样子」。
+- **Debug 模式（布局调参）**：`MineScreen` →「开发者」下有两个入口。**Debug 粗调**（`CoarseDebugScreen`）是一块可以上手拖的示意稿：上下拖改绳子中点高度、左右拖改邻卡露出、双指捏合改相纸宽度；**Debug 精调**（`DebugScreen`）是五个滑钮加数值。两者共用同一组 `UserDefaults` key（`ac_dbg_paper` / `ac_dbg_shift` / `ac_dbg_cord` / `ac_dbg_sag` / `ac_dbg_peek`），`PolaroidDeck` 用同名 `@AppStorage` 读，所以滑钮一动整理页立刻重绘。**`ac_dbg_cord` 的语义是「绳子中点距进度条（卡片区顶部）的垂直距离」**，默认 64；`cordY` 两端 = 中点 − 下垂。**新增可调参数时，key、默认值、两处 `reset()` 三处要一起加**。
 - **相簿管理**：`AlbumItem.isUserAlbum` 区分自建 / 智能相簿（智能相簿不能重命名删除）。`createAlbum` / `renameAlbum` / `deleteAlbums` / `deleteAlbumWithPhotos` / `moveAllPhotos` 都是 async→Bool，成功后 `reloadAlbums()`。空相簿横幅只统计自建相簿。
 
 **v4.0 SwiftUI 机制**：

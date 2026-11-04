@@ -106,9 +106,14 @@ struct MineScreen: View {
 
             Section("开发者") {
                 NavigationLink {
+                    CoarseDebugScreen()
+                } label: {
+                    Label("Debug 粗调", systemImage: "hand.draw")
+                }
+                NavigationLink {
                     DebugScreen()
                 } label: {
-                    Label("Debug 模式", systemImage: "slider.horizontal.3")
+                    Label("Debug 精调", systemImage: "slider.horizontal.3")
                 }
             }
 

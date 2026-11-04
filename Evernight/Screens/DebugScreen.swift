@@ -6,7 +6,7 @@ import SwiftUI
 struct DebugScreen: View {
     @AppStorage("ac_dbg_paper") private var paperScale = 0.56
     @AppStorage("ac_dbg_shift") private var topShift = 48.0
-    @AppStorage("ac_dbg_cord") private var cordTop = 40.0
+    @AppStorage("ac_dbg_cord") private var cordTop = 64.0
     @AppStorage("ac_dbg_sag") private var sag = 24.0
     @AppStorage("ac_dbg_peek") private var peek = 26.0
 
@@ -28,7 +28,7 @@ struct DebugScreen: View {
             }
 
             Section("绳子") {
-                tuner("绳子距顶", value: $cordTop, range: -260...140, format: "%.0f", suffix: "pt")
+                tuner("绳子中点距顶", value: $cordTop, range: -80...300, format: "%.0f", suffix: "pt")
                 tuner("绳子下垂", value: $sag, range: 0...80, format: "%.0f", suffix: "pt")
                 tuner("邻卡露出", value: $peek, range: 0...120, format: "%.0f", suffix: "pt")
             }
@@ -36,10 +36,10 @@ struct DebugScreen: View {
             Section {
                 Button("恢复默认值", role: .destructive) { reset() }
             } footer: {
-                Text("默认值：宽度 0.56 · 上提 48 · 距顶 40 · 下垂 24 · 露出 26")
+                Text("默认值：宽度 0.56 · 上提 48 · 中点距顶 64 · 下垂 24 · 露出 26")
             }
         }
-        .navigationTitle("Debug 模式")
+        .navigationTitle("Debug 精调")
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -53,13 +53,13 @@ private extension DebugScreen {
             let h = geo.size.height
             let scale = CGFloat(paperScale)
             let shift = CGFloat(topShift)
-            let cordY = min(max(CGFloat(cordTop) * 0.85, 6), h * 0.55)
-            let sagPx = min(CGFloat(sag) * 1.1, h * 0.26)
+            let midY = min(max(CGFloat(cordTop) * 0.5, -30), h * 0.7)
+            let sagPx = min(CGFloat(sag) * 0.6, h * 0.2)
             let peekPx = CGFloat(peek)
             let paperW = min(max(w * scale, 44), w - 10)
-            let paperH = min(max(paperW * 1.28, 44), max(h - cordY - sagPx - 14, 40))
-            let paperY = cordY + sagPx + 6 - shift * 0.32
-            let sideY = cordY + 6
+            let paperH = min(max(paperW * 1.28, 44), max(h - midY - sagPx - 14, 40))
+            let paperY = midY + 6 - shift * 0.32
+            let sideY = max(4, midY - sagPx + 4)
 
             ZStack(alignment: .topLeading) {
                 paper(width: paperW, height: paperH)
@@ -69,9 +69,9 @@ private extension DebugScreen {
                     .offset(x: peekPx - paperW, y: sideY)
 
                 Path { path in
-                    path.move(to: CGPoint(x: 0, y: cordY))
-                    path.addQuadCurve(to: CGPoint(x: w, y: cordY),
-                                      control: CGPoint(x: w / 2, y: cordY + sagPx * 2))
+                    path.move(to: CGPoint(x: 0, y: midY - sagPx))
+                    path.addQuadCurve(to: CGPoint(x: w, y: midY - sagPx),
+                                      control: CGPoint(x: w / 2, y: midY + sagPx))
                 }
                 .stroke(Theme.ink3, lineWidth: 1.2)
 
@@ -127,7 +127,7 @@ private extension DebugScreen {
     func reset() {
         paperScale = 0.56
         topShift = 48
-        cordTop = 40
+        cordTop = 64
         sag = 24
         peek = 26
     }

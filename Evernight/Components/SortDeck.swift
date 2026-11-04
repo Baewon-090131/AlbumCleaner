@@ -52,7 +52,7 @@ struct PolaroidDeck: View {
     /// 整理页与调试面板读写同一组 key，滑钮一动卡片区立刻重绘。
     @AppStorage("ac_dbg_paper") private var paperScale: Double = 0.56
     @AppStorage("ac_dbg_shift") private var topShift: Double = 48
-    @AppStorage("ac_dbg_cord") private var cordTopValue: Double = 40
+    @AppStorage("ac_dbg_cord") private var cordTopValue: Double = 64
     @AppStorage("ac_dbg_sag") private var sagValue: Double = 24
     @AppStorage("ac_dbg_peek") private var peekValue: Double = 26
 
@@ -70,16 +70,17 @@ struct PolaroidDeck: View {
         GeometryReader { geometry in
             let size = geometry.size
             ZStack(alignment: .topLeading) {
-                // 左右各挂一张，只在屏幕边缘露出一点，显得绳子是连续的
-                if let previous = previousPhoto {
-                    card(previous, direction: -1, in: size)
+                // 前后各两张全部提前渲染：相邻两张可见（各露 peek），
+                // 再往外两张停在屏外，只为把图片和播放器先加载好，
+                // 切过去时不会再闪一帧。
+                ForEach(-2...2, id: \.self) { offset in
+                    if let photo = photo(at: offset) {
+                        card(offset == 0 ? (ghost ?? photo) : photo,
+                             direction: offset,
+                             in: size)
+                    }
                 }
-                if let next = nextPhoto {
-                    card(next, direction: 1, in: size)
-                }
-                if let photo = ghost ?? currentPhoto {
-                    card(photo, direction: 0, in: size)
-                } else if previousPhoto == nil, nextPhoto == nil {
+                if currentPhoto == nil {
                     EmptyDeckView()
                         .frame(width: size.width, height: size.height)
                 }
@@ -122,28 +123,26 @@ private extension PolaroidDeck {
         photos.indices.contains(index) ? photos[index] : nil
     }
 
-    var previousPhoto: PhotoItem? {
-        photos.indices.contains(index - 1) ? photos[index - 1] : nil
+    /// 相对当前游标偏移 offset 张的那张照片；越界返回 nil。
+    func photo(at offset: Int) -> PhotoItem? {
+        let i = index + offset
+        return photos.indices.contains(i) ? photos[i] : nil
     }
 
-    var nextPhoto: PhotoItem? {
-        photos.indices.contains(index + 1) ? photos[index + 1] : nil
-    }
-
-    /// 绳子上 x 处的挂点高度（二次曲线）。
+    /// 绳子上 x 处的挂点高度（二次曲线）。`cordTop` 是**中点**距卡片区顶部的距离。
     func cordY(_ x: CGFloat, width: CGFloat) -> CGFloat {
         let t = min(max(x / max(width, 1), 0), 1)
-        return cordTop + 4 * sag * t * (1 - t)
+        return cordTop - sag + 4 * sag * t * (1 - t)
     }
 
     func cord(width: CGFloat) -> some View {
         Path { path in
-            path.move(to: CGPoint(x: 0, y: cordTop))
-            path.addQuadCurve(to: CGPoint(x: width, y: cordTop),
-                              control: CGPoint(x: width / 2, y: cordTop + sag * 2))
+            path.move(to: CGPoint(x: 0, y: cordTop - sag))
+            path.addQuadCurve(to: CGPoint(x: width, y: cordTop - sag),
+                              control: CGPoint(x: width / 2, y: cordTop + sag))
         }
         .stroke(Theme.ink3, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
-        .frame(width: width, height: max(0, cordTop + sag * 2 + 4))
+        .frame(width: width, height: max(0, cordTop + 4))
         .allowsHitTesting(false)
     }
 
@@ -158,17 +157,22 @@ private extension PolaroidDeck {
             .allowsHitTesting(false)
     }
 
-    /// - Parameter direction: 0 = 当前卡，-1 / 1 = 左右邻卡。
+    /// - Parameter direction: 0 = 当前卡，±1 = 左右邻卡（露出 peek），±2 = 屏外预热。
     @ViewBuilder
-    func card(_ photo: PhotoItem, direction: CGFloat, in size: CGSize) -> some View {
+    func card(_ photo: PhotoItem, direction: Int, in size: CGSize) -> some View {
         let metrics = PolaroidMetrics.make(for: photo, bounds: size, paperScale: CGFloat(paperScale))
         let isCurrent = direction == 0
         let isGhost = isCurrent && ghost != nil
         let width = metrics.paper.width
-        // 邻卡的中心放在「让它在屏幕边缘露出 peek」的位置上
-        let baseX: CGFloat = isCurrent
-            ? size.width / 2
-            : size.width / 2 + direction * (size.width / 2 + width / 2 - peek)
+        // 邻卡的中心放在「让它在屏幕边缘露出 peek」的位置上；再往外两张直接推到屏外
+        let baseX: CGFloat = {
+            guard !isCurrent else { return size.width / 2 }
+            let sign: CGFloat = direction > 0 ? 1 : -1
+            let distance: CGFloat = abs(direction) == 1
+                ? size.width / 2 + width / 2 - peek
+                : size.width + 80 + CGFloat(abs(direction) - 2) * 60
+            return size.width / 2 + sign * distance
+        }()
         // 三张都 1:1 跟手，整组沿绳一起滑动；切张时靠位移补偿保证落点连续
         let centerX = baseX + dragOffset
         // 相纸顶边落在绳子下方，木夹跨在绳上、下半截压在纸上
