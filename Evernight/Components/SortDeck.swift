@@ -84,6 +84,8 @@ struct PolaroidDeck: View {
                     .zIndex(2)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // 整组（绳子 + 木夹 + 相纸）一起上提，抵消上方多出来的留白
+            .offset(y: -48)
             .contentShape(Rectangle())
             .gesture(dragGesture)
             .onAppear { deckSize = size }
