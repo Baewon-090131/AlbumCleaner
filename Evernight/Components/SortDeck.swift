@@ -271,7 +271,7 @@ private extension PolaroidDeck {
         var i = 0
         while i != offset {
             let next = i + step
-            x += step * (paperWidth(at: i, in: size) / 2
+            x += CGFloat(step) * (paperWidth(at: i, in: size) / 2
                 + paperWidth(at: next, in: size) / 2
                 - peek)
             i = next
