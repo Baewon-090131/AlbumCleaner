@@ -20,7 +20,10 @@ final class PhotoLibraryService {
     private(set) var totalCleaned: Int
     private(set) var totalFreedBytes: Int64
 
-    private var fileSizeCache: [String: Int64] = [:]
+    /// 体积缓存**不参与观察**：`fileSize(of:)` 会在视图求值 body 时被调用，
+    /// 若这里写缓存触发了 observation，就会在 SwiftUI 更新事务里改状态，
+    /// 直接撞 AttributeGraph 的断言并 abort（真机上表现为「删一下就闪退」）。
+    @ObservationIgnored private var fileSizeCache: [String: Int64] = [:]
 
     init() {
         totalCleaned = UserDefaults.standard.integer(forKey: "ac_totalCleaned")

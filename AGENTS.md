@@ -135,6 +135,7 @@ rg -n "^import UIKit" Evernight --glob "*.swift"                           # 只
 - **分列删除**：`SortScreen.columnCount`（1/2/3），`MagnifyGesture().onEnded` 收拢 <0.82 加列、张开 >1.22 减列（相簿详情不支持分列——它的删除不走月份游标）。瀑布流在 `ColumnsGrid`：最短列优先分配；单元格用 `simultaneousGesture` 做横向滑删（|dx| > |dy|×1.2 才接管，70pt 过阈值，飞出 0.22s 后才调 `onMarkDelete`，与卡片区「先动效后数据」一致）。分列时右侧竖排钮隐藏，撤回在顶栏。
 - **相似页**：`SimilarityService` 在 RootView 常驻（environment）。指纹 = 64×64 缩略图 → 9×8 灰度 → dHash；16 位分段分桶找候选对（桶 >60 跳过，防全白全黑误判风暴）；汉明 ≤ 7 并查集成组；组内最优按「像素数 + 文件MB」打分。指纹存 UserDefaults（`ac_similar_hash_v1`），增量扫描。视频不参与。删除一律进「待删除」，不直接动系统相册。
 - **待删除结算页**：默认全勾（`unchecked` 集合记取消项），红条「彻底删除 N 项 · 释放 xx MB」。`deleteFromSystem` 返回 Bool：**成功后才把未勾选项 `restore` 放回相册**（参照「卡待删」语义）；用户取消系统弹窗则一切保持原样。删除成功时落账 `totalCleaned` / `totalFreedBytes`（UserDefaults），给「我的」统计卡。
+- **`fileSizeCache` 必须 `@ObservationIgnored`**：`fileSize(of:)` 会在视图求值 body 时被调用（整理页给相纸算体积标签）。缓存是 `@Observable` 类的普通存储属性时，写缓存会触发 `ObservationRegistrar.willSet`，在 SwiftUI 更新事务里改状态 → `AG::Graph::value_set` 断言失败 → `abort()`（SIGABRT）。真机上表现为「上滑删除必闪退」，crash log 里能看到 `PhotoLibraryService.fileSize(of:)` 与 `PolaroidDeck.card` 在同一栈里。
 - **相簿管理**：`AlbumItem.isUserAlbum` 区分自建 / 智能相簿（智能相簿不能重命名删除）。`createAlbum` / `renameAlbum` / `deleteAlbums` / `deleteAlbumWithPhotos` / `moveAllPhotos` 都是 async→Bool，成功后 `reloadAlbums()`。空相簿横幅只统计自建相簿。
 
 **v4.0 SwiftUI 机制**：
