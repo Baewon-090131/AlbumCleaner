@@ -13,9 +13,9 @@ struct PolaroidMetrics {
         CGSize(width: photo.width + pad * 2, height: photo.height + pad + noteHeight)
     }
 
-    static func make(for photo: PhotoItem, bounds: CGSize) -> PolaroidMetrics {
+    static func make(for photo: PhotoItem, bounds: CGSize, paperScale: CGFloat = 0.56) -> PolaroidMetrics {
         // 一次只挂一张，相纸可以占得比多张时更大
-        let paperWidth = min(max(bounds.width * 0.56, 132), 200)
+        let paperWidth = min(max(bounds.width * paperScale, 110), max(110, bounds.width - 24))
         let photoWidth = paperWidth - 18
         let ratio = min(max(photo.ratio, 0.32), 3.2)
         let maxPhotoHeight = max(bounds.height * 0.56, 150)

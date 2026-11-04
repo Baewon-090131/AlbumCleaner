@@ -104,6 +104,14 @@ struct MineScreen: View {
                 Button("清理缓存") { showCacheCleared = true }
             }
 
+            Section("开发者") {
+                NavigationLink {
+                    DebugScreen()
+                } label: {
+                    Label("Debug 模式", systemImage: "slider.horizontal.3")
+                }
+            }
+
             Section {
                 VStack(spacing: 8) {
                     Link("用户协议 · 隐私政策", destination: URL(string: "https://example.com")!)

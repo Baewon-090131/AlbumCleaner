@@ -48,10 +48,18 @@ struct PolaroidDeck: View {
     /// 自己写 `index` 时记下目标值，避免把切卡当成外部撤回再播一次入场。
     @State private var lastSelfIndex: Int?
 
+    /// 以下五项是「我的 → Debug 模式」里可调的布局参数，直接落 UserDefaults，
+    /// 整理页与调试面板读写同一组 key，滑钮一动卡片区立刻重绘。
+    @AppStorage("ac_dbg_paper") private var paperScale: Double = 0.56
+    @AppStorage("ac_dbg_shift") private var topShift: Double = 48
+    @AppStorage("ac_dbg_cord") private var cordTopValue: Double = 40
+    @AppStorage("ac_dbg_sag") private var sagValue: Double = 24
+    @AppStorage("ac_dbg_peek") private var peekValue: Double = 26
+
     /// 绳子的挂高（从卡片区顶部算）。
-    private let cordTop: CGFloat = 40
+    var cordTop: CGFloat { CGFloat(cordTopValue) }
     /// 绳子中点的下垂量。
-    private let sag: CGFloat = 24
+    var sag: CGFloat { CGFloat(sagValue) }
     /// 相纸顶边留出绳子 + 木夹的高度。
     private let cordGap: CGFloat = 8
     private let deleteThreshold: CGFloat = 90
@@ -85,7 +93,7 @@ struct PolaroidDeck: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             // 整组（绳子 + 木夹 + 相纸）一起上提，抵消上方多出来的留白
-            .offset(y: -48)
+            .offset(y: -CGFloat(topShift))
             .contentShape(Rectangle())
             .gesture(dragGesture)
             .onAppear { deckSize = size }
@@ -140,7 +148,7 @@ private extension PolaroidDeck {
     }
 
     /// 邻卡在屏幕边缘露出的宽度。
-    var peek: CGFloat { 26 }
+    var peek: CGFloat { CGFloat(peekValue) }
 
     @ViewBuilder
     func peg(in size: CGSize) -> some View {
@@ -153,7 +161,7 @@ private extension PolaroidDeck {
     /// - Parameter direction: 0 = 当前卡，-1 / 1 = 左右邻卡。
     @ViewBuilder
     func card(_ photo: PhotoItem, direction: CGFloat, in size: CGSize) -> some View {
-        let metrics = PolaroidMetrics.make(for: photo, bounds: size)
+        let metrics = PolaroidMetrics.make(for: photo, bounds: size, paperScale: CGFloat(paperScale))
         let isCurrent = direction == 0
         let isGhost = isCurrent && ghost != nil
         let width = metrics.paper.width
@@ -161,8 +169,8 @@ private extension PolaroidDeck {
         let baseX: CGFloat = isCurrent
             ? size.width / 2
             : size.width / 2 + direction * (size.width / 2 + width / 2 - peek)
-        // 当前卡严格跟手；邻卡只跟随一部分，保持绳子整体的滑动感
-        let centerX = baseX + dragOffset * (isCurrent ? 1 : 0.55)
+        // 三张都 1:1 跟手，整组沿绳一起滑动；切张时靠位移补偿保证落点连续
+        let centerX = baseX + dragOffset
         // 相纸顶边落在绳子下方，木夹跨在绳上、下半截压在纸上
         let topY = cordY(centerX, width: size.width) + cordGap
 
@@ -221,9 +229,9 @@ private extension PolaroidDeck {
 
                 if abs(translation.width) > abs(translation.height) {
                     if translation.width < -swapThreshold {
-                        swap(forward: true)
+                        commitSwipe(forward: true)
                     } else if translation.width > swapThreshold {
-                        swap(forward: false)
+                        commitSwipe(forward: false)
                     } else {
                         springBack()
                     }
@@ -248,33 +256,29 @@ private extension PolaroidDeck {
         return value
     }
 
-    /// 切张：旧卡沿拖动方向飞出，落定后新卡从反方向滑入。全程只有一张朝上。
-    func swap(forward: Bool) {
-        let target = forward ? index + 1 : index - 1
-        guard photos.indices.contains(target) else { return springBack() }
+    /// 相邻两张的中心距：正好等于邻卡贴边停在 `peek` 处时的距离。
+    func neighborSpacing() -> CGFloat {
+        guard let photo = currentPhoto else { return deckSize.width }
+        let width = PolaroidMetrics.make(for: photo, bounds: deckSize, paperScale: CGFloat(paperScale)).paper.width
+        return deckSize.width / 2 + width / 2 - peek
+    }
 
-        isPlaying = true
-        let direction: CGFloat = forward ? -1 : 1
-        withAnimation(.snappy(duration: 0.22)) {
-            dragOffset = direction * 460
-            dragAngle = Double(direction) * 0.08
-        }
+    /// 跟手切张：游标立刻改掉，同时把整组位移补偿一个「相邻中心距」，
+    /// 这样切完那一帧的落点与切前一帧完全连续；随后再用 `.smooth(0.3)` 平滑归位。
+    /// 浏览是纯跟手的，不播飞出动画——只有删除 / 存入相簿才走 `playTakeOff`。
+    func commitSwipe(forward: Bool) {
+        let next = forward ? index + 1 : index - 1
+        guard photos.indices.contains(next) else { return springBack() }
 
-        Task {
-            try? await Task.sleep(for: .seconds(0.22))
-            lastSelfIndex = target
-            withoutAnimation {
-                index = target
-                dragOffset = -direction * 170
-                dragAngle = 0
-                frontLift = .zero
-            }
-            // 隔一帧再归零，否则入场起点会被合并在同一帧、看不到滑入
-            try? await Task.sleep(for: .milliseconds(16))
-            withAnimation(.smooth(duration: 0.3)) { dragOffset = 0 }
-            try? await Task.sleep(for: .seconds(0.3))
-            isPlaying = false
+        let spacing = neighborSpacing()
+        withoutAnimation {
+            lastSelfIndex = next
+            index = next
+            dragOffset += forward ? spacing : -spacing
+            dragAngle = 0
+            frontLift = .zero
         }
+        withAnimation(.smooth(duration: 0.3)) { dragOffset = 0 }
     }
 
     /// 外部改游标时让新卡从指定方向滑进来。
@@ -320,7 +324,7 @@ private extension PolaroidDeck {
             dragAngle = 0
         }
         if let photo = currentPhoto, deckSize != .zero {
-            let metrics = PolaroidMetrics.make(for: photo, bounds: deckSize)
+            let metrics = PolaroidMetrics.make(for: photo, bounds: deckSize, paperScale: CGFloat(paperScale))
             sand = SandSampler.burst(for: photo, targetSize: metrics.photo)
         }
         withAnimation(.smooth(duration: 0.78)) { eraseProgress = 1 }
