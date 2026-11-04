@@ -52,7 +52,9 @@ struct SortScreen: View {
     }
 
     var body: some View {
-        VStack(spacing: 10) {
+        // 用 ZStack 而不是 VStack：卡片区要能画到进度条上面去，
+        // 否则绳子被往上调时会先被进度条盖住、再被裁掉。
+        ZStack(alignment: .top) {
             ProgressHeader(
                 processed: index,
                 total: photos.count,
@@ -72,12 +74,15 @@ struct SortScreen: View {
                     onTap: { viewerPhoto = $0 },
                     onAddToAlbum: { showAlbumPicker = true }
                 )
+                .padding(.top, 28)
+                .zIndex(1)
             } else {
                 ColumnsGrid(
                     photos: photos,
                     columns: columnCount,
                     onMarkDelete: markDeleteInColumns
                 )
+                .padding(.top, 28)
             }
         }
         .padding(.horizontal, 16)

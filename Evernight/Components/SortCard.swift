@@ -13,23 +13,14 @@ struct PolaroidMetrics {
         CGSize(width: photo.width + pad * 2, height: photo.height + pad + noteHeight)
     }
 
+    /// 所有相纸用**同一个窗口尺寸**（3:4），照片一律 `aspectFit`。
+    /// 这是切张不卡、不拉伸的前提：尺寸恒定 → 缓存 key 恒定 → 预热命中，
+    /// 也不会出现「旧图按新尺寸被拉一下」的那一帧。
     static func make(for photo: PhotoItem, bounds: CGSize, paperScale: CGFloat = 0.56) -> PolaroidMetrics {
-        // 一次只挂一张，相纸可以占得比多张时更大
         let paperWidth = min(max(bounds.width * paperScale, 110), max(110, bounds.width - 24))
         let photoWidth = paperWidth - 18
-        let ratio = min(max(photo.ratio, 0.32), 3.2)
-        let maxPhotoHeight = max(bounds.height * 0.56, 150)
-
-        guard ratio < 1 else {
-            return PolaroidMetrics(photo: CGSize(width: photoWidth, height: photoWidth))
-        }
-        var height = photoWidth / ratio
-        var width = photoWidth
-        if height > maxPhotoHeight {
-            height = maxPhotoHeight
-            width = height * ratio
-        }
-        return PolaroidMetrics(photo: CGSize(width: width, height: height))
+        let photoHeight = min(photoWidth * 4 / 3, max(bounds.height * 0.62, 160))
+        return PolaroidMetrics(photo: CGSize(width: photoWidth, height: photoHeight))
     }
 }
 
@@ -88,18 +79,14 @@ struct PolaroidCard: View {
         } else if photo.isLivePhoto {
             LivePhotoCardContent(asset: photo.asset, cardSize: metrics.photo, isActive: isFront)
         } else {
-            // 方形窗口里的横图必须 fit，否则会被裁掉两侧、破坏原始比例
+            // 窗口尺寸恒定，所有照片都 fit 进来，不裁切也不拉伸
             AsyncThumbnail(asset: photo.asset, targetSize: metrics.photo,
-                           contentMode: isSquare ? .fit : .fill,
+                           contentMode: .fit,
                            highQuality: true,
                            placeholderColor: Theme.card)
                 .background(Theme.card)
                 .onTapGesture { onOpenViewer() }
         }
-    }
-
-    private var isSquare: Bool {
-        abs(metrics.photo.width - metrics.photo.height) < 0.5
     }
 
     /// note 区：左边拍摄日期（衬线斜体），右边体积（等宽小字）。

@@ -11,8 +11,7 @@ struct ConfettiBurst: View {
 
     @State private var particles = ConfettiParticle.make(count: 100)
 
-    private let drag: CGFloat = 1.3      // 空气阻力系数
-    private let gravity: CGFloat = 420   // 重力（pt/s²）
+    private let drag: CGFloat = 1.3      // 水平方向的空气阻力系数
     private let duration: Double = 3.3
 
     var body: some View {
@@ -31,9 +30,20 @@ struct ConfettiBurst: View {
                     let x = origin.x
                         + particle.vx / drag * (1 - damp)
                         + CGFloat(sin(t * 2.2 + particle.phase)) * 14 * min(tc, 1.2)
-                    let y = origin.y
-                        + (particle.vy / drag + gravity / (drag * drag)) * (1 - damp)
-                        - gravity / drag * tc
+
+                    // 0.26s 快速冲上去，之后在空气阻力下缓慢回落。
+                    // 纯抛物线在 2.5s 内会飞出屏幕，所以下落段用「低终端速度」近似。
+                    let rise = -particle.vy * 0.5
+                    let peakT: CGFloat = 0.26
+                    let yOffset: CGFloat
+                    if tc < peakT {
+                        let p = tc / peakT
+                        yOffset = -rise * (1 - pow(1 - p, 2))
+                    } else {
+                        let u = min(tc - peakT, 2.2)
+                        yOffset = -rise + 0.5 * 130 * u * u
+                    }
+                    let y = origin.y + yOffset
 
                     let alpha = fade(t: t, start: particle.fadeStart)
                     guard alpha > 0 else { continue }
