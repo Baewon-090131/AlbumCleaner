@@ -14,7 +14,8 @@ struct PolaroidMetrics {
     }
 
     static func make(for photo: PhotoItem, bounds: CGSize) -> PolaroidMetrics {
-        let paperWidth = min(max(bounds.width * 0.46, 132), 186)
+        // 一次只挂一张，相纸可以占得比多张时更大
+        let paperWidth = min(max(bounds.width * 0.56, 132), 200)
         let photoWidth = paperWidth - 18
         let ratio = min(max(photo.ratio, 0.32), 3.2)
         let maxPhotoHeight = max(bounds.height * 0.56, 150)
@@ -57,7 +58,6 @@ struct PolaroidCard: View {
         .padding(.horizontal, metrics.pad)
         .padding(.top, metrics.pad)
         .background(Theme.card)
-        .overlay(alignment: .top) { peg }
         .shadow(color: Theme.ink.opacity(0.10), radius: 2, y: 1)
         .shadow(color: Theme.ink.opacity(0.22), radius: 18, y: 16)
         .mask(eraseMask)
@@ -132,15 +132,18 @@ struct PolaroidCard: View {
         }
     }
 
-    /// 木夹：两色渐变的小夹子，压在相纸顶边中央。
-    private var peg: some View {
+}
+
+/// 木夹。放在卡片之外绘制，`zIndex` 高于绳子——绳子从卡片上方横过，夹子压在绳上。
+struct PolaroidPeg: View {
+    var body: some View {
         RoundedRectangle(cornerRadius: 2, style: .continuous)
             .fill(LinearGradient(colors: [Color(hex: "#C9A67A"),
                                           Color(hex: "#E3C9A1"),
                                           Color(hex: "#B8915F")],
                                  startPoint: .leading,
                                  endPoint: .trailing))
-            .frame(width: 10, height: 26)
+            .frame(width: 10, height: 30)
             .overlay(alignment: .top) {
                 Rectangle()
                     .fill(Color(hex: "#503C1E").opacity(0.45))
