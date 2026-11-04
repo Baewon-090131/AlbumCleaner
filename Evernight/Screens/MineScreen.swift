@@ -15,6 +15,8 @@ struct MineScreen: View {
     @AppStorage("ac_autoVideo") private var autoPlayVideo = true
     @AppStorage("ac_videoMuted") private var videoMuted = true
     @AppStorage("ac_batchSize") private var batchSize = 30.0
+    @AppStorage("ac_sort_theme") private var sortTheme = "rope"
+    @AppStorage("ac_dbg_hang") private var hangEnabled = true
 
     @State private var showCacheCleared = false
     @State private var showFavorites = false
@@ -96,6 +98,18 @@ struct MineScreen: View {
             Section("外观") {
                 ThemeColorGrid(selection: $themeHex)
                     .padding(.vertical, 4)
+            }
+
+            Section("整理主题") {
+                Picker("整理主题", selection: $sortTheme) {
+                    Text("挂绳相纸").tag("rope")
+                    Text("整理照片").tag("glass")
+                }
+                .pickerStyle(.segmented)
+                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+
+                Toggle("矮图自动吊绳", isOn: $hangEnabled)
+                    .disabled(sortTheme != "rope")
             }
 
             Section("通用") {

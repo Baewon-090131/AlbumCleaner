@@ -51,6 +51,9 @@ struct SortScreen: View {
         index < photos.count ? photos[index] : nil
     }
 
+    /// 整理主题：`rope` = 挂绳相纸，`glass` = 单张大相纸。
+    @AppStorage("ac_sort_theme") private var sortTheme = "rope"
+
     var body: some View {
         // 用 ZStack 而不是 VStack：卡片区要能画到进度条上面去，
         // 否则绳子被往上调时会先被进度条盖住、再被裁掉。
@@ -63,18 +66,31 @@ struct SortScreen: View {
             )
 
             if columnCount == 1 {
-                PolaroidDeck(
-                    photos: photos,
-                    index: $index,
-                    command: command,
-                    isPlaying: $isPlaying,
-                    sizeLabel: { Format.bytes(library.fileSize(of: $0)) },
-                    onSwipe: { request($0) },
-                    onFinished: finish,
-                    onTap: { viewerPhoto = $0 },
-                    onAddToAlbum: { showAlbumPicker = true }
-                )
-                .zIndex(1)
+                if sortTheme == "glass" {
+                    GlassDeck(
+                        photos: photos,
+                        index: $index,
+                        sizeLabel: { Format.bytes(library.fileSize(of: $0)) },
+                        onSwipe: { request($0) },
+                        onFinished: finish,
+                        onTap: { viewerPhoto = $0 },
+                        onAddToAlbum: { showAlbumPicker = true }
+                    )
+                    .zIndex(1)
+                } else {
+                    PolaroidDeck(
+                        photos: photos,
+                        index: $index,
+                        command: command,
+                        isPlaying: $isPlaying,
+                        sizeLabel: { Format.bytes(library.fileSize(of: $0)) },
+                        onSwipe: { request($0) },
+                        onFinished: finish,
+                        onTap: { viewerPhoto = $0 },
+                        onAddToAlbum: { showAlbumPicker = true }
+                    )
+                    .zIndex(1)
+                }
             } else {
                 ColumnsGrid(
                     photos: photos,
