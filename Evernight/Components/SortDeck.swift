@@ -50,7 +50,7 @@ struct PolaroidDeck: View {
 
     /// 以下五项是「我的 → Debug 模式」里可调的布局参数，直接落 UserDefaults，
     /// 整理页与调试面板读写同一组 key，滑钮一动卡片区立刻重绘。
-    @AppStorage("ac_dbg_paper") private var paperScale: Double = 0.56
+    @AppStorage("ac_dbg_paper") private var paperScale: Double = 0.66
     @AppStorage("ac_dbg_shift") private var topShift: Double = 48
     @AppStorage("ac_dbg_cord") private var cordTopValue: Double = 64
     @AppStorage("ac_dbg_sag") private var sagValue: Double = 24
@@ -168,17 +168,10 @@ private extension PolaroidDeck {
         let metrics = PolaroidMetrics.make(for: photo, bounds: size, paperScale: CGFloat(paperScale))
         let isCurrent = direction == 0
         let isGhost = isCurrent && ghost != nil
-        let width = metrics.paper.width
-        // 邻卡的中心放在「让它在屏幕边缘露出 peek」的位置上；再往外两张直接推到屏外
-        let baseX: CGFloat = {
-            guard !isCurrent else { return size.width / 2 }
-            let sign: CGFloat = direction > 0 ? 1 : -1
-            let distance: CGFloat = abs(direction) == 1
-                ? size.width / 2 + width / 2 - peek
-                : size.width + 80 + CGFloat(abs(direction) - 2) * 60
-            return size.width / 2 + sign * distance
-        }()
-        // 三张都 1:1 跟手，整组沿绳一起滑动；切张时靠位移补偿保证落点连续
+        // 五张按「相邻半宽和 − 露出」逐张累加，像一条真正的晾衣绳：
+        // 间距一致、每张都在绳上完整挂着，只是超出屏幕的部分看不见。
+        let baseX = size.width / 2 + centerOffset(direction, in: size)
+        // 整组 1:1 跟手；切张时靠位移补偿保证落点连续
         let centerX = baseX + dragOffset
         // 相纸顶边落在绳子下方，木夹跨在绳上、下半截压在纸上
         let topY = cordY(centerX, width: size.width) + cordGap
@@ -266,9 +259,29 @@ private extension PolaroidDeck {
 
     /// 相邻两张的中心距：正好等于邻卡贴边停在 `peek` 处时的距离。
     func neighborSpacing() -> CGFloat {
-        guard let photo = currentPhoto else { return deckSize.width }
-        let width = PolaroidMetrics.make(for: photo, bounds: deckSize, paperScale: CGFloat(paperScale)).paper.width
-        return deckSize.width / 2 + width / 2 - peek
+        centerOffset(1, in: deckSize)
+    }
+
+    /// 偏移 `offset` 张的那张相纸相对当前卡的中心位移。
+    /// 逐张按「上一张半宽 + 这一张半宽 − 露出」累加，宽窄不一也能排得匀。
+    func centerOffset(_ offset: Int, in size: CGSize) -> CGFloat {
+        guard offset != 0, size.width > 0 else { return 0 }
+        let step = offset > 0 ? 1 : -1
+        var x: CGFloat = 0
+        var i = 0
+        while i != offset {
+            let next = i + step
+            x += step * (paperWidth(at: i, in: size) / 2
+                + paperWidth(at: next, in: size) / 2
+                - peek)
+            i = next
+        }
+        return x
+    }
+
+    func paperWidth(at offset: Int, in size: CGSize) -> CGFloat {
+        guard let photo = photo(at: offset) else { return 0 }
+        return PolaroidMetrics.make(for: photo, bounds: size, paperScale: CGFloat(paperScale)).paper.width
     }
 
     /// 跟手切张：游标立刻改掉，同时把整组位移补偿一个「相邻中心距」，

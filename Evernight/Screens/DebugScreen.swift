@@ -4,7 +4,7 @@ import SwiftUI
 /// 与 `PolaroidDeck` 的 `@AppStorage` 共用同一组 key，
 /// 所以滑钮一动整理页立刻重绘，返回即可看到实际效果。
 struct DebugScreen: View {
-    @AppStorage("ac_dbg_paper") private var paperScale = 0.56
+    @AppStorage("ac_dbg_paper") private var paperScale = 0.66
     @AppStorage("ac_dbg_shift") private var topShift = 48.0
     @AppStorage("ac_dbg_cord") private var cordTop = 64.0
     @AppStorage("ac_dbg_sag") private var sag = 24.0
@@ -36,7 +36,7 @@ struct DebugScreen: View {
             Section {
                 Button("恢复默认值", role: .destructive) { reset() }
             } footer: {
-                Text("默认值：宽度 0.56 · 上提 48 · 中点距顶 64 · 下垂 24 · 露出 26")
+                Text("默认值：宽度 0.66 · 上提 48 · 中点距顶 64 · 下垂 24 · 露出 26")
             }
         }
         .navigationTitle("Debug 精调")
@@ -125,7 +125,7 @@ private extension DebugScreen {
     }
 
     func reset() {
-        paperScale = 0.56
+        paperScale = 0.66
         topShift = 48
         cordTop = 64
         sag = 24

@@ -16,11 +16,11 @@ struct PolaroidMetrics {
     /// 相纸**按照片原始比例**长（竖图窄高、横图宽矮），只对极端比例做收口，
     /// 保证相纸不会细成一条、也不会长成一门板。照片用 `aspectFit`，
     /// 窗口与比例一致时没有留白；只有接近 16:9 这类更扁的图会留很窄的一条。
-    static func make(for photo: PhotoItem, bounds: CGSize, paperScale: CGFloat = 0.56) -> PolaroidMetrics {
+    static func make(for photo: PhotoItem, bounds: CGSize, paperScale: CGFloat = 0.66) -> PolaroidMetrics {
         let paperWidth = min(max(bounds.width * paperScale, 110), max(110, bounds.width - 24))
         let baseWidth = paperWidth - 18
         let ratio = min(max(photo.ratio, 0.42), 2.2)
-        let maxHeight = max(bounds.height * 0.52, 150)
+        let maxHeight = max(bounds.height * 0.66, 180)
         let minHeight = baseWidth * 0.6
 
         var height = baseWidth / ratio

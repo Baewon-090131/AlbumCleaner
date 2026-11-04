@@ -4,7 +4,7 @@ import SwiftUI
 /// 上下拖 = 绳子中点高度 · 左右拖 = 邻卡露出 · 双指捏合 = 相纸大小。
 /// 参数与「Debug 精调」共用同一组 UserDefaults key，改动立刻作用于整理页。
 struct CoarseDebugScreen: View {
-    @AppStorage("ac_dbg_paper") private var paperScale = 0.56
+    @AppStorage("ac_dbg_paper") private var paperScale = 0.66
     @AppStorage("ac_dbg_cord") private var cordTop = 64.0
     @AppStorage("ac_dbg_sag") private var sag = 24.0
     @AppStorage("ac_dbg_peek") private var peek = 26.0
@@ -140,7 +140,7 @@ private extension CoarseDebugScreen {
     }
 
     func reset() {
-        paperScale = 0.56
+        paperScale = 0.66
         cordTop = 64
         sag = 24
         peek = 26
