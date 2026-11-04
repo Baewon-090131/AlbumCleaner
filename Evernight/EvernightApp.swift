@@ -20,6 +20,8 @@ final class UIState {
     var detailPhoto: PhotoItem?
     /// 点击时相纸在屏幕上的矩形，详情页以它的左上角为锚点放大。
     var detailFrame: CGRect = .zero
+    /// 详情页点了「待删」：先倒放回缩略图，再交给整理页走删除动效。
+    var pendingTrash: PhotoItem?
 }
 
 /// 顶层：壁纸 + 权限门 + 主界面。数据源在这里创建，往下用 environment 传。

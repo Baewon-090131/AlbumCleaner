@@ -122,6 +122,12 @@ struct SortScreen: View {
                         onSelectFilter: selectFilter,
                         onUndo: { _ = request(.undo) })
         }
+        .onChange(of: ui.pendingTrash?.id) { _, _ in
+            guard let target = ui.pendingTrash else { return }
+            ui.pendingTrash = nil
+            guard target.id == current?.id else { return }
+            _ = request(.delete)
+        }
         .confirmationDialog("存入相簿", isPresented: $showAlbumPicker, titleVisibility: .visible) {
             ForEach(library.albums) { target in
                 Button(target.name) { addCurrentPhoto(to: target) }

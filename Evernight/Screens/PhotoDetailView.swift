@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// 点开一张相纸后的详情覆盖层：
 /// 0.15s 内以相纸左上角为锚点放大到屏幕中央、背景逐渐变暗，
@@ -8,6 +9,9 @@ struct PhotoDetailView: View {
     let photo: PhotoItem
     let startFrame: CGRect
     let onClose: () -> Void
+    /// 收藏 / 待删。都在详情页里操作，整理页不再有下滑收藏。
+    var onFavorite: () -> Void = {}
+    var onTrash: () -> Void = {}
 
     @Environment(PhotoLibraryService.self) private var library
     @Environment(\.displayScale) private var displayScale
@@ -16,6 +20,10 @@ struct PhotoDetailView: View {
     @State private var flipped = false
     @State private var showingBack = false
     @State private var showButton = false
+    /// 只有放大落定之后才开始播放视频 / 实况
+    @State private var isPlayingMedia = false
+    @State private var shareItems: [Any] = []
+    @State private var showShare = false
 
     private let flipDuration: Double = 0.55
 
@@ -48,8 +56,21 @@ struct PhotoDetailView: View {
             .onTapGesture { close() }
             .overlay(alignment: .bottom) {
                 if showButton {
-                    actionButton
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    VStack(spacing: 12) {
+                        HStack(spacing: 12) {
+                            circleButton("收藏", "heart", active: photo.asset.isFavorite) {
+                                onFavorite()
+                            }
+                            circleButton("分享", "square.and.arrow.up", active: false) {
+                                share()
+                            }
+                            circleButton("待删", "trash", active: false) {
+                                onTrash()
+                            }
+                        }
+                        actionButton
+                    }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
         }
@@ -59,7 +80,15 @@ struct PhotoDetailView: View {
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(175))
                 withAnimation(.snappy(duration: 0.24)) { showButton = true }
+                // 落定之后才让视频 / 实况开始播放
+                if photo.isVideo || photo.isLivePhoto {
+                    try? await Task.sleep(for: .milliseconds(220))
+                    isPlayingMedia = true
+                }
             }
+        }
+        .sheet(isPresented: $showShare) {
+            ActivityView(items: shareItems)
         }
     }
 }
@@ -84,12 +113,7 @@ private extension PhotoDetailView {
 
     func front(width: CGFloat, height: CGFloat) -> some View {
         VStack(spacing: 0) {
-            AsyncThumbnail(asset: photo.asset,
-                           targetSize: CGSize(width: width * displayScale,
-                                              height: height * displayScale),
-                           contentMode: .fit,
-                           highQuality: true,
-                           placeholderColor: Theme.card)
+            detailMedia(width: width - 20, height: height - 66)
                 .frame(width: width - 20, height: height - 66)
                 .background(Theme.card)
                 .clipped()
@@ -157,6 +181,67 @@ private extension PhotoDetailView {
             .padding(.vertical, 9)
     }
 
+    @ViewBuilder
+    func detailMedia(width: CGFloat, height: CGFloat) -> some View {
+        if photo.isVideo {
+            VideoCardContent(asset: photo.asset,
+                             cardSize: CGSize(width: width, height: height),
+                             isActive: isPlayingMedia)
+        } else if photo.isLivePhoto {
+            LivePhotoCardContent(asset: photo.asset,
+                                 cardSize: CGSize(width: width, height: height),
+                                 isActive: isPlayingMedia)
+        } else {
+            AsyncThumbnail(asset: photo.asset,
+                           targetSize: CGSize(width: width * displayScale,
+                                              height: height * displayScale),
+                           contentMode: .fit,
+                           highQuality: true,
+                           placeholderColor: Theme.card)
+        }
+    }
+
+    func circleButton(_ title: String, _ symbol: String, active: Bool,
+                      action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: symbol)
+                    .font(.system(size: 17, weight: .semibold))
+                Text(title)
+                    .font(.system(size: 11, weight: .medium))
+            }
+            .foregroundStyle(active ? Theme.accent : Theme.ink)
+            .frame(width: 66, height: 54)
+            .background(Theme.card.opacity(0.94),
+                        in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(Theme.line, lineWidth: 0.6)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// 分享：优先用缓存里的图，没有就异步拉一张再弹系统分享面板。
+    func share() {
+        let size = CGSize(width: 1200, height: 1200)
+        if let image = ThumbnailLoader.shared.cached(for: photo.asset,
+                                                     targetSize: size,
+                                                     highQuality: true) {
+            shareItems = [image]
+            showShare = true
+            return
+        }
+        Task { @MainActor in
+            if let image = await ThumbnailLoader.shared.image(for: photo.asset,
+                                                              targetSize: size,
+                                                              highQuality: true) {
+                shareItems = [image]
+                showShare = true
+            }
+        }
+    }
+
     func row(_ title: String, _ value: String) -> some View {
         HStack(alignment: .firstTextBaseline) {
             Text(title)
@@ -218,4 +303,15 @@ private extension PhotoDetailView {
             onClose()
         }
     }
+}
+
+/// 系统分享面板的 SwiftUI 包装。
+struct ActivityView: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }

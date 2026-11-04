@@ -36,13 +36,6 @@ struct GlassDeck: View {
                         .offset(offset)
                         .opacity(detailActive ? 0 : fade)
                         .gesture(dragGesture)
-                        .contextMenu {
-                            Button {
-                                onAddToAlbum()
-                            } label: {
-                                Label("存入相簿", systemImage: "photo.stack")
-                            }
-                        }
                 } else {
                     EmptyDeckView()
                 }
@@ -90,9 +83,6 @@ private extension GlassDeck {
                 if t.height < -threshold {
                     guard onSwipe(.delete) else { return springBack() }
                     flyUpAndFinish(.delete)
-                } else if t.height > 40 {
-                    guard onSwipe(.favorite) else { return springBack() }
-                    springBack()
                 } else {
                     springBack()
                 }

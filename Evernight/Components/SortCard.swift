@@ -47,6 +47,9 @@ struct PolaroidCard: View {
     var isFront = true
     /// 碎沙擦拭：0 = 完整，1 = 全部消失。遮罩从**底部**往上收，所以底边先被擦掉。
     var erase: CGFloat = 0
+    /// 是否加载视频 / 实况播放器。整理页里一律 false（只显示静态帧，点按才进详情），
+    /// 详情页里传 true 才开始真正播放。
+    var allowPlayback = false
     var onOpenViewer: () -> Void = {}
 
     var body: some View {
@@ -86,9 +89,9 @@ struct PolaroidCard: View {
 
     @ViewBuilder
     private var photoWindow: some View {
-        if photo.isVideo {
+        if photo.isVideo, allowPlayback {
             VideoCardContent(asset: photo.asset, cardSize: metrics.photo, isActive: isFront)
-        } else if photo.isLivePhoto {
+        } else if photo.isLivePhoto, allowPlayback {
             LivePhotoCardContent(asset: photo.asset, cardSize: metrics.photo, isActive: isFront)
         } else {
             // 窗口尺寸恒定，所有照片都 fit 进来，不裁切也不拉伸

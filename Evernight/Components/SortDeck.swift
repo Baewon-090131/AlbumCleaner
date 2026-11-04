@@ -79,8 +79,8 @@ struct PolaroidDeck: View {
                 // 前后各两张全部提前渲染：相邻两张可见（各露 peek），
                 // 再往外两张停在屏外，只为把图片和播放器先加载好，
                 // 切过去时不会再闪一帧。
-                // 前 10 张、后 5 张全部提前挂好，切过去时不用等加载
-                ForEach(-10...5, id: \.self) { offset in
+                // 只完整渲染 ±2 五张；更远的靠 prefetch 预取缓存，不挂视图
+                ForEach(-2...2, id: \.self) { offset in
                     if let photo = photo(at: offset) {
                         card(offset == 0 ? (ghost ?? photo) : photo,
                              direction: offset,
@@ -239,15 +239,6 @@ private extension PolaroidDeck {
             .opacity(detailActive && isCurrent ? 0 : (isGhost ? ghostOpacity : 1))
             .animation(.smooth(duration: 0.32), value: detailActive)
             .zIndex(isCurrent ? 0 : -1)
-            .contextMenu {
-                if isCurrent, !isGhost {
-                    Button {
-                        onAddToAlbum()
-                    } label: {
-                        Label("存入相簿", systemImage: "photo.stack")
-                    }
-                }
-            }
     }
 }
 
@@ -264,8 +255,8 @@ private extension PolaroidDeck {
                     dragOffset = rubber(translation.width)
                     dragAngle = min(max(Double(translation.width) * 0.0006, -0.06), 0.06)
                 } else {
-                    // 只让下滑有一点跟手反馈；**上滑不要移动卡片**，松手后原地消散
-                    frontLift = CGSize(width: 0, height: max(0, translation.height) * 0.5)
+                    // 上滑不跟手：松手直接原地消散
+                    frontLift = .zero
                 }
             }
             .onEnded { value in
@@ -285,8 +276,6 @@ private extension PolaroidDeck {
 
                 if translation.height < -deleteThreshold {
                     guard onSwipe(.delete) else { return springBack() }
-                } else if translation.height > favoriteThreshold {
-                    guard onSwipe(.favorite) else { return springBack() }
                 } else {
                     springBack()
                 }

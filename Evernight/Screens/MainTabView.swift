@@ -31,6 +31,7 @@ enum AppTab: Hashable, CaseIterable, Identifiable {
 struct MainTabView: View {
     @AppStorage("ac_theme_v2") private var themeHex = "#2B4A6F"
     @Environment(UIState.self) private var ui
+    @Environment(PhotoLibraryService.self) private var library
     @State private var selection: AppTab = .sort
     /// 「我的」的 zoom 转场：源是胶囊里第 4 个按钮，目标是全屏 cover。
     @Namespace private var mineNamespace
@@ -55,9 +56,18 @@ struct MainTabView: View {
 
             // 详情放在这一层：能盖住底栏，底栏也会跟着背景一起模糊
             if let photo = ui.detailPhoto {
-                PhotoDetailView(photo: photo, startFrame: ui.detailFrame) {
+                PhotoDetailView(photo: photo, startFrame: ui.detailFrame,
+                                onClose: { ui.detailPhoto = nil },
+                                onFavorite: { library.setFavorite(photo, true) },
+                                onTrash: {
                     ui.detailPhoto = nil
-                }
+                    let target = photo
+                    // 等倒放那 0.15s 走完，再让整理页按上滑删除的动效处理
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(200))
+                        ui.pendingTrash = target
+                    }
+                })
                 .zIndex(4)
             }
         }
