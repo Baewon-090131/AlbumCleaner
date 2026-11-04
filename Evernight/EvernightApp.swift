@@ -22,17 +22,17 @@ final class UIState {
     var detailFrame: CGRect = .zero
     /// 详情页点了「待删」：先倒放回缩略图，再交给整理页走删除动效。
     var pendingTrash: PhotoItem?
-    /// 整理完一个月的庆祝烟花：起点时间 + 三处发射点（单位坐标）。
-    /// 画在 `MainTabView` 最上层，动画边界就是整个屏幕。
+    /// 整理完一个月的庆祝烟花。发射点由 `MainTabView` 按底栏上边界算，画满整屏。
     var celebrationStart: Date?
-    var celebrationOrigins: [UnitPoint] = []
+    /// 删除时的碎沙。画在 `MainTabView` 最上层，飘散不受相纸边界限制。
+    var sandBurst: SandBurst?
 
     func celebrate() {
-        celebrationOrigins = (0..<3).map { _ in
-            UnitPoint(x: Double.random(in: 0.16...0.84),
-                      y: Double.random(in: 0.18...0.5))
-        }
         celebrationStart = Date()
+    }
+
+    func playSand(_ burst: SandBurst?) {
+        sandBurst = burst
     }
 }
 

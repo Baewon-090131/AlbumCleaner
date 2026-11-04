@@ -12,23 +12,29 @@ struct SandGrain {
     let delay: Double
 }
 
-/// 一次碎沙：粒子 + 起始时刻 + 总时长。
+/// 一次碎沙：粒子 + 起始时刻 + 照片在屏幕上的位置 + 总时长。
 struct SandBurst {
     let grains: [SandGrain]
     let start: Date
+    /// 照片窗口在屏幕上的矩形（全局坐标）。沙粒从这里起飞，
+    /// 但画布铺满整屏，飘散不受相纸边界限制。
+    let frameInScreen: CGRect
     let life: Double = 1.2
 }
 
 /// 碎沙画布：整张照片按 50 × 30（约 1500 粒）拆开，底部先动、向上飘、
-/// 边飘边缩小，最后 0.1s 左右淡出。
+/// 边飘边缩小，最后 0.1s 左右淡出。铺满整屏绘制，坐标直接用屏幕坐标。
 struct SandCanvas: View {
     let burst: SandBurst
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { timeline in
             let elapsed = timeline.date.timeIntervalSince(burst.start)
-            Canvas { context, size in
+            Canvas { context, _ in
                 guard elapsed < burst.life else { return }
+                let origin = burst.frameInScreen.origin
+                let photoSize = burst.frameInScreen.size
+
                 for grain in burst.grains {
                     let t = elapsed - grain.delay
                     guard t > 0 else { continue }
@@ -37,17 +43,17 @@ struct SandCanvas: View {
                     let p = t / 0.75
                     guard p < 1 else { continue }
 
-                    let x = grain.nx * size.width
+                    let x = origin.x + grain.nx * photoSize.width
                         + grain.drift * CGFloat(t)
                         + CGFloat(sin(t * 22 + grain.phase)) * 5
-                    let y = grain.ny * size.height - grain.rise * CGFloat(t)
+                    let y = origin.y + grain.ny * photoSize.height - grain.rise * CGFloat(t)
                     guard y > -24 else { continue }
 
                     let scale = 1 - CGFloat(p) * 0.72
                     let alpha = p > 0.78 ? max(0, 1 - (p - 0.78) / 0.22) : 1
                     guard alpha > 0 else { continue }
 
-                    let side = size.width * 0.026 * scale
+                    let side = photoSize.width * 0.026 * scale
                     context.fill(Path(CGRect(x: x - side / 2, y: y - side / 2,
                                              width: side, height: side)),
                                  with: .color(grain.color.opacity(alpha)))
@@ -60,7 +66,9 @@ struct SandCanvas: View {
 
 /// 把缩略图缩到 50 × 30，逐像素取色，生成沙粒。
 enum SandSampler {
-    static func burst(for photo: PhotoItem, targetSize: CGSize) -> SandBurst? {
+    static func burst(for photo: PhotoItem,
+                      targetSize: CGSize,
+                      frameInScreen: CGRect) -> SandBurst? {
         // 先读卡片缓存；万一 miss（比如刚启动就删），当场同步拉一张小图兜底，
         // 否则采不到颜色、一粒沙都出不来。
         let image = ThumbnailLoader.shared.cached(for: photo.asset,
@@ -109,7 +117,7 @@ enum SandSampler {
                 ))
             }
         }
-        return SandBurst(grains: grains, start: .now)
+        return SandBurst(grains: grains, start: .now, frameInScreen: frameInScreen)
     }
 
     /// 缓存 miss 时的兜底：同步请求一张 96×96 的小图，只为拿到颜色分布。

@@ -85,6 +85,7 @@ struct SortScreen: View {
                     onTap: { photo, frame in ui.detailFrame = frame; ui.detailPhoto = photo },
                     onAddToAlbum: { showAlbumPicker = true },
                     onReachEnd: { ui.celebrate() },
+                    onSandBurst: { ui.playSand($0) },
                     detailActive: ui.detailPhoto != nil
                 )
             }

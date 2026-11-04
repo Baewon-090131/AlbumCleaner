@@ -11,6 +11,8 @@ struct VideoCardContent: View {
     /// 卡片尺寸（点），缩略图按它请求，保证与卡片一致、不留边。
     let cardSize: CGSize
     var isActive: Bool
+    /// 详情页里嵌一套完整控制条（播放键 + 可拖动进度 + 时间）；整理页保持卡片干净。
+    var showsControls = false
 
     @AppStorage("ac_videoMuted") private var muted = true
     @AppStorage("ac_autoVideo") private var autoPlay = true
@@ -18,6 +20,11 @@ struct VideoCardContent: View {
     @State private var player: AVPlayer?
     @State private var isPlaying = false
     @State private var progress: Double = 0
+    @State private var currentTime: Double = 0
+    @State private var durationSeconds: Double = 0
+    /// 拖动进度条期间暂停进度回写，松手才 seek。
+    @State private var isScrubbing = false
+    @State private var scrubProgress: Double = 0
     /// 播到头的观察者，disappear 时摘掉，防止泄漏。
     @State private var endObserver: NSObjectProtocol?
 
@@ -36,8 +43,10 @@ struct VideoCardContent: View {
                 muteBadge
             }
 
-            // 底部：细进度条
-            if isPlaying || progress > 0 {
+            // 底部：详情页用完整控制条，整理页只留一条细进度
+            if showsControls, player != nil, isActive {
+                bottomControls
+            } else if isPlaying || progress > 0 {
                 progressBar
             }
         }
@@ -86,6 +95,85 @@ struct VideoCardContent: View {
         .allowsHitTesting(false)
     }
 
+    /// 详情页的控制条：播放 / 暂停 + 可拖动的进度 + 时间。
+    private var bottomControls: some View {
+        VStack {
+            Spacer()
+            HStack(spacing: 10) {
+                Button { toggle() } label: {
+                    Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 30, height: 30)
+                        .background(Theme.scrim.opacity(0.55), in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(isPlaying ? "暂停" : "播放")
+
+                GeometryReader { geometry in
+                    let filled = max(0, geometry.size.width * CGFloat(displayProgress))
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(Color.white.opacity(0.32))
+                            .frame(height: 4)
+                        Capsule()
+                            .fill(Color.white)
+                            .frame(width: filled, height: 4)
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 9, height: 9)
+                            .offset(x: filled - 4.5)
+                    }
+                    .frame(maxHeight: .infinity)
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                isScrubbing = true
+                                scrubProgress = ratio(value.location.x, width: geometry.size.width)
+                            }
+                            .onEnded { value in
+                                let target = ratio(value.location.x, width: geometry.size.width)
+                                seek(to: target)
+                                isScrubbing = false
+                            }
+                    )
+                }
+                .frame(height: 20)
+
+                Text("\(Format.duration(currentTime)) / \(Format.duration(durationSeconds))")
+                    .font(.typewriter(9, weight: .medium))
+                    .foregroundStyle(Color.white.opacity(0.92))
+                    .fixedSize()
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 20)
+            .padding(.bottom, 10)
+            .background(
+                LinearGradient(colors: [.clear, Theme.scrim.opacity(0.62)],
+                               startPoint: .top, endPoint: .bottom)
+            )
+        }
+    }
+
+    private var displayProgress: Double {
+        isScrubbing ? scrubProgress : progress
+    }
+
+    private func ratio(_ x: CGFloat, width: CGFloat) -> Double {
+        guard width > 0 else { return 0 }
+        return min(max(Double(x / width), 0), 1)
+    }
+
+    private func seek(to value: Double) {
+        guard let player, durationSeconds > 0 else { return }
+        progress = value
+        currentTime = value * durationSeconds
+        player.seek(to: CMTime(seconds: value * durationSeconds, preferredTimescale: 600),
+                    toleranceBefore: .zero,
+                    toleranceAfter: .zero)
+    }
+
     private func load() async {
         let avAsset = await withCheckedContinuation { (continuation: CheckedContinuation<AVAsset?, Never>) in
             let options = PHVideoRequestOptions()
@@ -115,7 +203,12 @@ struct VideoCardContent: View {
                                        queue: .main) { time in
             let duration = item.duration.seconds
             guard duration.isFinite, duration > 0 else { return }
-            progress = time.seconds / duration
+            durationSeconds = duration
+            currentTime = time.seconds
+            // 拖动进度条时以手指为准，松手 seek 后再恢复回写
+            if !isScrubbing {
+                progress = time.seconds / duration
+            }
         }
         self.player = player
         if autoPlay {
@@ -137,6 +230,10 @@ struct VideoCardContent: View {
     private func stop() {
         player?.pause()
         isPlaying = false
+        isScrubbing = false
+        scrubProgress = 0
+        currentTime = 0
+        progress = 0
         if let endObserver {
             NotificationCenter.default.removeObserver(endObserver)
             self.endObserver = nil

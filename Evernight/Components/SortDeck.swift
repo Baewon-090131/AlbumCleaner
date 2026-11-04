@@ -32,6 +32,8 @@ struct PolaroidDeck: View {
     let onAddToAlbum: () -> Void
     /// 翻过最后一张、进入「整理完毕」时回调一次（放烟花）。
     let onReachEnd: () -> Void
+    /// 删除时的碎沙交给外层全屏渲染（沙子要飘出相纸、画满整屏）。
+    let onSandBurst: (SandBurst) -> Void
     /// 详情页打开：两侧卡片向外抽走，当前卡交给详情层接管（避免两层重复）。
     var detailActive = false
 
@@ -45,12 +47,12 @@ struct PolaroidDeck: View {
     @State private var ghost: PhotoItem?
     @State private var ghostLift: CGFloat = 0
     @State private var ghostOpacity: Double = 1
-    /// 碎沙。
-    @State private var sand: SandBurst?
     /// 相纸从下往上被擦掉的比例（0 → 1）。
     @State private var eraseProgress: CGFloat = 0
     /// 卡片区尺寸（采样缩略图时要用它算请求尺寸，必须与 `PolaroidCard` 一致才能命中缓存）。
     @State private var deckSize: CGSize = .zero
+    /// 卡片区在屏幕上的原点（把碎沙换算到全屏坐标）。
+    @State private var deckOrigin: CGPoint = .zero
     /// 自己写 `index` 时记下目标值，避免把切卡当成外部撤回再播一次入场。
     @State private var lastSelfIndex: Int?
 
@@ -112,10 +114,12 @@ struct PolaroidDeck: View {
             .gesture(dragGesture)
             .onAppear {
                 deckSize = size
+                deckOrigin = origin
                 prefetch(in: size)
             }
             .onChange(of: size) { _, new in
                 deckSize = new
+                deckOrigin = origin
                 prefetch(in: new)
             }
         }
@@ -219,13 +223,6 @@ private extension PolaroidDeck {
                          }
                      })
             .frame(width: metrics.paper.width, height: metrics.paper.height)
-            .overlay(alignment: .topLeading) {
-                if isCurrent, let sand {
-                    SandCanvas(burst: sand)
-                        .frame(width: metrics.photo.width, height: metrics.photo.height)
-                        .offset(x: metrics.pad, y: metrics.pad)
-                }
-            }
             .overlay(alignment: .topLeading) {
                 // 每张相纸都带自己的木夹；当前卡如果被吊绳垂下来，再补一段竖线
                 ZStack(alignment: .topLeading) {
@@ -465,7 +462,21 @@ private extension PolaroidDeck {
                 width: min(metrics.photo.width * displayScale * 1.5, 2800),
                 height: min(metrics.photo.height * displayScale * 1.5, 2800)
             )
-            sand = SandSampler.burst(for: photo, targetSize: request)
+            // 照片窗口在屏幕上的位置：卡片区原点 + 卡片中心 + 白边，
+            // 沙粒按这个矩形起飞，画布则是整屏。
+            let centerX = deckSize.width / 2
+            let topY = cardTopY(centerX: centerX, photo: photo, isCurrent: true, in: deckSize)
+            let frameInScreen = CGRect(
+                x: deckOrigin.x + centerX - metrics.paper.width / 2 + metrics.pad,
+                y: deckOrigin.y + topY - CGFloat(topShift) + metrics.pad,
+                width: metrics.photo.width,
+                height: metrics.photo.height
+            )
+            if let burst = SandSampler.burst(for: photo,
+                                             targetSize: request,
+                                             frameInScreen: frameInScreen) {
+                onSandBurst(burst)
+            }
         }
         // 相纸自下而上被擦掉，沙粒也按同一个方向逐段生成（底部先走）
         withAnimation(.smooth(duration: 0.72)) { eraseProgress = 1 }
@@ -489,18 +500,23 @@ private extension PolaroidDeck {
         isPlaying = true
         if let incoming = cmd.incoming,
            cmd.reverseOf == .delete || cmd.reverseOf == .album {
-            // 只让挂回来的那张出现，避免屏幕上同时两张
-            withoutAnimation {
-                ghost = incoming
-                ghostLift = -340
-                ghostOpacity = 0
-            }
-            withAnimation(.snappy(duration: 0.36)) {
-                ghostLift = 0
-                ghostOpacity = 1
-            }
-            Task {
-                try? await Task.sleep(for: .seconds(0.36))
+            // 1. 先倒做删除后的「下一张补位」：现在这张往右滑走
+            withAnimation(.smooth(duration: 0.26)) { dragOffset = 170 }
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(260))
+                // 2. 被撤的那张从上方渐显落下；同一帧把补位卡复位，
+                //    避免屏幕上同时出现两张
+                withoutAnimation {
+                    ghost = incoming
+                    ghostLift = -360
+                    ghostOpacity = 0
+                    dragOffset = 0
+                }
+                withAnimation(.snappy(duration: 0.36)) {
+                    ghostLift = 0
+                    ghostOpacity = 1
+                }
+                try? await Task.sleep(for: .milliseconds(360))
                 finish(.undo)
             }
         } else {
@@ -537,7 +553,6 @@ private extension PolaroidDeck {
         ghost = nil
         ghostLift = 0
         ghostOpacity = 1
-        sand = nil
         eraseProgress = 0
     }
 }

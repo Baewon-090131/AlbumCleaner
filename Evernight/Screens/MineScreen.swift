@@ -114,7 +114,7 @@ struct MineScreen: View {
                 .pickerStyle(.segmented)
                 .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
 
-                Toggle("矮图自动吊绳", isOn: $hangEnabled)
+                Toggle("自适应居中", isOn: $hangEnabled)
                     .disabled(sortTheme != "rope")
             }
 

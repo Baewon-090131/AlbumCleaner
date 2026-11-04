@@ -24,6 +24,11 @@ struct PhotoDetailView: View {
     @State private var isPlayingMedia = false
     @State private var shareItems: [Any] = []
     @State private var showShare = false
+    /// 双指缩放：缩放倍率与拖动位移，`Base` 是上一次手势结束时的值。
+    @State private var zoom: CGFloat = 1
+    @State private var zoomBase: CGFloat = 1
+    @State private var pan: CGSize = .zero
+    @State private var panBase: CGSize = .zero
 
     private let flipDuration: Double = 0.55
 
@@ -49,7 +54,10 @@ struct PhotoDetailView: View {
                     .scaleEffect(appeared ? 1 : startScale, anchor: .topLeading)
                     .offset(x: appeared ? targetX : startFrame.minX,
                             y: appeared ? targetY : startFrame.minY)
+                    .scaleEffect(zoom, anchor: .center)
+                    .offset(pan)
                     .shadow(color: Theme.ink.opacity(0.24), radius: 26, y: 16)
+                    .gesture(zoomGesture)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .contentShape(Rectangle())
@@ -94,6 +102,34 @@ struct PhotoDetailView: View {
 }
 
 private extension PhotoDetailView {
+    /// 双指捏合缩放；放大后可以单指拖动查看细节。捏回 1 倍以内会弹回原大小。
+    var zoomGesture: some Gesture {
+        SimultaneousGesture(
+            MagnifyGesture()
+                .onChanged { value in
+                    zoom = min(max(zoomBase * value.magnification, 0.85), 4)
+                }
+                .onEnded { _ in
+                    zoomBase = zoom
+                    if zoom < 1 {
+                        withAnimation(.snappy(duration: 0.3)) {
+                            zoom = 1
+                            zoomBase = 1
+                            pan = .zero
+                            panBase = .zero
+                        }
+                    }
+                },
+            DragGesture(minimumDistance: 10)
+                .onChanged { value in
+                    guard zoom > 1.01 else { return }
+                    pan = CGSize(width: panBase.width + value.translation.width,
+                                 height: panBase.height + value.translation.height)
+                }
+                .onEnded { _ in panBase = pan }
+        )
+    }
+
     func flipCard(width: CGFloat, height: CGFloat) -> some View {
         ZStack {
             front(width: width, height: height)
@@ -186,7 +222,8 @@ private extension PhotoDetailView {
         if photo.isVideo {
             VideoCardContent(asset: photo.asset,
                              cardSize: CGSize(width: width, height: height),
-                             isActive: isPlayingMedia)
+                             isActive: isPlayingMedia,
+                             showsControls: true)
         } else if photo.isLivePhoto {
             LivePhotoCardContent(asset: photo.asset,
                                  cardSize: CGSize(width: width, height: height),
@@ -293,6 +330,13 @@ private extension PhotoDetailView {
         if flipped {
             toggleFlip()
             return
+        }
+        // 退出时先复位缩放，倒放才是从相纸原尺寸回缩略图
+        withoutAnimation {
+            zoom = 1
+            zoomBase = 1
+            pan = .zero
+            panBase = .zero
         }
         withAnimation(.smooth(duration: 0.15)) {
             appeared = false

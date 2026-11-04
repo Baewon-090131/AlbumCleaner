@@ -40,42 +40,37 @@ enum Theme {
     static let cornerCard: CGFloat = 28
     static let cornerPlate: CGFloat = 34
 
-    /// 桌面：实木台面。底色是浅橡木的暖棕，叠十几道极淡的木纹与一处顶光，
-    /// 让白色相纸压上去时像摊在桌上，而不是浮在空中。
+    /// 桌面：实木台面。扁平处理——只有一层很缓的木色渐变、几道极淡的木纹，
+    /// 不再叠顶光与底部暗角，看起来像刷过哑光漆的桌面而不是有高光的漆面。
     /// 木色不能太深：相簿页、相似页的深色文字直接压在桌面上，太深会看不清。
     static var wall: some View {
         ZStack {
             LinearGradient(
                 stops: [
-                    .init(color: Color(red: 234 / 255, green: 216 / 255, blue: 188 / 255), location: 0),
-                    .init(color: Color(red: 221 / 255, green: 193 / 255, blue: 156 / 255), location: 0.55),
-                    .init(color: Color(red: 199 / 255, green: 168 / 255, blue: 126 / 255), location: 1),
+                    .init(color: Color(red: 233 / 255, green: 216 / 255, blue: 191 / 255), location: 0),
+                    .init(color: Color(red: 224 / 255, green: 203 / 255, blue: 172 / 255), location: 0.6),
+                    .init(color: Color(red: 214 / 255, green: 190 / 255, blue: 156 / 255), location: 1),
                 ],
                 startPoint: .top,
                 endPoint: .bottom
             )
 
             Canvas { context, size in
-                for i in 0..<16 {
-                    let y = size.height * CGFloat(i) / 16 + 6
-                    let wave = sin(Double(i) * 1.7) * 6
+                for i in 0..<7 {
+                    let y = size.height * CGFloat(i) / 6 + 12
+                    let wave = sin(Double(i) * 1.4) * 5
                     var path = Path()
                     path.move(to: CGPoint(x: -20, y: y))
-                    path.addCurve(to: CGPoint(x: size.width + 20, y: y + 10),
+                    path.addCurve(to: CGPoint(x: size.width + 20, y: y + 6),
                                   control1: CGPoint(x: size.width * 0.35, y: y + CGFloat(wave)),
                                   control2: CGPoint(x: size.width * 0.7, y: y - CGFloat(wave)))
                     context.stroke(path,
-                                   with: .color(Color(red: 122 / 255, green: 92 / 255, blue: 62 / 255)
-                                        .opacity(i % 3 == 0 ? 0.13 : 0.06)),
-                                   lineWidth: i % 4 == 0 ? 2.2 : 1.1)
+                                   with: .color(Color(red: 138 / 255, green: 108 / 255, blue: 76 / 255)
+                                        .opacity(i % 2 == 0 ? 0.07 : 0.035)),
+                                   lineWidth: 1.2)
                 }
             }
             .allowsHitTesting(false)
-
-            RadialGradient(colors: [Color.white.opacity(0.26), .clear],
-                           center: .init(x: 0.5, y: -0.12), startRadius: 0, endRadius: 560)
-            RadialGradient(colors: [Color(red: 120 / 255, green: 92 / 255, blue: 58 / 255).opacity(0.20), .clear],
-                           center: .init(x: 0.5, y: 1.08), startRadius: 0, endRadius: 520)
         }
         .ignoresSafeArea()
     }
