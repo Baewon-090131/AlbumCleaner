@@ -8,6 +8,7 @@ struct SortScreen: View {
 
     @Environment(PhotoLibraryService.self) private var library
     @Environment(UIState.self) private var ui
+    @Environment(\.dismiss) private var dismiss
     @AppStorage("ac_theme_v2") private var themeHex = "#2B4A6F"
 
     @State private var selectedMonthID: String?
@@ -18,8 +19,8 @@ struct SortScreen: View {
     @State private var toast: String?
     @State private var showAlbumPicker = false
     @State private var columnCount = 1
-    /// 媒体类型筛选：照片 / 视频 / 实况 / 全部。相簿详情不显示。
-    @State private var mediaFilter: MediaFilter = .all
+    /// 月份滚轮面板是否展开。
+    @State private var showMonthWheel = false
     /// 相簿按钮选完的目标，等动效播完才真正写入。
     @State private var pendingAlbum: AlbumItem?
     /// 交给卡片区播放的操作；`commandToken` 保证同一种动作也能被认出来。
@@ -39,11 +40,13 @@ struct SortScreen: View {
         return library.months.first
     }
 
-    /// `.all` 走快路径（零拷贝）；只有筛选态才多一次 O(n) 扫描。
     private var photos: [PhotoItem] {
-        let base = isAlbumMode ? albumPhotos : (month?.photos ?? [])
-        guard mediaFilter != .all else { return base }
-        return base.filter { mediaFilter.matches($0) }
+        isAlbumMode ? albumPhotos : (month?.photos ?? [])
+    }
+
+    /// 翻过最后一张时的收尾文案。
+    private var endTitle: String {
+        isAlbumMode ? "相簿照片整理完毕" : "本月照片整理完毕"
     }
 
     private var current: PhotoItem? {
@@ -53,52 +56,82 @@ struct SortScreen: View {
     /// 整理主题：`rope` = 挂绳相纸，`glass` = 单张大相纸。
     @AppStorage("ac_sort_theme") private var sortTheme = "rope"
 
+    @ViewBuilder
+    private var content: some View {
+        if columnCount == 1 {
+            if sortTheme == "glass" {
+                GlassDeck(
+                    photos: photos,
+                    index: $index,
+                    endTitle: endTitle,
+                    sizeLabel: { Format.bytes(library.fileSize(of: $0)) },
+                    onSwipe: { request($0) },
+                    onFinished: finish,
+                    onTap: { photo, frame in ui.detailFrame = frame; ui.detailPhoto = photo },
+                    onAddToAlbum: { showAlbumPicker = true },
+                    onReachEnd: { ui.celebrate() },
+                    detailActive: ui.detailPhoto != nil
+                )
+            } else {
+                PolaroidDeck(
+                    photos: photos,
+                    index: $index,
+                    command: command,
+                    isPlaying: $isPlaying,
+                    endTitle: endTitle,
+                    sizeLabel: { Format.bytes(library.fileSize(of: $0)) },
+                    onSwipe: { request($0) },
+                    onFinished: finish,
+                    onTap: { photo, frame in ui.detailFrame = frame; ui.detailPhoto = photo },
+                    onAddToAlbum: { showAlbumPicker = true },
+                    onReachEnd: { ui.celebrate() },
+                    detailActive: ui.detailPhoto != nil
+                )
+            }
+        } else {
+            ColumnsGrid(
+                photos: photos,
+                columns: columnCount,
+                onMarkDelete: markDeleteInColumns
+            )
+            .padding(.top, 8)
+        }
+    }
+
     var body: some View {
         // 用 ZStack 而不是 VStack：卡片区要能画到进度条上面去，
         // 否则绳子被往上调时会先被进度条盖住、再被裁掉。
         ZStack(alignment: .top) {
-            ProgressHeader(
-                processed: index,
-                total: photos.count,
-                remaining: max(0, photos.count - index),
-                tint: Color(hex: themeHex)
-            )
+            SortHeader(months: library.months,
+                       selectedMonthID: month?.id,
+                       showsMonth: !isAlbumMode,
+                       albumTitle: isAlbumMode ? (album?.name ?? "相簿") : nil,
+                       processed: index,
+                       total: photos.count,
+                       canUndo: columnCount == 1 && !undoStack.isEmpty,
+                       tint: Color(hex: themeHex),
+                       showMonthWheel: $showMonthWheel,
+                       onUndo: { _ = request(.undo) },
+                       onBack: isAlbumMode ? { dismiss() } : nil)
 
-            if columnCount == 1 {
-                if sortTheme == "glass" {
-                    GlassDeck(
-                        photos: photos,
-                        index: $index,
-                        sizeLabel: { Format.bytes(library.fileSize(of: $0)) },
-                        onSwipe: { request($0) },
-                        onFinished: finish,
-                        onTap: { photo, frame in ui.detailFrame = frame; ui.detailPhoto = photo },
-                        onAddToAlbum: { showAlbumPicker = true },
-                    detailActive: ui.detailPhoto != nil
-                    )
-                    .zIndex(1)
-                } else {
-                    PolaroidDeck(
-                        photos: photos,
-                        index: $index,
-                        command: command,
-                        isPlaying: $isPlaying,
-                        sizeLabel: { Format.bytes(library.fileSize(of: $0)) },
-                        onSwipe: { request($0) },
-                        onFinished: finish,
-                        onTap: { photo, frame in ui.detailFrame = frame; ui.detailPhoto = photo },
-                        onAddToAlbum: { showAlbumPicker = true },
-                    detailActive: ui.detailPhoto != nil
-                    )
-                    .zIndex(1)
-                }
-            } else {
-                ColumnsGrid(
-                    photos: photos,
-                    columns: columnCount,
-                    onMarkDelete: markDeleteInColumns
-                )
-                .padding(.top, 28)
+            content
+                .padding(.top, SortHeader.height)
+                .zIndex(1)
+
+            if showMonthWheel {
+                // 点空白收起；放在这一层是为了不挡住右上角的滚轮面板
+                Color.black.opacity(0.001)
+                    .contentShape(Rectangle())
+                    .onTapGesture { collapseMonthWheel() }
+                    .zIndex(2)
+
+                MonthWheelPanel(months: library.months,
+                                currentID: month?.id,
+                                onSelect: selectMonth)
+                    .padding(.top, 90)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .transition(.opacity.combined(with: .scale(scale: 0.94, anchor: .topTrailing)))
+                    .zIndex(3)
             }
         }
         .padding(.horizontal, 16)
@@ -108,20 +141,7 @@ struct SortScreen: View {
             MagnifyGesture()
                 .onEnded { value in handlePinch(value.magnification) }
         )
-        // 顶栏交给系统 toolbar（Liquid Glass 由系统绘制）；标题留空，相簿详情用相簿名
-        .navigationTitle(isAlbumMode ? (album?.name ?? "相簿") : "")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbar {
-            SortToolbar(months: library.months,
-                        selectedMonthID: month?.id,
-                        filter: mediaFilter,
-                        showsMonth: !isAlbumMode,
-                        canUndo: columnCount == 1 && !undoStack.isEmpty,
-                        onSelectMonth: selectMonth,
-                        onSelectFilter: selectFilter,
-                        onUndo: { _ = request(.undo) })
-        }
+        .toolbar(.hidden, for: .navigationBar)
         .onChange(of: ui.pendingTrash?.id) { _, _ in
             guard let target = ui.pendingTrash else { return }
             ui.pendingTrash = nil
@@ -137,6 +157,7 @@ struct SortScreen: View {
         .overlay(alignment: .top) {
             if let toast {
                 ToastBanner(text: toast)
+                    .padding(.top, SortHeader.height)
                     .animation(.snappy(duration: 0.3), value: toast)
             }
         }
@@ -160,15 +181,13 @@ struct SortScreen: View {
 
 private extension SortScreen {
     func selectMonth(_ candidate: MonthSection) {
+        guard candidate.id != month?.id else { return }
         selectedMonthID = candidate.id
         resetCursor()
     }
 
-    /// 切筛选与切月同语义：游标回 0、清空撤销栈，避免跨筛选撤销导致游标指错。
-    func selectFilter(_ next: MediaFilter) {
-        guard next != mediaFilter else { return }
-        mediaFilter = next
-        resetCursor()
+    func collapseMonthWheel() {
+        withAnimation(.snappy(duration: 0.26)) { showMonthWheel = false }
     }
 
     func resetCursor() {

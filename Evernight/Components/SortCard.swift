@@ -108,13 +108,13 @@ struct PolaroidCard: View {
     private var note: some View {
         HStack(spacing: 6) {
             Text(photo.creationText)
-                .font(.system(size: 14, design: .serif).italic())
+                .font(.scriptItalic(14))
                 .foregroundStyle(Theme.ink)
                 .lineLimit(1)
             Spacer(minLength: 4)
             if !sizeLabel.isEmpty {
                 Text(sizeLabel)
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(.typewriter(10))
                     .foregroundStyle(Theme.ink3)
                     .lineLimit(1)
             }
@@ -126,7 +126,7 @@ struct PolaroidCard: View {
     private var mediaBadge: some View {
         if photo.isVideo || photo.isLivePhoto {
             Text(photo.isVideo ? Format.duration(photo.duration) : "LIVE")
-                .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                .font(.typewriter(9, weight: .semibold))
                 .foregroundStyle(Theme.card)
                 .padding(.horizontal, 5)
                 .padding(.vertical, 2)
@@ -157,19 +157,21 @@ struct PolaroidPeg: View {
     }
 }
 
-struct EmptyDeckView: View {
+/// 翻过本月最后一张之后：绳子还在，照片不再出现，只留一句收尾。
+/// 没有卡片底——木桌上直接写字，比盖一块玻璃更像实物。
+struct MonthDoneView: View {
+    var title: String = "本月照片整理完毕"
+
     var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 44))
-                .foregroundStyle(Theme.success)
-            Text("本月项目已整理完毕")
-                .font(.headline)
-            Text("删除的照片已移入待删除")
-                .font(.footnote)
-                .foregroundStyle(Theme.ink2)
+        VStack(spacing: 9) {
+            Text(title)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(Theme.ink)
+                .shadow(color: Theme.paper.opacity(0.55), radius: 2, y: 1)
+            Text("向右滑可以再检查一遍")
+                .font(.system(size: 12))
+                .foregroundStyle(Theme.ink.opacity(0.62))
+                .shadow(color: Theme.paper.opacity(0.45), radius: 1, y: 1)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .glassSurface(cornerRadius: Theme.cornerPlate)
     }
 }

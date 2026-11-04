@@ -40,27 +40,56 @@ enum Theme {
     static let cornerCard: CGFloat = 28
     static let cornerPlate: CGFloat = 34
 
-    /// 壁纸：奶油纸底 + 三处极淡的暖色光斑（琥珀 / 砖 / 橄榄）。
-    /// 只在最底层铺一次，所有页面共用。
+    /// 桌面：实木台面。底色是浅橡木的暖棕，叠十几道极淡的木纹与一处顶光，
+    /// 让白色相纸压上去时像摊在桌上，而不是浮在空中。
+    /// 木色不能太深：相簿页、相似页的深色文字直接压在桌面上，太深会看不清。
     static var wall: some View {
         ZStack {
             LinearGradient(
                 stops: [
-                    .init(color: Color(red: 249 / 255, green: 244 / 255, blue: 233 / 255), location: 0),
-                    .init(color: Color(red: 243 / 255, green: 236 / 255, blue: 222 / 255), location: 0.52),
-                    .init(color: Color(red: 237 / 255, green: 228 / 255, blue: 211 / 255), location: 1),
+                    .init(color: Color(red: 234 / 255, green: 216 / 255, blue: 188 / 255), location: 0),
+                    .init(color: Color(red: 221 / 255, green: 193 / 255, blue: 156 / 255), location: 0.55),
+                    .init(color: Color(red: 199 / 255, green: 168 / 255, blue: 126 / 255), location: 1),
                 ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+                startPoint: .top,
+                endPoint: .bottom
             )
-            RadialGradient(colors: [Color(red: 214 / 255, green: 168 / 255, blue: 96 / 255).opacity(0.30), .clear],
-                           center: .init(x: 0.08, y: -0.06), startRadius: 0, endRadius: 520)
-            RadialGradient(colors: [Color(red: 166 / 255, green: 78 / 255, blue: 58 / 255).opacity(0.14), .clear],
-                           center: .init(x: 0.96, y: 0.10), startRadius: 0, endRadius: 460)
-            RadialGradient(colors: [Color(red: 120 / 255, green: 134 / 255, blue: 96 / 255).opacity(0.16), .clear],
-                           center: .init(x: 0.62, y: 1.02), startRadius: 0, endRadius: 520)
+
+            Canvas { context, size in
+                for i in 0..<16 {
+                    let y = size.height * CGFloat(i) / 16 + 6
+                    let wave = sin(Double(i) * 1.7) * 6
+                    var path = Path()
+                    path.move(to: CGPoint(x: -20, y: y))
+                    path.addCurve(to: CGPoint(x: size.width + 20, y: y + 10),
+                                  control1: CGPoint(x: size.width * 0.35, y: y + CGFloat(wave)),
+                                  control2: CGPoint(x: size.width * 0.7, y: y - CGFloat(wave)))
+                    context.stroke(path,
+                                   with: .color(Color(red: 122 / 255, green: 92 / 255, blue: 62 / 255)
+                                        .opacity(i % 3 == 0 ? 0.13 : 0.06)),
+                                   lineWidth: i % 4 == 0 ? 2.2 : 1.1)
+                }
+            }
+            .allowsHitTesting(false)
+
+            RadialGradient(colors: [Color.white.opacity(0.26), .clear],
+                           center: .init(x: 0.5, y: -0.12), startRadius: 0, endRadius: 560)
+            RadialGradient(colors: [Color(red: 120 / 255, green: 92 / 255, blue: 58 / 255).opacity(0.20), .clear],
+                           center: .init(x: 0.5, y: 1.08), startRadius: 0, endRadius: 520)
         }
         .ignoresSafeArea()
+    }
+}
+
+extension Font {
+    /// 数字 / 英文：老式打字机（等宽）。
+    static func typewriter(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        .system(size: size, weight: weight, design: .monospaced)
+    }
+
+    /// 数字 / 英文：斜体花字（衬线斜体）。
+    static func scriptItalic(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        .system(size: size, weight: weight, design: .serif).italic()
     }
 }
 

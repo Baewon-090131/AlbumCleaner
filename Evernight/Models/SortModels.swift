@@ -48,31 +48,3 @@ enum UndoRecord {
         }
     }
 }
-
-/// 整理页顶部的媒体类型筛选（对应参考视频的「照片 ▾」胶囊）。
-enum MediaFilter: String, CaseIterable, Identifiable {
-    case all = "全部"
-    case photo = "照片"
-    case video = "视频"
-    case live = "实况"
-
-    var id: String { rawValue }
-
-    var symbol: String {
-        switch self {
-        case .all: "square.grid.2x2"
-        case .photo: "photo"
-        case .video: "video"
-        case .live: "livephoto"
-        }
-    }
-
-    func matches(_ item: PhotoItem) -> Bool {
-        switch self {
-        case .all: return true
-        case .photo: return !item.isVideo && !item.isLivePhoto
-        case .video: return item.isVideo
-        case .live: return item.isLivePhoto
-        }
-    }
-}

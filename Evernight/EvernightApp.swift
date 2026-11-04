@@ -22,6 +22,18 @@ final class UIState {
     var detailFrame: CGRect = .zero
     /// 详情页点了「待删」：先倒放回缩略图，再交给整理页走删除动效。
     var pendingTrash: PhotoItem?
+    /// 整理完一个月的庆祝烟花：起点时间 + 三处发射点（单位坐标）。
+    /// 画在 `MainTabView` 最上层，动画边界就是整个屏幕。
+    var celebrationStart: Date?
+    var celebrationOrigins: [UnitPoint] = []
+
+    func celebrate() {
+        celebrationOrigins = (0..<3).map { _ in
+            UnitPoint(x: Double.random(in: 0.16...0.84),
+                      y: Double.random(in: 0.18...0.5))
+        }
+        celebrationStart = Date()
+    }
 }
 
 /// 顶层：壁纸 + 权限门 + 主界面。数据源在这里创建，往下用 environment 传。

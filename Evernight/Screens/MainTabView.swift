@@ -54,6 +54,14 @@ struct MainTabView: View {
             bottomBar
                 .blur(radius: ui.detailPhoto != nil ? 25 : 0)
 
+            // 整理完一个月的烟花：铺满整屏，连底栏一起盖住
+            if let start = ui.celebrationStart {
+                ConfettiBurst(start: start, origins: ui.celebrationOrigins)
+                    .ignoresSafeArea()
+                    .zIndex(3)
+                    .id(start)
+            }
+
             // 详情放在这一层：能盖住底栏，底栏也会跟着背景一起模糊
             if let photo = ui.detailPhoto {
                 PhotoDetailView(photo: photo, startFrame: ui.detailFrame,
@@ -72,6 +80,14 @@ struct MainTabView: View {
             }
         }
         .animation(.smooth(duration: 0.3), value: ui.detailPhoto?.id)
+        .onChange(of: ui.celebrationStart) { _, value in
+            guard let value else { return }
+            // 粒子在 3.3s 内落完，多留一点余量再把整层撤掉
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(3.6))
+                if ui.celebrationStart == value { ui.celebrationStart = nil }
+            }
+        }
         .tint(Color(hex: themeHex))
         .fullScreenCover(isPresented: $ui.showMine) { mineCover }
         .sheet(isPresented: $ui.showTrash) { trashSheet }

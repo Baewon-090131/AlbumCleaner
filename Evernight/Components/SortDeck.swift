@@ -22,12 +22,16 @@ struct PolaroidDeck: View {
     @Binding var index: Int
     let command: DeckCommand?
     @Binding var isPlaying: Bool
+    /// 翻过本月最后一张后，空绳上写的那句话。
+    let endTitle: String
     let sizeLabel: (PhotoItem) -> String
     /// 手势判定结果；返回是否受理（撤回但栈空时返回 false，卡片归位）。
     let onSwipe: (SortMove) -> Bool
     let onFinished: (SortMove) -> Void
     let onTap: (PhotoItem, CGRect) -> Void
     let onAddToAlbum: () -> Void
+    /// 翻过最后一张、进入「整理完毕」时回调一次（放烟花）。
+    let onReachEnd: () -> Void
     /// 详情页打开：两侧卡片向外抽走，当前卡交给详情层接管（避免两层重复）。
     var detailActive = false
 
@@ -75,21 +79,27 @@ struct PolaroidDeck: View {
     var body: some View {
         GeometryReader { geometry in
             let size = geometry.size
+            let origin = geometry.frame(in: .global).origin
             ZStack(alignment: .topLeading) {
-                // 前后各两张全部提前渲染：相邻两张可见（各露 peek），
-                // 再往外两张停在屏外，只为把图片和播放器先加载好，
-                // 切过去时不会再闪一帧。
-                // 只完整渲染 ±2 五张；更远的靠 prefetch 预取缓存，不挂视图
-                ForEach(-2...2, id: \.self) { offset in
-                    if let photo = photo(at: offset) {
-                        card(offset == 0 ? (ghost ?? photo) : photo,
-                             direction: offset,
-                             in: size)
-                    }
-                }
+                // 翻过最后一张：照片不再出现，绳子原地留着，只写一句话
                 if currentPhoto == nil {
-                    EmptyDeckView()
-                        .frame(width: size.width, height: size.height)
+                    MonthDoneView(title: endTitle)
+                        .frame(width: size.width, height: size.height, alignment: .top)
+                        .offset(y: cordTop + sag + 52)
+                        .transition(.opacity)
+                } else {
+                    // 前后各两张全部提前渲染：相邻两张可见（各露 peek），
+                    // 再往外两张停在屏外，只为把图片和播放器先加载好，
+                    // 切过去时不会再闪一帧。
+                    // 只完整渲染 ±2 五张；更远的靠 prefetch 预取缓存，不挂视图
+                    ForEach(-2...2, id: \.self) { offset in
+                        if let photo = photo(at: offset) {
+                            card(offset == 0 ? (ghost ?? photo) : photo,
+                                 direction: offset,
+                                 in: size,
+                                 origin: origin)
+                        }
+                    }
                 }
 
                 cord(width: size.width)
@@ -176,9 +186,11 @@ private extension PolaroidDeck {
         return max(attached, middle - height / 2)
     }
 
-    /// - Parameter direction: 0 = 当前卡，±1 = 左右邻卡（露出 peek），±2 = 屏外预热。
+    /// - Parameters:
+    ///   - direction: 0 = 当前卡，±1 = 左右邻卡（露出 peek），±2 = 屏外预热。
+    ///   - origin: 卡片区在屏幕上的原点，详情页的锚点要用屏幕坐标。
     @ViewBuilder
-    func card(_ photo: PhotoItem, direction: Int, in size: CGSize) -> some View {
+    func card(_ photo: PhotoItem, direction: Int, in size: CGSize, origin: CGPoint) -> some View {
         let metrics = PolaroidMetrics.make(for: photo, bounds: size, paperScale: CGFloat(paperScale))
         let isCurrent = direction == 0
         let isGhost = isCurrent && ghost != nil
@@ -200,8 +212,8 @@ private extension PolaroidDeck {
                      erase: isCurrent ? eraseProgress : 0,
                      onOpenViewer: {
                          if isCurrent {
-                             onTap(photo, CGRect(x: centerX - metrics.paper.width / 2,
-                                                 y: topY - CGFloat(topShift),
+                             onTap(photo, CGRect(x: origin.x + centerX - metrics.paper.width / 2,
+                                                 y: origin.y + topY - CGFloat(topShift),
                                                  width: metrics.paper.width,
                                                  height: metrics.paper.height))
                          }
@@ -260,7 +272,18 @@ private extension PolaroidDeck {
                 }
             }
             .onEnded { value in
-                guard !isPlaying, currentPhoto != nil else { return }
+                guard !isPlaying else { return }
+
+                // 空绳（整理完毕）：只认「向右滑」，滑回去检查最后一张
+                guard currentPhoto != nil else {
+                    let translation = value.translation
+                    if translation.width > swapThreshold,
+                       abs(translation.width) > abs(translation.height) {
+                        returnToLastPhoto()
+                    }
+                    return
+                }
+
                 let translation = value.translation
 
                 if abs(translation.width) > abs(translation.height) {
@@ -342,7 +365,14 @@ private extension PolaroidDeck {
     /// 浏览是纯跟手的，不播飞出动画——只有删除 / 存入相簿才走 `playTakeOff`。
     func commitSwipe(forward: Bool) {
         let next = forward ? index + 1 : index - 1
-        guard photos.indices.contains(next) else { return springBack() }
+        // 游标可以停在 photos.count（空绳 = 本月整理完毕）
+        guard next >= 0, next <= photos.count else { return springBack() }
+
+        // 最后一张继续往前翻：卡片滑出屏幕，交给空绳上的收尾文案
+        if forward, next == photos.count {
+            finishMonth()
+            return
+        }
 
         let spacing = neighborSpacing()
         lastSelfIndex = next
@@ -355,6 +385,34 @@ private extension PolaroidDeck {
         Task { @MainActor in
             withAnimation(.smooth(duration: 0.3)) { dragOffset = 0 }
         }
+    }
+
+    /// 最后一张继续向前：相纸滑出屏幕，游标落到 `photos.count`，
+    /// 绳子留在原地，收尾文案淡入，同时通知外层放烟花。
+    func finishMonth() {
+        isPlaying = true
+        withAnimation(.smooth(duration: 0.26)) {
+            dragOffset = -(deckSize.width + 80)
+            dragAngle = 0
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(260))
+            lastSelfIndex = photos.count
+            withAnimation(.smooth(duration: 0.3)) {
+                index = photos.count
+                dragOffset = 0
+                dragAngle = 0
+            }
+            isPlaying = false
+            onReachEnd()
+        }
+    }
+
+    /// 空绳上向右滑：回到最后一张，卡片从左侧滑进来。
+    func returnToLastPhoto() {
+        guard photos.count > 0 else { return }
+        lastSelfIndex = nil
+        index = photos.count - 1
     }
 
     /// 外部改游标时让新卡从指定方向滑进来。

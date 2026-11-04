@@ -24,8 +24,14 @@ struct MineScreen: View {
 
     var body: some View {
         list
-            .navigationTitle("我的")
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                // 「我的」是独立的全屏层，常驻标题在这里单独放一份，
+                // 这样从底栏圆钮 zoom 进来时它跟着整页一起放大。
+                ToolbarItem(placement: .topBarLeading) {
+                    EvernightTitle(size: 24, color: Theme.ink)
+                }
                 if showsCloseButton {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {

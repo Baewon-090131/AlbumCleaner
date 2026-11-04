@@ -1,41 +1,50 @@
 import SwiftUI
 
-/// 整理页顶部的细进度条：横贯一条轨道 + 右侧剩余数量。
-/// 不再套玻璃胶囊外壳——外壳会多占约 20pt 高度，也会与顶栏的胶囊重复。
+/// 整理页顶部的进度条：一条轨道占满整行，下面一行小字报数。
+/// 数字走老式打字机（等宽），汉字用系统默认字体。
 struct ProgressHeader: View {
     let processed: Int
     let total: Int
-    let remaining: Int
+    var remaining: Int = -1
     var tint: Color = Theme.accent
 
     private var progress: Double {
-        guard total > 0 else { return 1 }
+        guard total > 0 else { return 0 }
         return min(1, Double(processed) / Double(total))
     }
 
+    private var left: Int {
+        remaining >= 0 ? remaining : max(0, total - processed)
+    }
+
     var body: some View {
-        HStack(spacing: 12) {
+        VStack(spacing: 5) {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(tint.opacity(0.18))
+                    Capsule().fill(Theme.ink.opacity(0.14))
                     Capsule()
                         .fill(tint)
                         .frame(width: max(0, geometry.size.width * progress))
                 }
-                .frame(height: 4)
-                .frame(maxHeight: .infinity)
             }
-            .frame(height: 16)
+            .frame(height: 5)
 
-            Text("\(remaining)")
-                .font(.headline.weight(.bold))
-                .monospacedDigit()
-                .foregroundStyle(tint)
+            HStack(spacing: 4) {
+                Text("已整理")
+                    .font(.system(size: 10))
+                Text("\(processed)")
+                    .font(.typewriter(10, weight: .medium))
+                Spacer(minLength: 0)
+                Text("剩余")
+                    .font(.system(size: 10))
+                Text("\(left) / \(total)")
+                    .font(.typewriter(10, weight: .medium))
+            }
+            .foregroundStyle(Theme.ink.opacity(0.62))
         }
-        .padding(.horizontal, 2)
-        .frame(height: 18)
+        .frame(height: 22)
         .animation(.snappy(duration: 0.35), value: progress)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("已处理 \(processed) 项，共 \(total) 项，剩余 \(remaining) 项")
+        .accessibilityLabel("已整理 \(processed) 项，共 \(total) 项，剩余 \(left) 项")
     }
 }
