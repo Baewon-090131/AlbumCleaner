@@ -31,9 +31,8 @@ struct TrashScreen: View {
                                        description: Text("滑动删除的照片会先落到这里"))
                     .padding(.top, 60)
             } else {
-                Text("本轮 \(library.trash.count) 项 · 预计释放 \(Format.bytes(library.trashByteCount))")
-                    .font(.footnote)
-                    .foregroundStyle(Theme.ink2)
+                MixedType.text("本轮 \(library.trash.count) 项 · 预计释放 \(Format.bytes(library.trashByteCount))", size: 11)
+                    .foregroundStyle(Theme.text2)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 12)
                     .padding(.top, 10)
@@ -90,7 +89,7 @@ struct TrashScreen: View {
                     Image(systemName: checked ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundStyle(checked ? Color.accentColor : .white)
-                        .shadow(color: Theme.ink.opacity(0.22), radius: 2)
+                        .shadow(color: Color.black.opacity(0.55), radius: 2)
                         .padding(5)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -112,7 +111,7 @@ struct TrashScreen: View {
 
                 Text("未勾选项将放回相册 · 删除项进入系统「最近删除」，30 天内可恢复")
                     .font(.caption2)
-                    .foregroundStyle(Theme.ink2)
+                    .foregroundStyle(Theme.text2)
             }
             .padding(.horizontal, 16)
             .padding(.top, 10)

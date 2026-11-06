@@ -151,11 +151,10 @@ struct AlbumsScreen: View {
                 .font(.title3)
                 .foregroundStyle(Theme.accent)
             VStack(alignment: .leading, spacing: 2) {
-                Text("空相簿 \(library.emptyUserAlbums.count) 个")
-                    .font(.subheadline.weight(.semibold))
+                MixedType.text("空相簿 \(library.emptyUserAlbums.count) 个", size: 13.5, weight: .medium)
                 Text("没有内容，可直接清理")
                     .font(.caption)
-                    .foregroundStyle(Theme.ink2)
+                    .foregroundStyle(Theme.text2)
             }
             Spacer()
             Button("一键删除") { dialog = .deleteEmpty }
@@ -274,19 +273,18 @@ struct AlbumCardView: View {
                     } else {
                         Image(systemName: "photo")
                             .font(.title3)
-                            .foregroundStyle(Theme.ink2)
+                            .foregroundStyle(Theme.text2)
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
             Text(album.name)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.pingFang(15, weight: .medium))
                 .lineLimit(1)
 
             Text("\(album.count)")
-                .font(.system(size: 13))
-                .foregroundStyle(Theme.ink2)
-                .monospacedDigit()
+                .font(.typewriter(11))
+                .foregroundStyle(Theme.text3)
         }
     }
 }

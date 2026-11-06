@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// 整理页顶部的进度：一条占满整行的细轨道，下面一行报数。
-/// 数字走老式打字机（等宽，天然对齐），汉字用系统默认字体。
+/// 数字走老式打字机（等宽，天然对齐），汉字走 PingFang。
 /// 报数只给两组事实——「已整理 3 / 42」与「剩余 39 张」，不重复同一个数字。
 struct ProgressHeader: View {
     let processed: Int
@@ -23,39 +23,39 @@ struct ProgressHeader: View {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(Theme.ink.opacity(0.12))
+                        .fill(Theme.track)
                     Capsule()
                         .fill(tint)
                         .frame(width: max(0, geometry.size.width * progress))
                 }
             }
-            .frame(height: 6)
+            .frame(height: 5)
 
             HStack(spacing: 4) {
                 Text("已整理")
-                    .font(.system(size: 11))
-                    .foregroundStyle(Theme.ink.opacity(0.70))
+                    .font(.pingFang(10.5))
+                    .foregroundStyle(Theme.text3)
                 Text("\(processed)")
-                    .font(.typewriter(11, weight: .semibold))
-                    .foregroundStyle(Theme.ink)
+                    .font(.typewriter(11, weight: .medium))
+                    .foregroundStyle(Theme.text2)
                 Text("/")
                     .font(.typewriter(11))
-                    .foregroundStyle(Theme.ink3)
+                    .foregroundStyle(Theme.text3)
                 Text("\(total)")
-                    .font(.typewriter(11, weight: .medium))
-                    .foregroundStyle(Theme.ink.opacity(0.62))
+                    .font(.typewriter(11))
+                    .foregroundStyle(Theme.text3)
 
                 Spacer(minLength: 12)
 
                 Text("剩余")
-                    .font(.system(size: 11))
-                    .foregroundStyle(Theme.ink.opacity(0.70))
+                    .font(.pingFang(10.5))
+                    .foregroundStyle(Theme.text3)
                 Text("\(left)")
-                    .font(.typewriter(11, weight: .semibold))
-                    .foregroundStyle(Theme.ink)
+                    .font(.typewriter(11, weight: .medium))
+                    .foregroundStyle(Theme.text2)
                 Text("张")
-                    .font(.system(size: 11))
-                    .foregroundStyle(Theme.ink.opacity(0.70))
+                    .font(.pingFang(10.5))
+                    .foregroundStyle(Theme.text3)
             }
         }
         .frame(height: 28)

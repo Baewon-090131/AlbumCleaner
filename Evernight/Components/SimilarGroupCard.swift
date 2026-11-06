@@ -20,12 +20,11 @@ struct GroupCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("\(group.photos.count) 张相似")
-                    .font(.headline)
+                MixedType.text("\(group.photos.count) 张相似", size: 15, weight: .medium)
                 Spacer()
                 Text("可释放 \(Format.bytes(reclaimBytes))")
-                    .font(.footnote)
-                    .foregroundStyle(Theme.accent)
+                    .font(.pingFang(11))
+                    .foregroundStyle(Theme.accentText)
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -37,8 +36,9 @@ struct GroupCard: View {
             }
 
             Button(action: onDelete) {
-                Text("删除选中 \(checkedPhotos.count) 张 · 释放 \(Format.bytes(reclaimBytes))（进待删除）")
-                    .font(.subheadline.weight(.semibold))
+                MixedType.text("删除选中 \(checkedPhotos.count) 张 · 释放 \(Format.bytes(reclaimBytes))（进待删除）", size: 12.5, weight: .medium)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 42)
@@ -49,7 +49,11 @@ struct GroupCard: View {
             .disabled(checkedPhotos.isEmpty)
         }
         .padding(14)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Theme.cornerPanel, style: .continuous))
+        .background(Theme.nightPanel, in: RoundedRectangle(cornerRadius: Theme.cornerPanel, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: Theme.cornerPanel, style: .continuous)
+                .strokeBorder(Theme.nightLine, lineWidth: 0.5)
+        }
     }
 
     private func thumb(_ photo: PhotoItem) -> some View {
@@ -68,10 +72,10 @@ struct GroupCard: View {
                     if isBest {
                         Label("最优", systemImage: "star.fill")
                             .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.ink)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 2)
-                            .background(Theme.success, in: Capsule())
+                            .background(Theme.paper, in: Capsule())
                             .padding(4)
                     }
                 }
@@ -80,14 +84,14 @@ struct GroupCard: View {
                         Image(systemName: checked ? "checkmark.circle.fill" : "circle")
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(checked ? Theme.danger : .white)
-                            .shadow(color: Theme.ink.opacity(0.22), radius: 2)
+                            .shadow(color: Color.black.opacity(0.5), radius: 2)
                             .padding(4)
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(isBest ? Theme.success : (checked ? Theme.danger : .clear),
+                        .strokeBorder(isBest ? Theme.text2 : (checked ? Theme.danger : .clear),
                                       lineWidth: 2)
                 }
         }

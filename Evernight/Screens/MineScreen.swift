@@ -10,7 +10,6 @@ struct MineScreen: View {
     @Environment(UIState.self) private var ui
     @Environment(\.dismiss) private var dismiss
 
-    @AppStorage("ac_theme_v2") private var themeHex = "#2B4A6F"
     @AppStorage("ac_autoLive") private var autoPlayLive = true
     @AppStorage("ac_autoVideo") private var autoPlayVideo = true
     @AppStorage("ac_videoMuted") private var videoMuted = true
@@ -30,7 +29,7 @@ struct MineScreen: View {
                 // 「我的」是独立的全屏层，常驻标题在这里单独放一份，
                 // 这样从底栏圆钮 zoom 进来时它跟着整页一起放大。
                 ToolbarItem(placement: .topBarLeading) {
-                    EvernightTitle(size: 24, color: Theme.ink)
+                    EvernightTitle(size: 24, color: Theme.text)
                 }
                 if showsCloseButton {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -75,15 +74,15 @@ struct MineScreen: View {
                         Text("每轮数量")
                         Spacer()
                         Text("\(Int(batchSize))")
-                            .monospacedDigit()
-                            .foregroundStyle(Theme.ink2)
+                            .font(.typewriter(15, weight: .medium))
+                            .foregroundStyle(Theme.text2)
                     }
                     Slider(value: $batchSize, in: 10...300, step: 10) {
                         Text("每轮数量")
                     }
                     Text("单轮最高可整理 300 项")
                         .font(.footnote)
-                        .foregroundStyle(Theme.ink2)
+                        .foregroundStyle(Theme.text2)
                 }
                 .padding(.vertical, 2)
             }
@@ -99,11 +98,6 @@ struct MineScreen: View {
                 Toggle("Live 图自动播放", isOn: $autoPlayLive)
                 Toggle("视频自动播放", isOn: $autoPlayVideo)
                 Toggle("视频默认静音", isOn: $videoMuted)
-            }
-
-            Section("外观") {
-                ThemeColorGrid(selection: $themeHex)
-                    .padding(.vertical, 4)
             }
 
             Section("整理主题") {
@@ -143,7 +137,7 @@ struct MineScreen: View {
                         .font(.footnote.weight(.medium))
                     Text("evernight 0.1 (14)")
                         .font(.caption)
-                        .foregroundStyle(Theme.ink2)
+                        .foregroundStyle(Theme.text2)
                 }
                 .frame(maxWidth: .infinity)
                 .listRowBackground(Color.clear)
@@ -177,30 +171,29 @@ private struct UsageCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("累计已清理")
-                .font(.footnote)
-                .foregroundStyle(.white.opacity(0.55))
+                .font(.pingFang(11))
+                .foregroundStyle(Theme.text3)
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("\(cleanedCount)")
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.success)
+                    .font(.typewriter(44, weight: .medium))
+                    .foregroundStyle(Theme.text)
                 Text("· 释放 \(Format.bytes(freedBytes))")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.65))
+                    .font(.typewriter(11))
+                    .foregroundStyle(Theme.text2)
             }
 
-            Divider().overlay(.white.opacity(0.18))
+            Divider().overlay(Theme.nightLine)
 
             HStack(spacing: 0) {
                 Button(action: onShowFavorites) {
-                    StatCell(symbol: "heart.fill", color: Theme.danger,
+                    StatCell(symbol: "heart.fill", color: Theme.accent,
                              value: "\(favoriteCount)", title: "已喜欢")
                 }
                 .buttonStyle(.plain)
-                Divider().frame(height: 34).overlay(.white.opacity(0.18))
+                Divider().frame(height: 34).overlay(Theme.nightLine)
                 Button(action: onShowTrash) {
-                    StatCell(symbol: "trash", color: Theme.success,
+                    StatCell(symbol: "trash", color: Theme.text2,
                              value: "\(pendingCount)", title: "待清理")
                 }
                 .buttonStyle(.plain)
@@ -208,27 +201,31 @@ private struct UsageCard: View {
 
             VStack(spacing: 6) {
                 HStack {
-                    Text("手机存储").font(.subheadline)
+                    Text("手机存储").font(.pingFang(12))
                     Spacer()
                     Text("剩余 \(Format.gigabytes(storage.free)) / \(Format.gigabytes(storage.total))")
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.65))
+                        .font(.typewriter(11))
+                        .foregroundStyle(Theme.text2)
                 }
                 ProgressView(value: storage.usedRatio)
-                    .tint(Theme.success)
+                    .tint(Theme.accent)
                 HStack {
                     Text("已用 \(Format.gigabytes(storage.used))（\(Int(storage.usedRatio * 100))%）")
                     Spacer()
                     Text("可用 \(Format.gigabytes(storage.free))")
                 }
-                .font(.caption2)
-                .foregroundStyle(.white.opacity(0.5))
+                .font(.typewriter(10))
+                .foregroundStyle(Theme.text3)
             }
         }
         .padding(16)
-        .foregroundStyle(.white)
-        .background(Theme.dark,
+        .foregroundStyle(Theme.text)
+        .background(Theme.nightPanel,
                     in: RoundedRectangle(cornerRadius: Theme.cornerPanel, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: Theme.cornerPanel, style: .continuous)
+                .strokeBorder(Theme.nightLine, lineWidth: 0.5)
+        }
     }
 }
 
@@ -244,63 +241,11 @@ private struct StatCell: View {
                 .font(.system(size: 15))
                 .foregroundStyle(color)
             Text(value)
-                .font(.headline)
-                .monospacedDigit()
+                .font(.typewriter(15, weight: .medium))
             Text(title + " ›")
-                .font(.caption2)
-                .foregroundStyle(.white.opacity(0.55))
+                .font(.pingFang(10))
+                .foregroundStyle(Theme.text3)
         }
         .frame(maxWidth: .infinity)
-    }
-}
-
-// MARK: - 主题色
-
-private struct ThemeColorGrid: View {
-    @Binding var selection: String
-
-    private let colors: [(id: String, color: Color, name: String)] = [
-        ("#2B4A6F", Color(hex: "#2B4A6F"), "深靛"),
-        ("#A9432F", Color(hex: "#A9432F"), "砖红"),
-        ("#5B7350", Color(hex: "#5B7350"), "橄榄"),
-        ("#B07A2E", Color(hex: "#B07A2E"), "赭黄"),
-        ("#4E6577", Color(hex: "#4E6577"), "灰蓝"),
-        ("#7A5B45", Color(hex: "#7A5B45"), "栗棕"),
-        ("#6B4A5C", Color(hex: "#6B4A5C"), "梅紫"),
-        ("#8A6D3B", Color(hex: "#8A6D3B"), "古金"),
-        ("#3F5E5A", Color(hex: "#3F5E5A"), "松绿"),
-        ("#9C5B3E", Color(hex: "#9C5B3E"), "陶土"),
-        ("#5A5566", Color(hex: "#5A5566"), "烟紫"),
-        ("#2B2620", Color(hex: "#2B2620"), "墨黑"),
-    ]
-
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 6)
-
-    var body: some View {
-        LazyVGrid(columns: columns, spacing: 14) {
-            ForEach(colors, id: \.id) { item in
-                Button {
-                    selection = item.id
-                } label: {
-                    Circle()
-                        .fill(item.color)
-                        .frame(width: 34, height: 34)
-                        .overlay {
-                            if selection == item.id {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 15, weight: .bold))
-                                    .foregroundStyle(.white)
-                            }
-                        }
-                        .overlay {
-                            if selection == item.id {
-                                Circle().strokeBorder(.white, lineWidth: 2).padding(-4)
-                            }
-                        }
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(item.name)
-            }
-        }
     }
 }

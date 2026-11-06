@@ -88,7 +88,7 @@ struct SimilarScreen: View {
                 .tint(Theme.accent)
             Text("正在分析照片 \(Int(similar.progress * 100))%")
                 .font(.subheadline)
-                .foregroundStyle(Theme.ink2)
+                .foregroundStyle(Theme.text2)
             Text("首次扫描需要逐张计算指纹，之后只增量扫新照片")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
@@ -135,25 +135,29 @@ struct SimilarScreen: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("最多可释放")
-                    .font(.caption)
-                    .foregroundStyle(Theme.ink2)
+                    .font(.pingFang(11))
+                    .foregroundStyle(Theme.text2)
                 Text(Format.bytes(totalReclaimable))
-                    .font(.title3.bold())
-                    .foregroundStyle(Theme.accent)
+                    .font(.typewriter(17, weight: .medium))
+                    .foregroundStyle(Theme.accentText)
             }
             Spacer()
             Button {
                 showSmartConfirm = true
             } label: {
                 Label("智能清理", systemImage: "wand.and.stars")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.pingFang(13, weight: .medium))
             }
             .glassButtonStyle(prominent: true)
             .tint(Theme.accent)
             .disabled(smartTargets.isEmpty)
         }
         .padding(14)
-        .background(Theme.accent.opacity(0.10), in: RoundedRectangle(cornerRadius: Theme.cornerTile, style: .continuous))
+        .background(Theme.nightRaised, in: RoundedRectangle(cornerRadius: Theme.cornerTile, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: Theme.cornerTile, style: .continuous)
+                .strokeBorder(Theme.nightLine, lineWidth: 0.5)
+        }
     }
 
     // MARK: - 勾选与删除

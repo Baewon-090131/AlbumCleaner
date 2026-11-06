@@ -29,7 +29,6 @@ enum AppTab: Hashable, CaseIterable, Identifiable {
 /// 的 Beta API，所以四个入口收进同一块玻璃，材质仍走官方 `glassEffect`。
 /// 「我的」第 4 个按钮点按后照样从按钮位置 zoom 扩散到全屏。
 struct MainTabView: View {
-    @AppStorage("ac_theme_v2") private var themeHex = "#2B4A6F"
     @Environment(UIState.self) private var ui
     @Environment(PhotoLibraryService.self) private var library
     @State private var selection: AppTab = .sort
@@ -120,7 +119,7 @@ struct MainTabView: View {
                 if ui.sandBurst?.start == value { ui.sandBurst = nil }
             }
         }
-        .tint(Color(hex: themeHex))
+        .tint(Theme.accent)
         .fullScreenCover(isPresented: $ui.showMine) { mineCover }
         .sheet(isPresented: $ui.showTrash) { trashSheet }
     }
@@ -153,7 +152,11 @@ struct MainTabView: View {
             mineButton
         }
         .padding(6)
-        .glassSurface(cornerRadius: 36)
+        .glassSurface(cornerRadius: 36, tint: Theme.nightRaised.opacity(0.55))
+        .overlay {
+            RoundedRectangle(cornerRadius: 36, style: .continuous)
+                .strokeBorder(Theme.nightLine, lineWidth: 0.5)
+        }
         .padding(.horizontal, 16)
         .padding(.bottom, 10)
     }
@@ -169,10 +172,10 @@ struct MainTabView: View {
                 Text(tab.title)
                     .font(.system(size: 9.5, weight: .medium))
             }
-            .foregroundStyle(isOn ? Color(hex: themeHex) : Theme.ink2)
+            .foregroundStyle(isOn ? Theme.accentText : Theme.text3)
             .frame(maxWidth: .infinity)
             .frame(height: 50)
-            .background(isOn ? Color(hex: themeHex).opacity(0.12) : .clear,
+            .background(isOn ? Theme.accent.opacity(0.14) : .clear,
                         in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
@@ -202,7 +205,7 @@ struct MainTabView: View {
                 Text("我的")
                     .font(.system(size: 9.5, weight: .medium))
             }
-            .foregroundStyle(Theme.ink2)
+            .foregroundStyle(Theme.text3)
             .frame(maxWidth: .infinity)
             .frame(height: 50)
             .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -214,16 +217,15 @@ struct MainTabView: View {
     // MARK: - 呈现
 
     /// 「我的」：从胶囊第 4 个按钮扩散到全屏；退出用右上角 ×，转场自动倒放。
-    /// 这一页不要木桌桌面，用平铺的纸色。
     @ViewBuilder
     private var mineCover: some View {
         if #available(iOS 18.0, *) {
             NavigationStack { MineScreen() }
-                .background(Theme.paper)
+                .background(Theme.night)
                 .navigationTransition(.zoom(sourceID: Self.mineTransitionID, in: mineNamespace))
         } else {
             NavigationStack { MineScreen() }
-                .background(Theme.paper)
+                .background(Theme.night)
         }
     }
 

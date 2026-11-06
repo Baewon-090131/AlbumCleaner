@@ -130,7 +130,7 @@ private struct ConfettiParticle {
 
     /// 五色主题色，形状随机；发射角在正上方 ±36° 内。
     static func make(count: Int) -> [ConfettiParticle] {
-        let palette = [Theme.accent, Theme.danger, Theme.success, Theme.warning, Theme.info]
+        let palette = [Theme.accent, Theme.accentText, Theme.paper, Theme.text2]
         return (0..<count).map { _ in
             let speed = CGFloat.random(in: 40...56)
             let angle = Double.random(in: (90 - 36)...(90 + 36)) * .pi / 180

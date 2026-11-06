@@ -56,7 +56,7 @@ struct PhotoDetailView: View {
                             y: appeared ? targetY : startFrame.minY)
                     .scaleEffect(zoom, anchor: .center)
                     .offset(pan)
-                    .shadow(color: Theme.ink.opacity(0.24), radius: 26, y: 16)
+                    .shadow(color: Color.black.opacity(0.65), radius: 30, y: 18)
                     .gesture(zoomGesture)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -156,7 +156,7 @@ private extension PhotoDetailView {
 
             HStack {
                 Text(photo.creationText)
-                    .font(.system(size: 15, design: .serif).italic())
+                    .font(.typewriter(11))
                     .foregroundStyle(Theme.ink)
                 Spacer()
                 Text(Format.bytes(library.fileSize(of: photo)))
@@ -197,7 +197,7 @@ private extension PhotoDetailView {
             Spacer(minLength: 8)
 
             Text("evernight · 整理档案")
-                .font(.system(size: 10, design: .serif).italic())
+                .font(.typewriter(9))
                 .foregroundStyle(Theme.ink3)
         }
         .padding(18)
@@ -245,7 +245,7 @@ private extension PhotoDetailView {
                 Image(systemName: symbol)
                     .font(.system(size: 17, weight: .semibold))
                 Text(title)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.pingFang(10.5, weight: .medium))
             }
             .foregroundStyle(active ? Theme.accent : Theme.ink)
             .frame(width: 66, height: 54)
@@ -282,11 +282,11 @@ private extension PhotoDetailView {
     func row(_ title: String, _ value: String) -> some View {
         HStack(alignment: .firstTextBaseline) {
             Text(title)
-                .font(.system(size: 12))
+                .font(.pingFang(12))
                 .foregroundStyle(Theme.ink2)
                 .frame(width: 76, alignment: .leading)
             Text(value)
-                .font(.system(size: 13, design: .monospaced))
+                .font(.typewriter(12))
                 .foregroundStyle(Theme.ink)
             Spacer(minLength: 0)
         }
@@ -307,8 +307,8 @@ private extension PhotoDetailView {
             toggleFlip()
         } label: {
             Text(flipped ? "返回" : "查看详细信息")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Theme.card)
+                .font(.pingFang(14, weight: .medium))
+                .foregroundStyle(Theme.paper)
                 .frame(width: 220, height: 50)
                 .background(Theme.accent, in: Capsule())
         }

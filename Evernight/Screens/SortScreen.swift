@@ -9,7 +9,6 @@ struct SortScreen: View {
     @Environment(PhotoLibraryService.self) private var library
     @Environment(UIState.self) private var ui
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("ac_theme_v2") private var themeHex = "#2B4A6F"
 
     @State private var selectedMonthID: String?
     @State private var index = 0
@@ -49,7 +48,7 @@ struct SortScreen: View {
 
     /// 翻过最后一张时的收尾文案。
     private var endTitle: String {
-        isAlbumMode ? "相簿照片整理完毕" : "本月照片整理完毕"
+        isAlbumMode ? "相簿整理完毕" : "本月整理完毕"
     }
 
     /// 撤回会倒做哪一步（撤销栈是通用的，光一个箭头看不出会撤什么）。
@@ -129,7 +128,7 @@ struct SortScreen: View {
                        total: photos.count,
                        canUndo: columnCount == 1 && !undoStack.isEmpty,
                        undoHint: columnCount == 1 ? undoHint : nil,
-                       tint: Color(hex: themeHex),
+                       tint: Theme.accent,
                        showMonthWheel: $showMonthWheel,
                        onUndo: { _ = request(.undo) },
                        onBack: isAlbumMode ? { dismiss() } : nil)

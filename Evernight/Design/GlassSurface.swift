@@ -87,8 +87,8 @@ struct ContentPanel<Content: View>: View {
                         in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(Theme.line.opacity(0.55), lineWidth: 0.5)
+                    .strokeBorder(Theme.nightLine, lineWidth: 0.5)
             )
-            .shadow(color: Theme.ink.opacity(0.10), radius: 10, y: 6)
+            .shadow(color: Color.black.opacity(0.35), radius: 10, y: 6)
     }
 }

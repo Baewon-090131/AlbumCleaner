@@ -16,7 +16,7 @@ struct TrayButton: View {
                 .overlay(alignment: .topTrailing) {
                     if !library.trash.isEmpty {
                         Text("\(min(library.trash.count, 99))")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.typewriter(9.5, weight: .semibold))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 4)
                             .padding(.vertical, 1)

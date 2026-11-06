@@ -36,7 +36,7 @@ struct SwipeDeleteButton: View {
 
     private var done: Bool { result != nil }
 
-    private var fillColor: Color { enabled ? Theme.danger : Theme.line }
+    private var fillColor: Color { enabled ? Theme.danger : Theme.text.opacity(0.16) }
 
     private var label: String {
         if let result {
@@ -68,7 +68,7 @@ struct SwipeDeleteButton: View {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 17, weight: .semibold))
                         Text(label)
-                            .font(.subheadline.weight(.semibold))
+                            .font(.pingFang(13, weight: .medium))
                             .lineLimit(1)
                     }
                     .foregroundStyle(.white)
@@ -77,7 +77,7 @@ struct SwipeDeleteButton: View {
                 } else {
                     Text(label)
                         .font(.headline)
-                        .foregroundStyle(progress > 0.5 ? Color.white : Theme.ink2)
+                        .foregroundStyle(progress > 0.5 ? Theme.paper : Theme.text2)
                         .frame(width: trackWidth, height: trackHeight, alignment: .center)
                         .opacity(1 - progress * 1.4)
                         .allowsHitTesting(false)
@@ -92,7 +92,7 @@ struct SwipeDeleteButton: View {
                             .font(.system(size: 18, weight: .bold))
                             .foregroundStyle(.white)
                     }
-                    .shadow(color: Theme.ink.opacity(0.16), radius: 4, y: 2)
+                    .shadow(color: Color.black.opacity(0.5), radius: 4, y: 2)
                     .scaleEffect(isDragging ? 1.05 : 1)
                     .offset(x: travel * progress)
                     .opacity(armed || done ? 0 : 1)

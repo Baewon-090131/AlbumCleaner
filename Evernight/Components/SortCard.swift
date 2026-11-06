@@ -58,6 +58,16 @@ struct PolaroidCard: View {
                 .frame(width: metrics.photo.width, height: metrics.photo.height)
                 .clipped()
                 .overlay(alignment: .topLeading) { mediaBadge }
+                .overlay(alignment: .topTrailing) {
+                    // 收藏的照片在右上角盖一枚封蜡花印——全屏唯一饱和的绯红面。
+                    if photo.asset.isFavorite {
+                        NightFlower(color: Theme.accent, filled: true, lineWidth: 1.2)
+                            .frame(width: 38, height: 38)
+                            .rotationEffect(.degrees(-8))
+                            .padding(10)
+                            .transition(.opacity)
+                    }
+                }
             note
                 .frame(width: metrics.photo.width, height: metrics.noteHeight)
         }
@@ -66,10 +76,10 @@ struct PolaroidCard: View {
         .background(Theme.card)
         .overlay {
             // 相纸边一道发丝线：木桌偏浅，没有影子压住的边会「糊」进桌面
-            Rectangle().strokeBorder(Theme.ink.opacity(0.08), lineWidth: 0.6)
+            Rectangle().strokeBorder(Theme.ink.opacity(0.14), lineWidth: 0.5)
         }
-        .shadow(color: Theme.ink.opacity(0.10), radius: 2, y: 1)
-        .shadow(color: Theme.ink.opacity(0.22), radius: 18, y: 16)
+        .shadow(color: Color.black.opacity(0.45), radius: 2, y: 1)
+        .shadow(color: Color.black.opacity(0.62), radius: 22, y: 18)
         .mask(eraseMask)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("待整理的照片")
@@ -112,7 +122,7 @@ struct PolaroidCard: View {
     private var note: some View {
         HStack(spacing: 6) {
             Text(photo.creationText)
-                .font(.scriptItalic(14))
+                .font(.typewriter(11))
                 .foregroundStyle(Theme.ink)
                 .lineLimit(1)
             Spacer(minLength: 4)
@@ -141,63 +151,73 @@ struct PolaroidCard: View {
 
 }
 
-/// 木夹。放在卡片之外绘制，`zIndex` 高于绳子——绳子从卡片上方横过，夹子压在绳上。
+/// 冷银夹。放在卡片之外绘制，`zIndex` 高于绳子——绳子从卡片上方横过，夹子压在绳上。
+/// 尺寸与挂点位置不动，只把木头换成银，免得影响卡片的吊挂几何。
 struct PolaroidPeg: View {
     var body: some View {
-        RoundedRectangle(cornerRadius: 2, style: .continuous)
-            .fill(LinearGradient(colors: [Color(hex: "#C9A67A"),
-                                          Color(hex: "#E3C9A1"),
-                                          Color(hex: "#B8915F")],
+        RoundedRectangle(cornerRadius: 2.5, style: .continuous)
+            .fill(LinearGradient(colors: [Color(hex: "#9C93AC"),
+                                          Color(hex: "#E6E0EC"),
+                                          Color(hex: "#B9B1C6")],
                                  startPoint: .leading,
                                  endPoint: .trailing))
             .frame(width: 10, height: 30)
             .overlay(alignment: .top) {
                 Rectangle()
-                    .fill(Color(hex: "#503C1E").opacity(0.45))
-                    .frame(width: 2, height: 7)
-                    .padding(.top, 8)
+                    .fill(Color(hex: "#3A3144").opacity(0.6))
+                    .frame(width: 2, height: 16)
+                    .padding(.top, 7)
             }
-            .shadow(color: Theme.ink.opacity(0.25), radius: 2, y: 2)
+            .overlay(alignment: .top) {
+                Rectangle()
+                    .fill(Color.white.opacity(0.35))
+                    .frame(width: 8, height: 0.5)
+                    .padding(.top, 2)
+            }
+            .shadow(color: Color.black.opacity(0.55), radius: 2, y: 2)
     }
 }
 
 /// 翻过本月最后一张之后：绳子还在，照片不再出现，只留一句收尾。
-/// 没有卡片底——木桌上直接写字，比盖一块玻璃更像实物。
+/// 夜桌上直接写字，不盖卡片；标题上方一枚小的线描花，是这一页唯一的装饰。
 struct MonthDoneView: View {
-    var title: String = "本月照片整理完毕"
+    var title: String = "本月整理完毕"
     /// 本次删除的结算：张数与释放体积（已格式化）。没删就整行不显示。
     var deleted: Int = 0
     var freed: String = ""
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 10) {
+            NightFlower(color: Theme.text.opacity(0.34), filled: false, lineWidth: 1.1,
+                        showsInner: false, showsCenter: false)
+                .frame(width: 24, height: 24)
+                .padding(.bottom, 2)
+
             Text(title)
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(Theme.ink)
-                .shadow(color: Theme.paper.opacity(0.55), radius: 2, y: 1)
+                .font(.pingFang(20, weight: .medium))
+                .foregroundStyle(Theme.text)
 
             if deleted > 0 {
                 HStack(spacing: 4) {
                     Text("本次删除")
-                        .font(.system(size: 12))
-                        .foregroundStyle(Theme.ink2)
+                        .font(.pingFang(12))
+                        .foregroundStyle(Theme.text3)
                     Text("\(deleted)")
-                        .font(.typewriter(12, weight: .semibold))
-                        .foregroundStyle(Theme.danger)
+                        .font(.typewriter(12, weight: .medium))
+                        .foregroundStyle(Theme.accentText)
                     Text("张 · 释放")
-                        .font(.system(size: 12))
-                        .foregroundStyle(Theme.ink2)
+                        .font(.pingFang(12))
+                        .foregroundStyle(Theme.text3)
                     Text(freed)
-                        .font(.typewriter(12, weight: .semibold))
-                        .foregroundStyle(Theme.ink)
+                        .font(.typewriter(12, weight: .medium))
+                        .foregroundStyle(Theme.text2)
                 }
-                .shadow(color: Theme.paper.opacity(0.45), radius: 1, y: 1)
             }
 
             Text("向右滑可以再检查一遍")
-                .font(.system(size: 11))
-                .foregroundStyle(Theme.ink.opacity(0.66))
-                .shadow(color: Theme.paper.opacity(0.45), radius: 1, y: 1)
+                .font(.pingFang(11))
+                .foregroundStyle(Theme.text3)
         }
     }
 }
+

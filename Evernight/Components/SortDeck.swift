@@ -175,7 +175,7 @@ private extension PolaroidDeck {
             path.addQuadCurve(to: CGPoint(x: width, y: cordTop - sag),
                               control: CGPoint(x: width / 2, y: cordTop + sag))
         }
-        .stroke(Theme.ink3, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+        .stroke(Theme.accent.opacity(0.55), style: StrokeStyle(lineWidth: 1.4, lineCap: .round))
         .frame(width: width, height: max(0, cordTop + 4))
         .allowsHitTesting(false)
     }
@@ -233,7 +233,7 @@ private extension PolaroidDeck {
                         let rope = topY - cordGap - cordY(centerX, width: size.width)
                         if rope > 4 {
                             Rectangle()
-                                .fill(Theme.ink3)
+                                .fill(Theme.accent.opacity(0.55))
                                 .frame(width: 1.2, height: rope)
                                 .offset(x: metrics.paper.width / 2 - 0.6,
                                         y: -cordGap - rope)
@@ -559,3 +559,4 @@ private extension PolaroidDeck {
         eraseProgress = 0
     }
 }
+

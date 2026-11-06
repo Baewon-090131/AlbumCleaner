@@ -72,8 +72,8 @@ private struct LoadingStateView: View {
             ProgressView()
                 .controlSize(.large)
             Text("正在加载照片库…")
-                .font(.subheadline)
-                .foregroundStyle(Theme.ink2)
+                .font(.pingFang(13))
+                .foregroundStyle(Theme.text2)
         }
         .padding(28)
         .glassSurface(cornerRadius: Theme.cornerPanel)
@@ -85,14 +85,13 @@ private struct PermissionStateView: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            Image(systemName: "photo.on.rectangle.angled")
-                .font(.system(size: 34))
-                .foregroundStyle(Theme.accent)
+            NightFlower(color: Theme.accent, lineWidth: 1.5)
+                .frame(width: 44, height: 44)
             Text("需要照片访问权限")
-                .font(.headline)
+                .font(.pingFang(17, weight: .medium))
             Text("在「设置 › 隐私与安全性 › 照片」里允许 Evernight 访问照片后回到这里。")
-                .font(.footnote)
-                .foregroundStyle(Theme.ink2)
+                .font(.pingFang(12))
+                .foregroundStyle(Theme.text2)
                 .multilineTextAlignment(.center)
             Button("重新检查", action: retry)
                 .glassButtonStyle(prominent: true)
@@ -103,3 +102,4 @@ private struct PermissionStateView: View {
         .glassSurface(cornerRadius: Theme.cornerPanel)
     }
 }
+

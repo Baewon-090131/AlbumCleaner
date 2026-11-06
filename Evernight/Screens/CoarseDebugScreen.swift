@@ -60,13 +60,13 @@ private extension CoarseDebugScreen {
                     path.addQuadCurve(to: CGPoint(x: w, y: mid - sagPx),
                                       control: CGPoint(x: w / 2, y: mid + sagPx))
                 }
-                .stroke(Theme.ink3, lineWidth: 1.6)
+                .stroke(Theme.accent.opacity(0.55), lineWidth: 1.6)
 
                 sheet(width: paperW, height: paperH)
                     .offset(x: (w - paperW) / 2, y: mainY)
 
                 Rectangle()
-                    .fill(Theme.ink2)
+                    .fill(Theme.text2)
                     .frame(width: 7, height: 16)
                     .offset(x: w / 2 - 3.5, y: mainY - 9)
             }
@@ -115,13 +115,13 @@ private extension CoarseDebugScreen {
             row("双指捏合", "相纸宽度 \(String(format: "%.2f", paperScale))")
         }
         .font(.footnote)
-        .foregroundStyle(Theme.ink2)
+        .foregroundStyle(Theme.text2)
     }
 
     func row(_ gesture: String, _ detail: String) -> some View {
         HStack(spacing: 8) {
             Text(gesture)
-                .foregroundStyle(Theme.ink)
+                .foregroundStyle(Theme.text)
                 .frame(width: 64, alignment: .leading)
             Text(detail)
                 .monospacedDigit()
@@ -136,7 +136,7 @@ private extension CoarseDebugScreen {
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .strokeBorder(Theme.line, lineWidth: 0.5)
             }
-            .shadow(color: Theme.ink.opacity(0.14), radius: 4, y: 3)
+            .shadow(color: Color.black.opacity(0.5), radius: 4, y: 3)
     }
 
     func reset() {

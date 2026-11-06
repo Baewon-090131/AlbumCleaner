@@ -88,6 +88,7 @@ private extension DebugScreen {
         }
         .frame(height: 210)
         .background(Theme.paperDeep)
+        .toolbarColorScheme(.light, for: .navigationBar)
         .clipShape(RoundedRectangle(cornerRadius: Theme.cornerPanel, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: Theme.cornerPanel, style: .continuous)

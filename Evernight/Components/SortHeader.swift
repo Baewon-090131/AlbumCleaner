@@ -1,10 +1,10 @@
 import SwiftUI
 
-/// 整理页顶部：左上角常驻 Evernight 标题，下面一行是月份胶囊与「待删除 + 撤回」合体胶囊，
+/// 整理页顶部：左上角常驻 EVERNIGHT 字标，下面一行是月份与「待删除 + 撤回」金属板，
 /// 最下面一条占满整行的进度条。
 ///
-/// 不用系统 toolbar：toolbar 只有一行，排不下「标题在上、胶囊在下」；
-/// 标题还要在点开照片详情时跟着整页一起模糊，放在页面内容里才自然。
+/// 不用系统 toolbar：toolbar 只有一行，排不下「字标在上、操作在下」；
+/// 字标还要在点开照片详情时跟着整页一起模糊，放在页面内容里才自然。
 struct SortHeader: View {
     /// 顶部总高：上边距 4 + 标题 36 + 间距 8 + 胶囊 34 + 间距 8 + 进度条 28。
     static let height: CGFloat = 118
@@ -39,17 +39,17 @@ struct SortHeader: View {
 
             HStack(spacing: 8) {
                 if showsMonth {
-                    monthPill
+                    monthButton
                 }
                 Spacer(minLength: 8)
                 if let undoHint {
                     Text(undoHint)
-                        .font(.system(size: 11))
-                        .foregroundStyle(Theme.ink.opacity(0.68))
+                        .font(.pingFang(11))
+                        .foregroundStyle(Theme.text3)
                         .lineLimit(1)
                         .transition(.opacity)
                 }
-                actionCapsule
+                actionPlate
             }
             .frame(height: 34)
             .padding(.top, 8)
@@ -68,10 +68,13 @@ struct SortHeader: View {
             if let onBack {
                 Button(action: onBack) {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(Theme.card)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Theme.text)
                         .frame(width: 30, height: 30)
-                        .background(Theme.ink.opacity(0.22), in: Circle())
+                        .background(Theme.nightRaised, in: Circle())
+                        .overlay {
+                            Circle().strokeBorder(Theme.nightLine, lineWidth: 0.5)
+                        }
                 }
                 .buttonStyle(PillPressStyle())
                 .accessibilityLabel("返回")
@@ -83,8 +86,8 @@ struct SortHeader: View {
 
             if let albumTitle {
                 Text(albumTitle)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Theme.ink.opacity(0.72))
+                    .font(.pingFang(12, weight: .medium))
+                    .foregroundStyle(Theme.text2)
                     .lineLimit(1)
             }
         }
@@ -92,26 +95,22 @@ struct SortHeader: View {
 
     // MARK: - 月份
 
-    private var monthPill: some View {
+    /// 月份不是胶囊，是书页上的一行字：汉字 PingFang、数字打字机，后面跟一个小箭头。
+    private var monthButton: some View {
         Button {
             withAnimation(.snappy(duration: 0.26)) { showMonthWheel.toggle() }
         } label: {
             HStack(spacing: 6) {
-                Text(selectedTitle)
-                    .font(.typewriter(13, weight: .medium))
+                MixedType.text(selectedTitle, size: 13, weight: .medium)
                     .lineLimit(1)
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.system(size: 8, weight: .bold))
                     .rotationEffect(.degrees(showMonthWheel ? 180 : 0))
+                    .opacity(0.55)
             }
-            .foregroundStyle(Theme.ink)
-            .padding(.horizontal, 14)
+            .foregroundStyle(Theme.text)
             .frame(height: 34)
-            .background(Theme.card, in: Capsule())
-            .overlay {
-                Capsule().strokeBorder(Theme.line.opacity(0.85), lineWidth: 0.8)
-            }
-            .shadow(color: Theme.ink.opacity(0.16), radius: 8, y: 3)
+            .contentShape(Rectangle())
         }
         .buttonStyle(PillPressStyle())
         .accessibilityLabel("选择月份")
@@ -119,26 +118,23 @@ struct SortHeader: View {
 
     // MARK: - 待删除 + 撤回
 
-    /// 两个按钮共用一块纸胶囊，中间一道发丝线。
-    private var actionCapsule: some View {
+    /// 两个按钮共用一块夜漆金属板，中间一道发丝线。
+    private var actionPlate: some View {
         HStack(spacing: 0) {
             Button {
                 ui.showTrash = true
             } label: {
                 Image(systemName: "trash")
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: 15, weight: .regular))
                     .overlay(alignment: .topTrailing) {
                         if !library.trash.isEmpty {
                             Text("\(min(library.trash.count, 99))")
-                                .font(.typewriter(9, weight: .semibold))
-                                .foregroundStyle(Theme.card)
+                                .font(.typewriter(8, weight: .semibold))
+                                .foregroundStyle(Theme.paper)
                                 .padding(.horizontal, 4)
                                 .padding(.vertical, 1)
-                                .background(Theme.danger, in: Capsule())
-                                .overlay {
-                                    Capsule().strokeBorder(Theme.card.opacity(0.65), lineWidth: 0.8)
-                                }
-                                .offset(x: 10, y: -8)
+                                .background(Theme.accent, in: Capsule())
+                                .offset(x: 11, y: -8)
                         }
                     }
                     .frame(width: 48, height: 34)
@@ -147,29 +143,29 @@ struct SortHeader: View {
             .accessibilityLabel("待删除")
 
             Rectangle()
-                .fill(Theme.line.opacity(0.9))
-                .frame(width: 0.8, height: 16)
+                .fill(Theme.nightLine)
+                .frame(width: 0.5, height: 16)
 
             Button(action: onUndo) {
                 Image(systemName: "arrow.uturn.backward")
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: 15, weight: .regular))
                     .frame(width: 48, height: 34)
             }
             .buttonStyle(PillPressStyle())
             .disabled(!canUndo)
-            .opacity(canUndo ? 1 : 0.35)
+            .opacity(canUndo ? 1 : 0.3)
             .accessibilityLabel("撤回")
         }
-        .foregroundStyle(Theme.ink)
-        .background(Theme.card, in: Capsule())
+        .foregroundStyle(Theme.text)
+        .background(Theme.nightRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay {
-            Capsule().strokeBorder(Theme.line.opacity(0.85), lineWidth: 0.8)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(Theme.nightLine, lineWidth: 0.5)
         }
-        .shadow(color: Theme.ink.opacity(0.16), radius: 8, y: 3)
     }
 }
 
-/// 胶囊里的按钮按下时轻微缩一下：不改变布局，只给手感一个交代。
+/// 按钮按下时轻微缩一下：不改变布局，只给手感一个交代。
 private struct PillPressStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -179,7 +175,7 @@ private struct PillPressStyle: ButtonStyle {
 }
 
 /// 月份滚轮：交给系统 `Picker(.wheel)`，惯性、回弹、选中反馈都是原生手感。
-/// 选中即切月；面板不会自动收起，点空白或再点胶囊才收，避免滚轮还在惯性时被打断。
+/// 选中即切月；面板不会自动收起，点空白或再点月份才收，避免滚轮还在惯性时被打断。
 struct MonthWheelPanel: View {
     let months: [MonthSection]
     let onSelect: (MonthSection) -> Void
@@ -197,14 +193,13 @@ struct MonthWheelPanel: View {
     var body: some View {
         VStack(spacing: 4) {
             Text("选择月份")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(Theme.ink2)
+                .font(.pingFang(11, weight: .medium))
+                .foregroundStyle(Theme.text2)
                 .padding(.top, 12)
 
             Picker("月份", selection: $selection) {
                 ForEach(months) { month in
-                    Text(month.title)
-                        .font(.typewriter(15))
+                    MixedType.text(month.title, size: 15)
                         .tag(month.id)
                 }
             }
@@ -214,12 +209,12 @@ struct MonthWheelPanel: View {
         .padding(.horizontal, 8)
         .padding(.bottom, 8)
         .frame(width: 208)
-        .background(Theme.card, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(Theme.nightRaised, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(Theme.line.opacity(0.85), lineWidth: 0.8)
+                .strokeBorder(Theme.nightLine, lineWidth: 0.5)
         }
-        .shadow(color: Theme.ink.opacity(0.24), radius: 20, y: 10)
+        .shadow(color: Color.black.opacity(0.55), radius: 22, y: 12)
         .onChange(of: selection) { _, id in
             guard let month = months.first(where: { $0.id == id }) else { return }
             onSelect(month)
@@ -227,19 +222,19 @@ struct MonthWheelPanel: View {
     }
 }
 
-/// 左上角的 App 标题。英文走衬线斜体（「斜体花字」），压在木桌上时带一点投影。
-/// 「我的」是独立的全屏层，那里再放一份同样的标题，zoom 转场时它会跟着一起缩放。
+/// 左上角的 App 字标。英文走打字机、大写、宽字距——和素材里的 EVERNIGHT 小标同一种排版。
+/// 「我的」是独立的全屏层，那里再放一份同样的字标，zoom 转场时它会跟着一起缩放。
 struct EvernightTitle: View {
     var size: CGFloat = 28
-    /// 木桌上是墨色，深色底上可换成奶白。
-    var color: Color = Theme.ink
+    /// 夜桌上是骨白，深色底上可换成墨色。
+    var color: Color = Theme.text
 
     var body: some View {
-        Text("Evernight")
-            .font(.scriptItalic(size, weight: .semibold))
+        Text("EVERNIGHT")
+            .font(.typewriter(size * 0.5, weight: .medium))
+            .tracking(size * 0.12)
             .fixedSize()
             .foregroundStyle(color)
-            .shadow(color: Theme.paper.opacity(0.45), radius: 1, y: 1)
             .accessibilityAddTraits(.isHeader)
     }
 }

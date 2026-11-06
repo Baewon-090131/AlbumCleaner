@@ -6,11 +6,12 @@ struct ToastBanner: View {
 
     var body: some View {
         Text(text)
-            .font(.subheadline.weight(.medium))
-            .foregroundStyle(.white)
+            .font(.pingFang(12.5, weight: .medium))
+            .foregroundStyle(Theme.text)
             .padding(.horizontal, 18)
             .padding(.vertical, 10)
-            .background(Theme.scrim.opacity(0.45), in: Capsule())
+            .background(Theme.nightRaised.opacity(0.96), in: Capsule())
+            .overlay { Capsule().strokeBorder(Theme.nightLine, lineWidth: 0.5) }
             .padding(.top, 8)
             .transition(.move(edge: .top).combined(with: .opacity))
     }
