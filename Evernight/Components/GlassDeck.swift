@@ -7,6 +7,9 @@ struct GlassDeck: View {
     @Binding var index: Int
     /// 翻过最后一张后空态写的那句话。
     let endTitle: String
+    /// 本次整理的删除结算：张数与释放体积。
+    var endDeleted = 0
+    var endFreed = ""
     let sizeLabel: (PhotoItem) -> String
     let onSwipe: (SortMove) -> Bool
     let onFinished: (SortMove) -> Void
@@ -41,7 +44,7 @@ struct GlassDeck: View {
                         .offset(offset)
                         .opacity(detailActive ? 0 : fade)
                 } else {
-                    MonthDoneView(title: endTitle)
+                    MonthDoneView(title: endTitle, deleted: endDeleted, freed: endFreed)
                         .transition(.opacity)
                 }
             }

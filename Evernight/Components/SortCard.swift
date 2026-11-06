@@ -64,6 +64,10 @@ struct PolaroidCard: View {
         .padding(.horizontal, metrics.pad)
         .padding(.top, metrics.pad)
         .background(Theme.card)
+        .overlay {
+            // 相纸边一道发丝线：木桌偏浅，没有影子压住的边会「糊」进桌面
+            Rectangle().strokeBorder(Theme.ink.opacity(0.08), lineWidth: 0.6)
+        }
         .shadow(color: Theme.ink.opacity(0.10), radius: 2, y: 1)
         .shadow(color: Theme.ink.opacity(0.22), radius: 18, y: 16)
         .mask(eraseMask)
@@ -115,7 +119,7 @@ struct PolaroidCard: View {
             if !sizeLabel.isEmpty {
                 Text(sizeLabel)
                     .font(.typewriter(10))
-                    .foregroundStyle(Theme.ink3)
+                    .foregroundStyle(Theme.ink2)
                     .lineLimit(1)
             }
         }
@@ -161,16 +165,38 @@ struct PolaroidPeg: View {
 /// 没有卡片底——木桌上直接写字，比盖一块玻璃更像实物。
 struct MonthDoneView: View {
     var title: String = "本月照片整理完毕"
+    /// 本次删除的结算：张数与释放体积（已格式化）。没删就整行不显示。
+    var deleted: Int = 0
+    var freed: String = ""
 
     var body: some View {
-        VStack(spacing: 9) {
+        VStack(spacing: 8) {
             Text(title)
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(Theme.ink)
                 .shadow(color: Theme.paper.opacity(0.55), radius: 2, y: 1)
+
+            if deleted > 0 {
+                HStack(spacing: 4) {
+                    Text("本次删除")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Theme.ink2)
+                    Text("\(deleted)")
+                        .font(.typewriter(12, weight: .semibold))
+                        .foregroundStyle(Theme.danger)
+                    Text("张 · 释放")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Theme.ink2)
+                    Text(freed)
+                        .font(.typewriter(12, weight: .semibold))
+                        .foregroundStyle(Theme.ink)
+                }
+                .shadow(color: Theme.paper.opacity(0.45), radius: 1, y: 1)
+            }
+
             Text("向右滑可以再检查一遍")
-                .font(.system(size: 12))
-                .foregroundStyle(Theme.ink.opacity(0.62))
+                .font(.system(size: 11))
+                .foregroundStyle(Theme.ink.opacity(0.66))
                 .shadow(color: Theme.paper.opacity(0.45), radius: 1, y: 1)
         }
     }

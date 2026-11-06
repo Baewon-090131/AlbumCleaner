@@ -6,7 +6,7 @@ import SwiftUI
 /// 不用系统 toolbar：toolbar 只有一行，排不下「标题在上、胶囊在下」；
 /// 标题还要在点开照片详情时跟着整页一起模糊，放在页面内容里才自然。
 struct SortHeader: View {
-    /// 顶部总高：上边距 6 + 标题 36 + 间距 8 + 胶囊 34 + 间距 12 + 进度条 22。
+    /// 顶部总高：上边距 4 + 标题 36 + 间距 8 + 胶囊 34 + 间距 8 + 进度条 28。
     static let height: CGFloat = 118
 
     let months: [MonthSection]
@@ -17,6 +17,8 @@ struct SortHeader: View {
     let processed: Int
     let total: Int
     let canUndo: Bool
+    /// 撤回会倒做哪一步。撤销栈是通用的，写清楚比一个光秃秃的箭头可信。
+    let undoHint: String?
     let tint: Color
     @Binding var showMonthWheel: Bool
     let onUndo: () -> Void
@@ -33,21 +35,30 @@ struct SortHeader: View {
         VStack(alignment: .leading, spacing: 0) {
             titleRow
                 .frame(height: 36)
-                .padding(.top, 6)
+                .padding(.top, 4)
 
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 if showsMonth {
                     monthPill
                 }
                 Spacer(minLength: 8)
+                if let undoHint {
+                    Text(undoHint)
+                        .font(.system(size: 11))
+                        .foregroundStyle(Theme.ink.opacity(0.68))
+                        .lineLimit(1)
+                        .transition(.opacity)
+                }
                 actionCapsule
             }
+            .frame(height: 34)
             .padding(.top, 8)
 
             ProgressHeader(processed: processed, total: total, tint: tint)
-                .padding(.top, 12)
+                .padding(.top, 8)
         }
         .frame(height: Self.height, alignment: .top)
+        .animation(.smooth(duration: 0.25), value: undoHint)
     }
 
     // MARK: - 标题
@@ -62,7 +73,7 @@ struct SortHeader: View {
                         .frame(width: 30, height: 30)
                         .background(Theme.ink.opacity(0.22), in: Circle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PillPressStyle())
                 .accessibilityLabel("返回")
             }
 
@@ -100,9 +111,9 @@ struct SortHeader: View {
             .overlay {
                 Capsule().strokeBorder(Theme.line.opacity(0.85), lineWidth: 0.8)
             }
-            .shadow(color: Theme.ink.opacity(0.20), radius: 6, y: 3)
+            .shadow(color: Theme.ink.opacity(0.16), radius: 8, y: 3)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PillPressStyle())
         .accessibilityLabel("选择月份")
     }
 
@@ -124,12 +135,15 @@ struct SortHeader: View {
                                 .padding(.horizontal, 4)
                                 .padding(.vertical, 1)
                                 .background(Theme.danger, in: Capsule())
+                                .overlay {
+                                    Capsule().strokeBorder(Theme.card.opacity(0.65), lineWidth: 0.8)
+                                }
                                 .offset(x: 10, y: -8)
                         }
                     }
                     .frame(width: 48, height: 34)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PillPressStyle())
             .accessibilityLabel("待删除")
 
             Rectangle()
@@ -138,10 +152,10 @@ struct SortHeader: View {
 
             Button(action: onUndo) {
                 Image(systemName: "arrow.uturn.backward")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 15, weight: .medium))
                     .frame(width: 48, height: 34)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PillPressStyle())
             .disabled(!canUndo)
             .opacity(canUndo ? 1 : 0.35)
             .accessibilityLabel("撤回")
@@ -151,7 +165,16 @@ struct SortHeader: View {
         .overlay {
             Capsule().strokeBorder(Theme.line.opacity(0.85), lineWidth: 0.8)
         }
-        .shadow(color: Theme.ink.opacity(0.20), radius: 6, y: 3)
+        .shadow(color: Theme.ink.opacity(0.16), radius: 8, y: 3)
+    }
+}
+
+/// 胶囊里的按钮按下时轻微缩一下：不改变布局，只给手感一个交代。
+private struct PillPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.94 : 1)
+            .animation(.snappy(duration: 0.2), value: configuration.isPressed)
     }
 }
 

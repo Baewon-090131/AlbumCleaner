@@ -24,6 +24,9 @@ struct PolaroidDeck: View {
     @Binding var isPlaying: Bool
     /// 翻过本月最后一张后，空绳上写的那句话。
     let endTitle: String
+    /// 本次整理的删除结算：张数与释放体积。删过的才显示，没删就只留一句收尾。
+    var endDeleted = 0
+    var endFreed = ""
     let sizeLabel: (PhotoItem) -> String
     /// 手势判定结果；返回是否受理（撤回但栈空时返回 false，卡片归位）。
     let onSwipe: (SortMove) -> Bool
@@ -85,7 +88,7 @@ struct PolaroidDeck: View {
             ZStack(alignment: .topLeading) {
                 // 翻过最后一张：照片不再出现，绳子原地留着，只写一句话
                 if currentPhoto == nil {
-                    MonthDoneView(title: endTitle)
+                    MonthDoneView(title: endTitle, deleted: endDeleted, freed: endFreed)
                         .frame(width: size.width, height: size.height, alignment: .top)
                         .offset(y: cordTop + sag + 52)
                         .transition(.opacity)

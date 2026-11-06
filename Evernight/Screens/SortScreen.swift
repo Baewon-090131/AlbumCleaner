@@ -26,6 +26,9 @@ struct SortScreen: View {
     /// 交给卡片区播放的操作；`commandToken` 保证同一种动作也能被认出来。
     @State private var command: DeckCommand?
     @State private var commandToken = 0
+    /// 本次整理（当前月份 / 当前相簿）的删除结算：翻过最后一张时收尾用。
+    @State private var sessionDeleted = 0
+    @State private var sessionFreedBytes: Int64 = 0
     /// 卡片区正在播动效：这期间不接新操作，避免动效播到一半被覆盖。
     @State private var isPlaying = false
 
@@ -49,6 +52,17 @@ struct SortScreen: View {
         isAlbumMode ? "相簿照片整理完毕" : "本月照片整理完毕"
     }
 
+    /// 撤回会倒做哪一步（撤销栈是通用的，光一个箭头看不出会撤什么）。
+    private var undoHint: String? {
+        guard let last = undoStack.last else { return nil }
+        switch last {
+        case .deletion: return "可撤回：删除"
+        case .advance: return "可撤回：翻页"
+        case .favorite: return "可撤回：收藏"
+        case .albumAdd: return "可撤回：存入相簿"
+        }
+    }
+
     private var current: PhotoItem? {
         index < photos.count ? photos[index] : nil
     }
@@ -64,6 +78,8 @@ struct SortScreen: View {
                     photos: photos,
                     index: $index,
                     endTitle: endTitle,
+                    endDeleted: sessionDeleted,
+                    endFreed: Format.bytes(sessionFreedBytes),
                     sizeLabel: { Format.bytes(library.fileSize(of: $0)) },
                     onSwipe: { request($0) },
                     onFinished: finish,
@@ -79,6 +95,8 @@ struct SortScreen: View {
                     command: command,
                     isPlaying: $isPlaying,
                     endTitle: endTitle,
+                    endDeleted: sessionDeleted,
+                    endFreed: Format.bytes(sessionFreedBytes),
                     sizeLabel: { Format.bytes(library.fileSize(of: $0)) },
                     onSwipe: { request($0) },
                     onFinished: finish,
@@ -110,6 +128,7 @@ struct SortScreen: View {
                        processed: index,
                        total: photos.count,
                        canUndo: columnCount == 1 && !undoStack.isEmpty,
+                       undoHint: columnCount == 1 ? undoHint : nil,
                        tint: Color(hex: themeHex),
                        showMonthWheel: $showMonthWheel,
                        onUndo: { _ = request(.undo) },
@@ -197,6 +216,8 @@ private extension SortScreen {
         undoStack.removeAll()
         command = nil
         pendingAlbum = nil
+        sessionDeleted = 0
+        sessionFreedBytes = 0
     }
 
     /// 手势是唯一入口：只写 command，动效和数据变更都等卡片区播完再收尾。
@@ -231,6 +252,8 @@ private extension SortScreen {
         switch move {
         case .delete:
             guard let photo = current else { return }
+            sessionDeleted += 1
+            sessionFreedBytes += library.fileSize(of: photo)
             library.moveToTrash(photo)
             push(.deletion(photo: photo, index: index))
             show("已移到待删除")
@@ -264,6 +287,8 @@ private extension SortScreen {
         switch last {
         case .deletion(let photo, let position):
             library.restore(photo)
+            sessionDeleted = max(0, sessionDeleted - 1)
+            sessionFreedBytes = max(0, sessionFreedBytes - library.fileSize(of: photo))
             index = max(0, position)
             show("已撤回删除")
 
@@ -306,6 +331,8 @@ private extension SortScreen {
 
     /// 分列模式里的滑删：飞出动画播完才走到这里，与卡片区「先动效后数据」一致。
     func markDeleteInColumns(_ photo: PhotoItem) {
+        sessionDeleted += 1
+        sessionFreedBytes += library.fileSize(of: photo)
         library.moveToTrash(photo)
         push(.deletion(photo: photo, index: index))
         show("已标记，进待删除")
