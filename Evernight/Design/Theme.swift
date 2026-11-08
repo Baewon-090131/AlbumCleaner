@@ -15,7 +15,6 @@ enum Theme {
     static let nightPanel = Color(hex: "#241B31")
     /// 夜上的发丝线
     static let nightLine = Color(hex: "#EFE8F2").opacity(0.12)
-    static let nightLineSoft = Color(hex: "#EFE8F2").opacity(0.07)
 
     // MARK: - 夜上文字
     static let text = Color(hex: "#EFE8F2")
@@ -39,12 +38,7 @@ enum Theme {
     /// 夜色上的小红字 / 图标：提亮一档，保证 4.5:1
     static let accentText = Color(hex: "#E0556F")
     static let danger = Color(hex: "#C42340")
-    static let success = Color(hex: "#6E8B7B")
-    static let warning = Color(hex: "#B07A2E")
-    static let info = Color(hex: "#7A8FA6")
 
-    /// 深色统计卡（与面板同一层）
-    static let dark = Color(hex: "#1A1424")
 
     // MARK: - 面层
     /// 轨道 / 输入底
@@ -55,21 +49,26 @@ enum Theme {
     static let cornerIsland: CGFloat = 28
     static let cornerPanel: CGFloat = 28
     static let cornerTile: CGFloat = 20
-    /// 照片卡：比面板略收，配合 16pt 页边距不显笨重
-    static let cornerCard: CGFloat = 28
-    static let cornerPlate: CGFloat = 34
 
-    /// 夜桌：一层极缓的紫黑渐变，没有光晕、没有木纹。
+    /// 夜桌：一层极缓的紫黑渐变，右上角压一枚素材里的月牙远景（`IMG_7499`）。
+    /// 月只露一点轮廓，不当装饰贴图用——它给整屏一个"深夜"的方向感。
     static var wall: some View {
-        LinearGradient(
-            stops: [
-                .init(color: Color(hex: "#171020"), location: 0),
-                .init(color: Color(hex: "#120E18"), location: 0.55),
-                .init(color: Color(hex: "#0F0B14"), location: 1),
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
+        ZStack(alignment: .topTrailing) {
+            LinearGradient(
+                stops: [
+                    .init(color: Color(hex: "#171020"), location: 0),
+                    .init(color: Color(hex: "#120E18"), location: 0.55),
+                    .init(color: Color(hex: "#0F0B14"), location: 1),
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            NightMoonPlate(opacity: 0.16)
+                .frame(width: 280, height: 200, alignment: .topTrailing)
+                .blur(radius: 2)
+                .offset(x: 46, y: -66)
+        }
         .ignoresSafeArea()
     }
 }

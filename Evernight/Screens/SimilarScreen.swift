@@ -38,8 +38,8 @@ struct SimilarScreen: View {
                 if similar.isScanning {
                     scanningCard
                 } else if similar.groups.isEmpty && similar.hasScanned {
-                    ContentUnavailableView("没有发现相似照片", systemImage: "square.on.square",
-                                           description: Text("库里的照片都不重复，很干净"))
+                    NightEmptyState(title: "没有发现相似照片",
+                                    message: "库里的照片都不重复，很干净")
                         .padding(.top, 60)
                 } else {
                     yearFilter

@@ -170,7 +170,7 @@ struct MainTabView: View {
                 Image(systemName: tab.symbol)
                     .font(.system(size: 19))
                 Text(tab.title)
-                    .font(.system(size: 9.5, weight: .medium))
+                    .font(.pingFang(9.5, weight: .medium))
             }
             .foregroundStyle(isOn ? Theme.accentText : Theme.text3)
             .frame(maxWidth: .infinity)
@@ -203,7 +203,7 @@ struct MainTabView: View {
                 Image(systemName: "person.crop.circle.fill")
                     .font(.system(size: 19))
                 Text("我的")
-                    .font(.system(size: 9.5, weight: .medium))
+                    .font(.pingFang(9.5, weight: .medium))
             }
             .foregroundStyle(Theme.text3)
             .frame(maxWidth: .infinity)

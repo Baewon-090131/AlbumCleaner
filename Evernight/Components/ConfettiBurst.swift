@@ -16,7 +16,7 @@ struct ConfettiBurst: View {
 
     @State private var clusters: [Cluster]
 
-    private let duration: Double = 3.3
+    private let duration: Double = 3.6
 
     init(start: Date,
          originFromBottom: CGFloat = 0,
@@ -76,13 +76,12 @@ struct ConfettiBurst: View {
                         ctx.rotate(by: .radians(particle.spin * t))
                         let flip = cos(particle.spin * t * 1.6)
                         ctx.scaleBy(x: flip < 0 ? -1 : 1, y: 1)
+                        ctx.opacity = alpha * (flip < 0 ? 0.72 : 1)
 
-                        let path = shapePath(particle)
-                        ctx.fill(path, with: .color(particle.color.opacity(alpha)))
-                        if flip < 0 {
-                            // 背面：叠一层黑让它变暗
-                            ctx.fill(path, with: .color(.black.opacity(0.26 * alpha)))
-                        }
+                        // 彩纸就是素材里的飞花：直接从 Assets 取，不再画几何形。
+                        let s = particle.size
+                        ctx.draw(Image(particle.sprite),
+                                 in: CGRect(x: -s, y: -s, width: s * 2, height: s * 2))
                     }
                 }
             }
@@ -93,20 +92,6 @@ struct ConfettiBurst: View {
     private func fade(t: Double, start: Double) -> Double {
         guard t > start else { return 1 }
         return max(0, 1 - (t - start) / 0.35)
-    }
-
-    private func shapePath(_ particle: ConfettiParticle) -> Path {
-        switch particle.shape {
-        case 0:
-            let rect = CGRect(x: -3, y: -particle.size, width: 6, height: particle.size * 2)
-            return Path(rect)
-        case 1:
-            let d = particle.size
-            return Path(ellipseIn: CGRect(x: -d / 2, y: -d / 2, width: d, height: d))
-        default:
-            let d = particle.size
-            return Path(CGRect(x: -d / 2, y: -d / 2, width: d, height: d))
-        }
     }
 }
 
@@ -119,27 +104,25 @@ private struct Cluster {
 private struct ConfettiParticle {
     let vx: CGFloat
     let vy: CGFloat
-    let color: Color
-    /// 0 = 长条，1 = 圆片，2 = 方片。
-    let shape: Int
+    /// 素材里拆出来的飞花图片名（Petal1…Petal12）。
+    let sprite: String
     let size: CGFloat
     let spin: Double
     let phase: Double
     let delay: Double
     let fadeStart: Double
 
-    /// 五色主题色，形状随机；发射角在正上方 ±36° 内。
+    /// 用素材里的 12 朵飞花；发射角在正上方 ±36° 内。
     static func make(count: Int) -> [ConfettiParticle] {
-        let palette = [Theme.accent, Theme.accentText, Theme.paper, Theme.text2]
+        let sprites = Theme.petalSprites
         return (0..<count).map { _ in
             let speed = CGFloat.random(in: 40...56)
             let angle = Double.random(in: (90 - 36)...(90 + 36)) * .pi / 180
             return ConfettiParticle(
                 vx: CGFloat(cos(angle)) * speed * 0.42,
                 vy: -CGFloat(sin(angle)) * speed,
-                color: palette.randomElement() ?? Theme.accent,
-                shape: Int.random(in: 0...2),
-                size: CGFloat.random(in: 7...12),
+                sprite: sprites.randomElement() ?? "Petal1",
+                size: CGFloat.random(in: 12...20),
                 spin: Double.random(in: -9...9),
                 phase: Double.random(in: 0...(.pi * 2)),
                 delay: Double.random(in: 0...0.08),

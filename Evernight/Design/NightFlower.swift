@@ -2,97 +2,60 @@ import SwiftUI
 
 /// 四瓣夜花：全 App 唯一的记号。
 ///
-/// 用在封蜡红的花印（收藏）、月终的小印、空态与图标上。
-/// 形状用四段三次贝塞尔画成一片圆润的花瓣，再绕中心旋转四次；
-/// 内层可以叠一圈缩小版描边，得到素材里那种“同心线”的感觉。
-struct NightFlowerShape: Shape {
-    /// 以 0.5 为原型缩放；1 = 原始大小，0.6 = 内圈。
-    var scale: CGFloat = 1
-    var petals: Int = 4
-
-    func path(in rect: CGRect) -> Path {
-        let side = min(rect.width, rect.height)
-        let origin = CGPoint(x: rect.midX - side / 2, y: rect.midY - side / 2)
-        var path = Path()
-        for index in 0..<max(petals, 1) {
-            let angle = CGFloat(index) * 2 * .pi / CGFloat(max(petals, 1))
-            var petal = petalPath(origin: origin, side: side)
-            petal = petal.applying(
-                CGAffineTransform(translationX: origin.x + side / 2,
-                                  y: origin.y + side / 2)
-                    .rotated(by: angle)
-                    .translatedBy(x: -(origin.x + side / 2),
-                                  y: -(origin.y + side / 2))
-            )
-            if scale != 1 {
-                petal = petal.applying(
-                    CGAffineTransform(translationX: origin.x + side / 2,
-                                      y: origin.y + side / 2)
-                        .scaledBy(x: scale, y: scale)
-                        .translatedBy(x: -(origin.x + side / 2),
-                                      y: -(origin.y + side / 2))
-                )
-            }
-            path.addPath(petal)
-        }
-        return path
+/// v0.2 起不再手绘矢量，直接用素材里那张花（`Evernight素材/IMG_7050.jpg`）抠出来的两张位图：
+/// - `FlowerSeal`：绯红花瓣 + 骨白同心线，做封蜡花印、图标、权限门；
+/// - `FlowerLine`：只有骨白线条，做月终 / 空态 / 水印这类不该抢戏的地方。
+///
+/// 位图是 640×640、已经压成主题色，所以着色一律走 `.renderingMode(.original)`；
+/// 需要别色时用 `.colorMultiply` 或调透明度，不要再 tint（会把红面也染掉）。
+struct NightFlower: View {
+    enum Kind {
+        case seal, line
     }
 
-    /// 一片朝上的花瓣，坐标按 100×100 设计，再按 side/100 缩放并落到 rect 的中央。
-    private func petalPath(origin: CGPoint, side: CGFloat) -> Path {
-        let s = side / 100
-        func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
-            CGPoint(x: origin.x + x * s, y: origin.y + y * s)
-        }
-        var path = Path()
-        path.move(to: p(50, 50))
-        path.addCurve(to: p(34, 15), control1: p(34, 40), control2: p(28, 26))
-        path.addCurve(to: p(66, 15), control1: p(39, 5), control2: p(61, 5))
-        path.addCurve(to: p(50, 50), control1: p(72, 26), control2: p(66, 40))
-        path.closeSubpath()
-        return path
+    var kind: Kind = .seal
+    /// 叠加透明度。水印类用 0.10–0.35，花印用 1。
+    var opacity: Double = 1
+    /// 轻微旋转，做“盖章”的随意感；0 表示不转。
+    var angle: Double = 0
+
+    var body: some View {
+        Image(kind == .seal ? "FlowerSeal" : "FlowerLine")
+            .resizable()
+            .renderingMode(.original)
+            .aspectRatio(1, contentMode: .fit)
+            .opacity(opacity)
+            .rotationEffect(.degrees(angle))
+            .allowsHitTesting(false)
     }
 }
 
-/// 花印：可填充、可只描边，中心一枚小菱形。
-struct NightFlower: View {
-    var color: Color = Theme.accent
-    var filled = false
-    var lineWidth: CGFloat = 1.4
-    var showsInner = true
-    var showsCenter = true
+/// 素材里的伞：权限门与空态的大件插画。
+struct NightUmbrella: View {
+    var body: some View {
+        Image("Umbrella")
+            .resizable()
+            .renderingMode(.original)
+            .aspectRatio(contentMode: .fit)
+            .allowsHitTesting(false)
+    }
+}
+
+/// 素材里的月牙星空底。压暗过，直接铺在夜色上。
+struct NightMoonPlate: View {
+    var opacity: Double = 0.55
 
     var body: some View {
-        GeometryReader { proxy in
-            let side = min(proxy.size.width, proxy.size.height)
-            ZStack {
-                if filled {
-                    NightFlowerShape().fill(color)
-                }
-                if showsInner {
-                    NightFlowerShape(scale: 0.6)
-                        .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineJoin: .round))
-                }
-                NightFlowerShape()
-                    .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineJoin: .round))
-                if showsCenter {
-                    Path { path in
-                        let cx = proxy.size.width / 2
-                        let cy = proxy.size.height / 2
-                        let r = side * 0.045
-                        let v = side * 0.085
-                        path.move(to: CGPoint(x: cx, y: cy - v))
-                        path.addLine(to: CGPoint(x: cx + r, y: cy))
-                        path.addLine(to: CGPoint(x: cx, y: cy + v))
-                        path.addLine(to: CGPoint(x: cx - r, y: cy))
-                        path.closeSubpath()
-                    }
-                    .fill(filled ? Theme.paper : color)
-                }
-            }
-            .frame(width: side, height: side)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .allowsHitTesting(false)
+        Image("MoonPlate")
+            .resizable()
+            .renderingMode(.original)
+            .aspectRatio(contentMode: .fill)
+            .opacity(opacity)
+            .allowsHitTesting(false)
     }
+}
+
+extension Theme {
+    /// 从素材拆出来的 12 朵飞花，供彩纸 / 月终烟花随机取用。
+    static let petalSprites = (1...12).map { "Petal\($0)" }
 }

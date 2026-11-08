@@ -13,8 +13,8 @@ struct FavoritesScreen: View {
     var body: some View {
         ScrollView {
             if photos.isEmpty {
-                ContentUnavailableView("还没有收藏", systemImage: "heart",
-                                       description: Text("整理页下滑收藏的照片会出现在这里"))
+                NightEmptyState(title: "还没有收藏",
+                                message: "整理页下滑收藏的照片会出现在这里")
                     .padding(.top, 60)
             } else {
                 LazyVGrid(columns: columns, spacing: 3) {

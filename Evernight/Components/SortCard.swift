@@ -61,10 +61,9 @@ struct PolaroidCard: View {
                 .overlay(alignment: .topTrailing) {
                     // 收藏的照片在右上角盖一枚封蜡花印——全屏唯一饱和的绯红面。
                     if photo.asset.isFavorite {
-                        NightFlower(color: Theme.accent, filled: true, lineWidth: 1.2)
-                            .frame(width: 38, height: 38)
-                            .rotationEffect(.degrees(-8))
-                            .padding(10)
+                        NightFlower(kind: .seal, angle: -8)
+                            .frame(width: 42, height: 42)
+                            .padding(9)
                             .transition(.opacity)
                     }
                 }
@@ -188,9 +187,8 @@ struct MonthDoneView: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            NightFlower(color: Theme.text.opacity(0.34), filled: false, lineWidth: 1.1,
-                        showsInner: false, showsCenter: false)
-                .frame(width: 24, height: 24)
+            NightFlower(kind: .line, opacity: 0.34)
+                .frame(width: 26, height: 26)
                 .padding(.bottom, 2)
 
             Text(title)

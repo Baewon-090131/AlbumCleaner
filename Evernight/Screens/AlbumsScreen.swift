@@ -57,8 +57,9 @@ struct AlbumsScreen: View {
                 }
 
                 if library.albums.isEmpty {
-                    ContentUnavailableView("还没有相簿", systemImage: "photo.on.rectangle",
-                                           description: Text("点右上角「+」新建一个"))
+                    NightEmptyState(title: "还没有相簿",
+                                    message: "点右上角「+」新建一个",
+                                    flowerSize: 132)
                         .padding(.top, 40)
                 }
             }

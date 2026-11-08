@@ -84,6 +84,9 @@ struct SortHeader: View {
 
             Spacer(minLength: 8)
 
+            NightFlower(kind: .line, opacity: 0.22)
+                .frame(width: 20, height: 20)
+
             if let albumTitle {
                 Text(albumTitle)
                     .font(.pingFang(12, weight: .medium))

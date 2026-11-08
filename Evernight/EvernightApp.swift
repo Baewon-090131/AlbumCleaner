@@ -66,40 +66,61 @@ struct RootView: View {
     }
 }
 
+/// 加载态：夜底上一枚压印的花线，下面是转圈。
 private struct LoadingStateView: View {
     var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 22) {
+            NightFlower(kind: .line, opacity: 0.20)
+                .frame(width: 116, height: 116)
+
             ProgressView()
                 .controlSize(.large)
+                .tint(Theme.text2)
+
             Text("正在加载照片库…")
                 .font(.pingFang(13))
                 .foregroundStyle(Theme.text2)
         }
-        .padding(28)
-        .glassSurface(cornerRadius: Theme.cornerPanel)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
+/// 权限门：素材里的伞放在上半屏，文字与按钮在下方。
+/// 伞是原图（`Evernight素材/IMG_7500.jpg`）抠底后放进 `Assets.xcassets/Umbrella`。
 private struct PermissionStateView: View {
     let retry: () -> Void
 
     var body: some View {
-        VStack(spacing: 14) {
-            NightFlower(color: Theme.accent, lineWidth: 1.5)
-                .frame(width: 44, height: 44)
-            Text("需要照片访问权限")
-                .font(.pingFang(17, weight: .medium))
-            Text("在「设置 › 隐私与安全性 › 照片」里允许 Evernight 访问照片后回到这里。")
-                .font(.pingFang(12))
-                .foregroundStyle(Theme.text2)
-                .multilineTextAlignment(.center)
-            Button("重新检查", action: retry)
-                .glassButtonStyle(prominent: true)
-                .tint(Theme.accent)
+        VStack(spacing: 0) {
+            NightUmbrella()
+                .frame(maxWidth: 300)
+                .frame(height: 340)
+                .padding(.top, 12)
+
+            VStack(spacing: 10) {
+                Text("需要照片访问权限")
+                    .font(.pingFang(19, weight: .medium))
+                    .foregroundStyle(Theme.text)
+
+                Text("在「设置 › 隐私与安全性 › 照片」里允许 evernight 访问照片后回到这里。")
+                    .font(.pingFang(13))
+                    .lineSpacing(4)
+                    .foregroundStyle(Theme.text2)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+
+                Button(action: retry) {
+                    Text("重新检查")
+                        .font(.pingFang(15, weight: .medium))
+                        .foregroundStyle(Theme.paper)
+                        .frame(width: 200, height: 48)
+                        .background(Theme.accent, in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 8)
+            }
+            .padding(.bottom, 40)
         }
-        .padding(24)
-        .frame(maxWidth: 320)
-        .glassSurface(cornerRadius: Theme.cornerPanel)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 }
-
