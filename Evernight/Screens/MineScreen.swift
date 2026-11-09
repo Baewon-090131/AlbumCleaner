@@ -14,8 +14,6 @@ struct MineScreen: View {
     @AppStorage("ac_autoVideo") private var autoPlayVideo = true
     @AppStorage("ac_videoMuted") private var videoMuted = true
     @AppStorage("ac_batchSize") private var batchSize = 30.0
-    @AppStorage("ac_sort_theme") private var sortTheme = "rope"
-    @AppStorage("ac_dbg_hang") private var hangEnabled = true
 
     @State private var showCacheCleared = false
     @State private var showFavorites = false
@@ -88,7 +86,7 @@ struct MineScreen: View {
             }
 
             Section("整理偏好") {
-                LabeledContent("滑动方向", value: "左滑跳过 / 上滑删除")
+                LabeledContent("滑动方向", value: "左滑下一张 / 右滑撤回 / 上滑删除 / 下拉进相簿")
                 LabeledContent("展示顺序", value: "最新优先")
                 LabeledContent("照片显示", value: "显示全图")
                 LabeledContent("语言", value: "简体中文")
@@ -98,18 +96,6 @@ struct MineScreen: View {
                 Toggle("Live 图自动播放", isOn: $autoPlayLive)
                 Toggle("视频自动播放", isOn: $autoPlayVideo)
                 Toggle("视频默认静音", isOn: $videoMuted)
-            }
-
-            Section("整理主题") {
-                Picker("整理主题", selection: $sortTheme) {
-                    Text("挂绳相纸").tag("rope")
-                    Text("整理照片").tag("glass")
-                }
-                .pickerStyle(.segmented)
-                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-
-                Toggle("自适应居中", isOn: $hangEnabled)
-                    .disabled(sortTheme != "rope")
             }
 
             Section("通用") {

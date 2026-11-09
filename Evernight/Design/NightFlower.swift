@@ -2,12 +2,11 @@ import SwiftUI
 
 /// 四瓣夜花：全 App 唯一的记号。
 ///
-/// v0.2 起不再手绘矢量，直接用素材里那张花（`Evernight素材/IMG_7050.jpg`）抠出来的两张位图：
+/// 用素材里那张花（`Evernight素材/IMG_7050.jpg`）抠出来的两张位图：
 /// - `FlowerSeal`：绯红花瓣 + 骨白同心线，做封蜡花印、图标、权限门；
 /// - `FlowerLine`：只有骨白线条，做月终 / 空态 / 水印这类不该抢戏的地方。
 ///
-/// 位图是 640×640、已经压成主题色，所以着色一律走 `.renderingMode(.original)`；
-/// 需要别色时用 `.colorMultiply` 或调透明度，不要再 tint（会把红面也染掉）。
+/// 位图已经压成主题色，所以一律 `.renderingMode(.original)`；别再 tint。
 struct NightFlower: View {
     enum Kind {
         case seal, line
@@ -30,7 +29,7 @@ struct NightFlower: View {
     }
 }
 
-/// 素材里的伞：权限门与空态的大件插画。
+/// 素材里的伞：权限门的大件插画。
 struct NightUmbrella: View {
     var body: some View {
         Image("Umbrella")
@@ -53,9 +52,4 @@ struct NightMoonPlate: View {
             .opacity(opacity)
             .allowsHitTesting(false)
     }
-}
-
-extension Theme {
-    /// 从素材拆出来的 12 朵飞花，供彩纸 / 月终烟花随机取用。
-    static let petalSprites = (1...12).map { "Petal\($0)" }
 }

@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// 整理页布局调试面板。五个滑钮直接写 UserDefaults，
-/// 与 `PolaroidDeck` 的 `@AppStorage` 共用同一组 key，
+/// 挂绳相纸已下线，这个面板暂时只预览参数，不再影响整理页。
 /// 所以滑钮一动整理页立刻重绘，返回即可看到实际效果。
 struct DebugScreen: View {
     @AppStorage("ac_dbg_paper") private var paperScale = 0.90

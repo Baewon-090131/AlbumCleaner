@@ -16,7 +16,6 @@ struct SortScreen: View {
     @State private var undoStack: [UndoRecord] = []
     @State private var albumPhotos: [PhotoItem] = []
     @State private var toast: String?
-    @State private var showAlbumPicker = false
     @State private var columnCount = 1
     /// 月份滚轮面板是否展开。
     @State private var showMonthWheel = false
@@ -66,46 +65,28 @@ struct SortScreen: View {
         index < photos.count ? photos[index] : nil
     }
 
-    /// 整理主题：`rope` = 挂绳相纸，`glass` = 单张大相纸。
-    @AppStorage("ac_sort_theme") private var sortTheme = "rope"
-
     @ViewBuilder
     private var content: some View {
         if columnCount == 1 {
-            if sortTheme == "glass" {
-                GlassDeck(
-                    photos: photos,
-                    index: $index,
-                    endTitle: endTitle,
-                    endDeleted: sessionDeleted,
-                    endFreed: Format.bytes(sessionFreedBytes),
-                    sizeLabel: { Format.bytes(library.fileSize(of: $0)) },
-                    onSwipe: { request($0) },
-                    onFinished: finish,
-                    onTap: { photo, frame in ui.detailFrame = frame; ui.detailPhoto = photo },
-                    onAddToAlbum: { showAlbumPicker = true },
-                    onReachEnd: { ui.celebrate() },
-                    detailActive: ui.detailPhoto != nil
-                )
-            } else {
-                PolaroidDeck(
-                    photos: photos,
-                    index: $index,
-                    command: command,
-                    isPlaying: $isPlaying,
-                    endTitle: endTitle,
-                    endDeleted: sessionDeleted,
-                    endFreed: Format.bytes(sessionFreedBytes),
-                    sizeLabel: { Format.bytes(library.fileSize(of: $0)) },
-                    onSwipe: { request($0) },
-                    onFinished: finish,
-                    onTap: { photo, frame in ui.detailFrame = frame; ui.detailPhoto = photo },
-                    onAddToAlbum: { showAlbumPicker = true },
-                    onReachEnd: { ui.celebrate() },
-                    onSandBurst: { ui.playSand($0) },
-                    detailActive: ui.detailPhoto != nil
-                )
-            }
+            SwipeDeck(
+                photos: photos,
+                index: $index,
+                command: command,
+                isPlaying: $isPlaying,
+                albums: library.albums,
+                albumPick: pendingAlbum,
+                endTitle: endTitle,
+                endDeleted: sessionDeleted,
+                endFreed: Format.bytes(sessionFreedBytes),
+                sizeLabel: { Format.bytes(library.fileSize(of: $0)) },
+                onSwipe: { request($0) },
+                onFinished: finish,
+                onTap: { photo, frame in ui.detailFrame = frame; ui.detailPhoto = photo },
+                onAddToAlbum: { target in pickAlbum(target) },
+                onReachEnd: { ui.celebrate() },
+                onSandBurst: { ui.playSand($0) },
+                detailActive: ui.detailPhoto != nil
+            )
         } else {
             ColumnsGrid(
                 photos: photos,
@@ -167,12 +148,6 @@ struct SortScreen: View {
             ui.pendingTrash = nil
             guard target.id == current?.id else { return }
             _ = request(.delete)
-        }
-        .confirmationDialog("存入相簿", isPresented: $showAlbumPicker, titleVisibility: .visible) {
-            ForEach(library.albums) { target in
-                Button(target.name) { addCurrentPhoto(to: target) }
-            }
-            Button("取消", role: .cancel) {}
         }
         .overlay(alignment: .top) {
             if let toast {
@@ -241,7 +216,7 @@ private extension SortScreen {
         return true
     }
 
-    /// 卡片区播完动效后回调；复位与数据变更已在同一个无动画事务里（见 `PolaroidDeck.finish`）。
+    /// 卡片区播完动效后回调；复位与数据变更已在同一个无动画事务里（见 `SwipeDeck.finishNow`）。
     func finish(_ move: SortMove) {
         command = nil
         apply(move)
@@ -311,9 +286,16 @@ private extension SortScreen {
         if undoStack.count > undoDepth { undoStack.removeFirst() }
     }
 
+    /// 下拉托盘松手 / 顶栏相簿按钮都会走到这里：先记下目标，再交给卡片区播动效。
     func addCurrentPhoto(to target: AlbumItem) {
+        guard !isPlaying else { return }
         pendingAlbum = target
-        request(.album)
+        _ = request(.album)
+    }
+
+    /// 托盘里点中一格：卡片当场播放落下动效，播完才真正写相册。
+    func pickAlbum(_ target: AlbumItem) {
+        addCurrentPhoto(to: target)
     }
 
     /// 双指收拢进分列、张开退回单卡。相簿详情不支持分列（它的删除不走月份游标）。
