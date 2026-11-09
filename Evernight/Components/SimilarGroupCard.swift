@@ -43,7 +43,7 @@ struct GroupCard: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 42)
                     .background(checkedPhotos.isEmpty ? Color.gray : Theme.accent,
-                                in: RoundedRectangle(cornerRadius: 21, style: .continuous))
+                                in: RoundedRectangle(cornerRadius: Theme.radiusPlate, style: .continuous))
             }
             .buttonStyle(.plain)
             .disabled(checkedPhotos.isEmpty)

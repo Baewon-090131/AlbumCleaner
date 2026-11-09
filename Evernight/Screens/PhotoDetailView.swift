@@ -197,7 +197,7 @@ private extension PhotoDetailView {
             Spacer(minLength: 8)
 
             Text("evernight · 整理档案")
-                .font(.typewriter(9))
+                .font(.typewriter(10))
                 .foregroundStyle(Theme.ink3)
         }
         .padding(18)
@@ -245,7 +245,7 @@ private extension PhotoDetailView {
                 Image(systemName: symbol)
                     .font(.system(size: 17, weight: .semibold))
                 Text(title)
-                    .font(.pingFang(10.5, weight: .medium))
+                    .font(.pingFang(10.5, weight: .semibold))
             }
             .foregroundStyle(active ? Theme.accent : Theme.ink)
             .frame(width: 66, height: 54)
@@ -307,7 +307,7 @@ private extension PhotoDetailView {
             toggleFlip()
         } label: {
             Text(flipped ? "返回" : "查看详细信息")
-                .font(.pingFang(14, weight: .medium))
+                .font(.pingFang(14, weight: .semibold))
                 .foregroundStyle(Theme.paper)
                 .frame(width: 220, height: 50)
                 .background(Theme.accent, in: Capsule())

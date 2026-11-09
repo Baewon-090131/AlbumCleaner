@@ -99,7 +99,7 @@ private struct PermissionStateView: View {
 
             VStack(spacing: 10) {
                 Text("需要照片访问权限")
-                    .font(.pingFang(19, weight: .medium))
+                    .font(.pingFang(19, weight: .semibold))
                     .foregroundStyle(Theme.text)
 
                 Text("在「设置 › 隐私与安全性 › 照片」里允许 evernight 访问照片后回到这里。")
@@ -111,7 +111,7 @@ private struct PermissionStateView: View {
 
                 Button(action: retry) {
                     Text("重新检查")
-                        .font(.pingFang(15, weight: .medium))
+                        .font(.pingFang(15, weight: .semibold))
                         .foregroundStyle(Theme.paper)
                         .frame(width: 200, height: 48)
                         .background(Theme.accent, in: Capsule())

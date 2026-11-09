@@ -142,7 +142,7 @@ struct VideoCardContent: View {
                 .frame(height: 20)
 
                 Text("\(Format.duration(currentTime)) / \(Format.duration(durationSeconds))")
-                    .font(.typewriter(9, weight: .medium))
+                    .font(.typewriter(10, weight: .semibold))
                     .foregroundStyle(Color.white.opacity(0.92))
                     .fixedSize()
             }

@@ -16,8 +16,8 @@ struct SandGrain {
 struct SandBurst {
     let grains: [SandGrain]
     let start: Date
-    /// 照片窗口在屏幕上的矩形（全局坐标）。沙粒从这里起飞，
-    /// 但画布铺满整屏，飘散不受相纸边界限制。
+    /// 照片窗口**此刻**在屏幕上的矩形（全局坐标，含跟手位移）。
+    /// 沙粒的起点就按它换算——上滑到哪儿，粒子就从哪儿散开。
     let frameInScreen: CGRect
     let life: Double = 1.2
 }

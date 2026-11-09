@@ -1,110 +1,87 @@
 import SwiftUI
 
-/// 整理页布局调试面板。五个滑钮直接写 UserDefaults，
-/// 挂绳相纸已下线，这个面板暂时只预览参数，不再影响整理页。
-/// 所以滑钮一动整理页立刻重绘，返回即可看到实际效果。
+/// 整理页卡片区的实时调参面板。
+///
+/// 参数直接写 UserDefaults，`SwipeDeck` 用同名 `@AppStorage` 读，
+/// 所以拖滑钮时返回「整理」就能看到真实手感，不用重跑。
 struct DebugScreen: View {
-    @AppStorage("ac_dbg_paper") private var paperScale = 0.90
-    @AppStorage("ac_dbg_shift") private var topShift = 48.0
-    @AppStorage("ac_dbg_cord") private var cordTop = 26.0
-    @AppStorage("ac_dbg_sag") private var sag = 15.0
-    @AppStorage("ac_dbg_peek") private var peek = 0.0
-    @AppStorage("ac_dbg_hang") private var hang = true
+    @AppStorage("ac_deck_w") private var cardWidthRatio = 0.98
+    @AppStorage("ac_deck_h") private var cardHeightRatio = 1.0
+    @AppStorage("ac_deck_swap") private var swap = 88.0
+    @AppStorage("ac_deck_del") private var del = 104.0
+    @AppStorage("ac_deck_tray") private var tray = 64.0
 
     var body: some View {
         List {
             Section {
                 preview
-                    .listRowInsets(EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 12))
+                    .listRowInsets(EdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12))
                     .listRowBackground(Color.clear)
             } header: {
                 Text("实时预览")
             } footer: {
-                Text("参数直接作用于整理页，返回「整理」即可看到真实效果。")
+                Text("按 3:4 竖图示意，实际尺寸随照片比例在这两条上限内缩放。")
             }
 
-            Section("相纸") {
-                tuner("相纸宽度", value: $paperScale, range: 0.34...0.92, format: "%.2f")
-                tuner("整体上下位移", value: $topShift, range: -60...200, format: "%.0f", suffix: "pt 上提")
+            Section("卡片") {
+                tuner("最大宽度", value: $cardWidthRatio, range: 0.70...1.0, format: "%.2f")
+                tuner("最大高度", value: $cardHeightRatio, range: 0.60...1.0, format: "%.2f")
             }
 
-            Section("绳子") {
-                tuner("绳子中点距顶", value: $cordTop, range: -80...300, format: "%.0f", suffix: "pt")
-                tuner("绳子下垂", value: $sag, range: 0...80, format: "%.0f", suffix: "pt")
-                tuner("邻卡露出", value: $peek, range: 0...120, format: "%.0f", suffix: "pt")
-                Toggle("矮图自动吊绳", isOn: $hang)
+            Section("手感") {
+                tuner("左右切张阈值", value: $swap, range: 50...160, format: "%.0f", suffix: "pt")
+                tuner("上滑删除阈值", value: $del, range: 60...200, format: "%.0f", suffix: "pt")
+                tuner("下拉托盘阈值", value: $tray, range: 30...140, format: "%.0f", suffix: "pt")
             }
 
             Section {
                 Button("恢复默认值", role: .destructive) { reset() }
             } footer: {
-                Text("默认值：宽度 0.90 · 上提 48 · 中点距顶 26 · 下垂 15 · 露出 0")
+                Text("默认：宽 0.98 · 高 1.0 · 切张 88 · 删除 104 · 托盘 64")
             }
         }
-        .navigationTitle("Debug 精调")
+        .navigationTitle("整理手感")
         .navigationBarTitleDisplayMode(.inline)
     }
 }
 
 private extension DebugScreen {
-    /// 缩小的示意稿：一条绳 + 一张相纸 + 两片露边的邻卡。
-    /// `topShift` 在预览里只取三分之一权重，否则会顶出画框。
+    /// 缩小示意：一块夜底上按当前比例摆一张卡，外框就是可用区。
     var preview: some View {
         GeometryReader { geo in
             let w = geo.size.width
             let h = geo.size.height
-            let scale = CGFloat(paperScale)
-            let shift = CGFloat(topShift)
-            let midY = min(max(CGFloat(cordTop) * 0.5, -30), h * 0.7)
-            let sagPx = min(CGFloat(sag) * 0.6, h * 0.2)
-            let peekPx = CGFloat(peek)
-            let paperW = min(max(w * scale, 44), w - 10)
-            let paperH = min(max(paperW * 1.28, 44), max(h - midY - sagPx - 14, 40))
-            let paperY = midY + 6 - shift * 0.32
-            let sideY = max(4, midY - sagPx + 4)
+            let maxW = w * CGFloat(cardWidthRatio)
+            let maxH = h * CGFloat(cardHeightRatio)
+            let ratio: CGFloat = 3.0 / 4.0
+            var cw = maxW
+            var ch = cw / ratio
+            if ch > maxH { ch = maxH; cw = ch * ratio }
 
-            ZStack(alignment: .topLeading) {
-                paper(width: paperW, height: paperH)
-                    .offset(x: w - peekPx, y: sideY)
-
-                paper(width: paperW, height: paperH)
-                    .offset(x: peekPx - paperW, y: sideY)
-
-                Path { path in
-                    path.move(to: CGPoint(x: 0, y: midY - sagPx))
-                    path.addQuadCurve(to: CGPoint(x: w, y: midY - sagPx),
-                                      control: CGPoint(x: w / 2, y: midY + sagPx))
-                }
-                .stroke(Theme.ink3, lineWidth: 1.2)
-
-                paper(width: paperW, height: paperH)
-                    .offset(x: (w - paperW) / 2, y: paperY)
-
+            ZStack {
                 Rectangle()
-                    .fill(Theme.ink2)
-                    .frame(width: 6, height: 14)
-                    .offset(x: w / 2 - 3, y: paperY - 8)
+                    .fill(Theme.text.opacity(0.04))
+                    .frame(width: maxW, height: maxH)
+
+                RoundedRectangle(cornerRadius: Theme.radiusCard, style: .continuous)
+                    .fill(Theme.nightPanel)
+                    .frame(width: cw, height: ch)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: Theme.radiusCard, style: .continuous)
+                            .strokeBorder(Theme.text.opacity(0.10), lineWidth: 0.5)
+                    }
+                    .shadow(color: .black.opacity(0.42), radius: 12, y: 6)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(height: 210)
-        .background(Theme.paperDeep)
-        .toolbarColorScheme(.light, for: .navigationBar)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.cornerPanel, style: .continuous))
+        .frame(height: 240)
+        .background(Theme.night, in: RoundedRectangle(cornerRadius: Theme.cornerPanel,
+                                                     style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: Theme.cornerPanel, style: .continuous)
-                .strokeBorder(Theme.line, lineWidth: 0.5)
+                .strokeBorder(Theme.nightLine, lineWidth: 0.5)
         }
-    }
-
-    func paper(width: CGFloat, height: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: 5, style: .continuous)
-            .fill(Theme.card)
-            .frame(width: width, height: height)
-            .overlay {
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .strokeBorder(Theme.line, lineWidth: 0.5)
-            }
-            .shadow(color: Theme.ink.opacity(0.12), radius: 3, y: 2)
+        .toolbarColorScheme(.dark, for: .navigationBar)
     }
 
     func tuner(_ title: String,
@@ -117,9 +94,8 @@ private extension DebugScreen {
                 Text(title)
                 Spacer()
                 Text(String(format: format, value.wrappedValue) + suffix)
-                    .font(.footnote)
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.ink2)
+                    .font(.typewriter(13))
+                    .foregroundStyle(Theme.text2)
             }
             Slider(value: value, in: range)
                 .tint(Theme.accent)
@@ -128,11 +104,10 @@ private extension DebugScreen {
     }
 
     func reset() {
-        paperScale = 0.90
-        topShift = 48
-        cordTop = 26
-        sag = 15
-        peek = 0
-        hang = true
+        cardWidthRatio = 0.98
+        cardHeightRatio = 1.0
+        swap = 88
+        del = 104
+        tray = 64
     }
 }

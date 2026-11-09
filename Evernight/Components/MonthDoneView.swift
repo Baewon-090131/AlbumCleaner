@@ -15,7 +15,7 @@ struct MonthDoneView: View {
                 .padding(.bottom, 2)
 
             Text(title)
-                .font(.pingFang(20, weight: .medium))
+                .font(.pingFang(20, weight: .semibold))
                 .foregroundStyle(Theme.text)
 
             if deleted > 0 {
@@ -24,13 +24,13 @@ struct MonthDoneView: View {
                         .font(.pingFang(12))
                         .foregroundStyle(Theme.text3)
                     Text("\(deleted)")
-                        .font(.typewriter(12, weight: .medium))
+                        .font(.typewriter(12, weight: .semibold))
                         .foregroundStyle(Theme.accentText)
                     Text("张 · 释放")
                         .font(.pingFang(12))
                         .foregroundStyle(Theme.text3)
                     Text(freed)
-                        .font(.typewriter(12, weight: .medium))
+                        .font(.typewriter(12, weight: .semibold))
                         .foregroundStyle(Theme.text2)
                 }
             }

@@ -6,8 +6,8 @@ import SwiftUI
 /// 不用系统 toolbar：toolbar 只有一行，排不下「字标在上、操作在下」；
 /// 字标还要在点开照片详情时跟着整页一起模糊，放在页面内容里才自然。
 struct SortHeader: View {
-    /// 顶部总高：上边距 4 + 标题 36 + 间距 8 + 胶囊 34 + 间距 8 + 进度条 28。
-    static let height: CGFloat = 118
+    /// 顶部总高：上边距 4 + 标题 36 + 间距 8 + 胶囊 34 + 间距 8 + 进度条 27。
+    static let height: CGFloat = 117
 
     let months: [MonthSection]
     let selectedMonthID: String?
@@ -89,7 +89,7 @@ struct SortHeader: View {
 
             if let albumTitle {
                 Text(albumTitle)
-                    .font(.pingFang(12, weight: .medium))
+                    .font(.pingFang(12, weight: .semibold))
                     .foregroundStyle(Theme.text2)
                     .lineLimit(1)
             }
@@ -132,7 +132,7 @@ struct SortHeader: View {
                     .overlay(alignment: .topTrailing) {
                         if !library.trash.isEmpty {
                             Text("\(min(library.trash.count, 99))")
-                                .font(.typewriter(8, weight: .semibold))
+                                .font(.typewriter(10, weight: .semibold))
                                 .foregroundStyle(Theme.paper)
                                 .padding(.horizontal, 4)
                                 .padding(.vertical, 1)
@@ -160,9 +160,10 @@ struct SortHeader: View {
             .accessibilityLabel("撤回")
         }
         .foregroundStyle(Theme.text)
-        .background(Theme.nightRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(Theme.nightRaised, in: RoundedRectangle(cornerRadius: Theme.radiusInner,
+                                                            style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: Theme.radiusInner, style: .continuous)
                 .strokeBorder(Theme.nightLine, lineWidth: 0.5)
         }
     }
@@ -196,7 +197,7 @@ struct MonthWheelPanel: View {
     var body: some View {
         VStack(spacing: 4) {
             Text("选择月份")
-                .font(.pingFang(11, weight: .medium))
+                .font(.pingFang(11, weight: .semibold))
                 .foregroundStyle(Theme.text2)
                 .padding(.top, 12)
 
@@ -212,9 +213,10 @@ struct MonthWheelPanel: View {
         .padding(.horizontal, 8)
         .padding(.bottom, 8)
         .frame(width: 208)
-        .background(Theme.nightRaised, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(Theme.nightRaised,
+                    in: RoundedRectangle(cornerRadius: Theme.radiusPlate, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: Theme.radiusPlate, style: .continuous)
                 .strokeBorder(Theme.nightLine, lineWidth: 0.5)
         }
         .shadow(color: Color.black.opacity(0.55), radius: 22, y: 12)

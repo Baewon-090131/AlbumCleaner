@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// 整理页。`album` 为 nil 时是「整理」tab（按月整理），否则是某个相簿的整理页。
-/// 卡片是一排挂在绳上的拍立得相纸：左右拖绳子浏览，上滑摘下删除，下滑收藏。
-/// 卡片上不放任何按钮；撤回的入口在顶栏（左右拖动只改浏览位置，不再承担「下一张 / 撤回」）。
+/// 卡片区是一次一张的大照片：左滑下一张、右滑撤回、上滑删除、下拉拖到相簿。
+/// 卡片上不放任何按钮；撤回的入口在顶栏，也可以右滑。
 struct SortScreen: View {
     var album: AlbumItem? = nil
 
@@ -98,8 +98,7 @@ struct SortScreen: View {
     }
 
     var body: some View {
-        // 用 ZStack 而不是 VStack：卡片区要能画到进度条上面去，
-        // 否则绳子被往上调时会先被进度条盖住、再被裁掉。
+        // 用 ZStack 而不是 VStack：月份滚轮要能浮在内容之上。
         ZStack(alignment: .top) {
             SortHeader(months: library.months,
                        selectedMonthID: month?.id,
@@ -114,8 +113,13 @@ struct SortScreen: View {
                        onUndo: { _ = request(.undo) },
                        onBack: isAlbumMode ? { dismiss() } : nil)
 
+            // 用 safeAreaInset 而不是 padding：padding 只是把内容整体下推，
+            // 底部会溢出整整一个顶栏的高度（相簿轨道因此压到了底栏上）。
+            // safeAreaInset 会让内容**少掉**这一段的可用高度。
             content
-                .padding(.top, SortHeader.height)
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    Color.clear.frame(height: SortHeader.height)
+                }
                 .zIndex(1)
 
             if showMonthWheel {

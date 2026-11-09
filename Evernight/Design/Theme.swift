@@ -50,6 +50,20 @@ enum Theme {
     static let cornerPanel: CGFloat = 28
     static let cornerTile: CGFloat = 20
 
+    // MARK: - 圆角阶（对齐 DESIGN 的 rounded 系列）
+    /// 照片卡：DESIGN 的 `rounded.lg`。全 App 只有照片用这一档。
+    static let radiusCard: CGFloat = 18
+    /// 浮板 / 托盘：介于卡片与浮岛之间，用来把「承托照片的东西」和照片本身分开。
+    static let radiusPlate: CGFloat = 22
+    /// 胶囊内的方块按钮：DESIGN 的 `rounded.md`。
+    static let radiusInner: CGFloat = 11
+
+    // MARK: - 间距（DESIGN 的 8pt 基线）
+    static let spaceXS: CGFloat = 8
+    static let spaceSM: CGFloat = 12
+    static let spaceMD: CGFloat = 17
+    static let spaceLG: CGFloat = 24
+
     /// 夜桌：一层极缓的紫黑渐变，右上角压一枚素材里的月牙远景（`IMG_7499`）。
     /// 月只露一点轮廓，不当装饰贴图用——它给整屏一个"深夜"的方向感。
     static var wall: some View {

@@ -68,7 +68,7 @@ struct SwipeDeleteButton: View {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 17, weight: .semibold))
                         Text(label)
-                            .font(.pingFang(13, weight: .medium))
+                            .font(.pingFang(13, weight: .semibold))
                             .lineLimit(1)
                     }
                     .foregroundStyle(.white)

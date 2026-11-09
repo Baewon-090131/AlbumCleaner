@@ -6,7 +6,7 @@ struct ToastBanner: View {
 
     var body: some View {
         Text(text)
-            .font(.pingFang(12.5, weight: .medium))
+            .font(.pingFang(12.5, weight: .semibold))
             .foregroundStyle(Theme.text)
             .padding(.horizontal, 18)
             .padding(.vertical, 10)

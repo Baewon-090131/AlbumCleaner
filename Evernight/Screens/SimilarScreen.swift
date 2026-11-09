@@ -138,7 +138,7 @@ struct SimilarScreen: View {
                     .font(.pingFang(11))
                     .foregroundStyle(Theme.text2)
                 Text(Format.bytes(totalReclaimable))
-                    .font(.typewriter(17, weight: .medium))
+                    .font(.typewriter(17, weight: .semibold))
                     .foregroundStyle(Theme.accentText)
             }
             Spacer()
@@ -146,7 +146,7 @@ struct SimilarScreen: View {
                 showSmartConfirm = true
             } label: {
                 Label("智能清理", systemImage: "wand.and.stars")
-                    .font(.pingFang(13, weight: .medium))
+                    .font(.pingFang(13, weight: .semibold))
             }
             .glassButtonStyle(prominent: true)
             .tint(Theme.accent)

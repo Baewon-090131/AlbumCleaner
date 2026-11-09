@@ -17,7 +17,7 @@ struct NightEmptyState: View {
                 .padding(.bottom, 18)
 
             Text(title)
-                .font(.pingFang(16, weight: .medium))
+                .font(.pingFang(16, weight: .semibold))
                 .foregroundStyle(Theme.text)
 
             if let message {

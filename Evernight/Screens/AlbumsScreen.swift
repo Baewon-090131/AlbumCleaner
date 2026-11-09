@@ -280,7 +280,7 @@ struct AlbumCardView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
             Text(album.name)
-                .font(.pingFang(15, weight: .medium))
+                .font(.pingFang(15, weight: .semibold))
                 .lineLimit(1)
 
             Text("\(album.count)")

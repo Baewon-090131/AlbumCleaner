@@ -19,7 +19,7 @@ struct ProgressHeader: View {
     }
 
     var body: some View {
-        VStack(spacing: 7) {
+        VStack(spacing: Theme.spaceXS) {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     Capsule()
@@ -29,14 +29,14 @@ struct ProgressHeader: View {
                         .frame(width: max(0, geometry.size.width * progress))
                 }
             }
-            .frame(height: 5)
+            .frame(height: 4)
 
-            HStack(spacing: 4) {
+            HStack(spacing: 5) {
                 Text("已整理")
-                    .font(.pingFang(10.5))
+                    .font(.pingFang(11))
                     .foregroundStyle(Theme.text3)
                 Text("\(processed)")
-                    .font(.typewriter(11, weight: .medium))
+                    .font(.typewriter(11, weight: .semibold))
                     .foregroundStyle(Theme.text2)
                 Text("/")
                     .font(.typewriter(11))
@@ -45,20 +45,20 @@ struct ProgressHeader: View {
                     .font(.typewriter(11))
                     .foregroundStyle(Theme.text3)
 
-                Spacer(minLength: 12)
+                Spacer(minLength: Theme.spaceSM)
 
                 Text("剩余")
-                    .font(.pingFang(10.5))
+                    .font(.pingFang(11))
                     .foregroundStyle(Theme.text3)
                 Text("\(left)")
-                    .font(.typewriter(11, weight: .medium))
+                    .font(.typewriter(11, weight: .semibold))
                     .foregroundStyle(Theme.text2)
                 Text("张")
-                    .font(.pingFang(10.5))
+                    .font(.pingFang(11))
                     .foregroundStyle(Theme.text3)
             }
         }
-        .frame(height: 28)
+        .frame(height: 27)
         .animation(.smooth(duration: 0.35), value: progress)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("已整理 \(processed) 项，共 \(total) 项，剩余 \(left) 项")

@@ -72,7 +72,7 @@ struct MineScreen: View {
                         Text("每轮数量")
                         Spacer()
                         Text("\(Int(batchSize))")
-                            .font(.typewriter(15, weight: .medium))
+                            .font(.typewriter(15, weight: .semibold))
                             .foregroundStyle(Theme.text2)
                     }
                     Slider(value: $batchSize, in: 10...300, step: 10) {
@@ -106,14 +106,9 @@ struct MineScreen: View {
 
             Section("开发者") {
                 NavigationLink {
-                    CoarseDebugScreen()
-                } label: {
-                    Label("Debug 粗调", systemImage: "hand.draw")
-                }
-                NavigationLink {
                     DebugScreen()
                 } label: {
-                    Label("Debug 精调", systemImage: "slider.horizontal.3")
+                    Label("整理手感", systemImage: "slider.horizontal.3")
                 }
             }
 
@@ -162,7 +157,7 @@ private struct UsageCard: View {
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("\(cleanedCount)")
-                    .font(.typewriter(44, weight: .medium))
+                    .font(.typewriter(44, weight: .semibold))
                     .foregroundStyle(Theme.text)
                 Text("· 释放 \(Format.bytes(freedBytes))")
                     .font(.typewriter(11))
@@ -227,7 +222,7 @@ private struct StatCell: View {
                 .font(.system(size: 15))
                 .foregroundStyle(color)
             Text(value)
-                .font(.typewriter(15, weight: .medium))
+                .font(.typewriter(15, weight: .semibold))
             Text(title + " ›")
                 .font(.pingFang(10))
                 .foregroundStyle(Theme.text3)
