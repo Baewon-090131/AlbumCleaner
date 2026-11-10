@@ -36,6 +36,10 @@ struct MainTabView: View {
     @State private var selection: AppTab = .sort
 
     var body: some View {
+        // `@Environment` 拿到的是不可变引用，要拿 `$ui.showTrash` 这样的绑定位
+        // 必须先在 body 里包一层 `@Bindable`。
+        @Bindable var ui = ui
+
         ZStack(alignment: .bottom) {
             tabView
                 .tint(Theme.accent)
