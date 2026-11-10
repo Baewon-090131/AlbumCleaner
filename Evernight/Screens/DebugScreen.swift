@@ -5,7 +5,7 @@ import SwiftUI
 /// 参数直接写 UserDefaults，`SwipeDeck` 用同名 `@AppStorage` 读，
 /// 所以拖滑钮时返回「整理」就能看到真实手感，不用重跑。
 struct DebugScreen: View {
-    @AppStorage("ac_deck_w") private var cardWidthRatio = 0.98
+    @AppStorage("ac_deck_w") private var cardWidthRatio = 1.0
     @AppStorage("ac_deck_h") private var cardHeightRatio = 1.0
     @AppStorage("ac_deck_swap") private var swap = 88.0
     @AppStorage("ac_deck_del") private var del = 104.0
@@ -37,7 +37,7 @@ struct DebugScreen: View {
             Section {
                 Button("恢复默认值", role: .destructive) { reset() }
             } footer: {
-                Text("默认：宽 0.98 · 高 1.0 · 切张 88 · 删除 104 · 托盘 64")
+                Text("默认：宽 1.0 · 高 1.0 · 切张 88 · 删除 104 · 托盘 64")
             }
         }
         .navigationTitle("整理手感")
@@ -88,7 +88,6 @@ private extension DebugScreen {
         if fullHeight <= maxH { return CGSize(width: maxW, height: fullHeight) }
         return CGSize(width: maxH * ratio, height: maxH)
     }
-
     func tuner(_ title: String,
                value: Binding<Double>,
                range: ClosedRange<Double>,
@@ -109,7 +108,7 @@ private extension DebugScreen {
     }
 
     func reset() {
-        cardWidthRatio = 0.98
+        cardWidthRatio = 1.0
         cardHeightRatio = 1.0
         swap = 88
         del = 104

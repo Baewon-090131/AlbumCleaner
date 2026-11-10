@@ -227,17 +227,22 @@ struct MonthWheelPanel: View {
     }
 }
 
-/// 左上角的 App 字标。英文走打字机、大写、宽字距——和素材里的 EVERNIGHT 小标同一种排版。
-/// 「我的」是独立的全屏层，那里再放一份同样的字标，zoom 转场时它会跟着一起缩放。
+/// 整理页左上角的 App 字标。
+///
+/// 字距按 DESIGN.md 的字标规则：大写等宽字母串不需要 `0.12em` 那种排版字距——
+/// 那会把九个字母拆成一排互不相连的符号。这里只给 0.06em 的呼吸，
+/// 并保持 semibold（DESIGN 的字重阶是 300/400/600/700，没有 500）。
 struct EvernightTitle: View {
     var size: CGFloat = 28
     /// 夜桌上是骨白，深色底上可换成墨色。
     var color: Color = Theme.text
 
+    private var fontSize: CGFloat { size * 0.5 }
+
     var body: some View {
         Text("EVERNIGHT")
-            .font(.typewriter(size * 0.5, weight: .medium))
-            .tracking(size * 0.12)
+            .font(.typewriter(fontSize, weight: .semibold))
+            .tracking(fontSize * 0.06)
             .fixedSize()
             .foregroundStyle(color)
             .accessibilityAddTraits(.isHeader)

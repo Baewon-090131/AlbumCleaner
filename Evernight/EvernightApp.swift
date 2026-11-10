@@ -9,12 +9,11 @@ struct EvernightApp: App {
     }
 }
 
-/// 全局界面状态：任何页面的「待删除托盘」都经它弹出回收站；「我的」也经它开合。
+/// 全局界面状态：任何页面的「待删除托盘」都经它弹出回收站。
 @Observable
 @MainActor
 final class UIState {
     var showTrash = false
-    var showMine = false
     /// 点开的照片详情。放在全局而不是某个页面里，
     /// 这样它才能盖在底栏之上、并让底栏跟着背景一起模糊。
     var detailPhoto: PhotoItem?

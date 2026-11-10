@@ -1,14 +1,10 @@
 import SwiftUI
 
-/// 「我的」面板。从底部栏的圆钮扩散到全屏（`fullScreenCover` + zoom 转场），
-/// 退出用右上角 ×，交互就是入场动画的倒放。
+/// 「我的」页。和其它三页一样是一个普通 tab —— 不再走全屏 cover 的 zoom 转场，
+/// 切页只做系统默认转场。左上角 EVERNIGHT 直接作为导航栏标题展示，不再塞进胶囊。
 struct MineScreen: View {
-    /// iOS 26 走全屏 cover，需要右上角 ×；iOS 17–25 是普通 tab，不需要关闭按钮。
-    var showsCloseButton = true
-
     @Environment(PhotoLibraryService.self) private var library
     @Environment(UIState.self) private var ui
-    @Environment(\.dismiss) private var dismiss
 
     @AppStorage("ac_autoLive") private var autoPlayLive = true
     @AppStorage("ac_autoVideo") private var autoPlayVideo = true
@@ -21,25 +17,17 @@ struct MineScreen: View {
 
     var body: some View {
         list
-            .navigationTitle("")
+            // EVERNIGHT 就是这一页的标题：放在系统标题位（principal），
+            // 不套任何胶囊、也不塞进 leading 的按钮区。
+            // 字体走打字机 + 收紧的字距（见 `EvernightTitle`），不再手动撑宽。
+            .navigationTitle("EVERNIGHT")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                // 「我的」是独立的全屏层，常驻标题在这里单独放一份，
-                // 这样从底栏圆钮 zoom 进来时它跟着整页一起放大。
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .principal) {
                     EvernightTitle(size: 24, color: Theme.text)
                 }
-                if showsCloseButton {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            dismiss()
-                        } label: {
-                            Image(systemName: "xmark")
-                        }
-                        .accessibilityLabel("关闭")
-                    }
-                }
             }
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .fullScreenCover(isPresented: $showFavorites) {
                 NavigationStack { FavoritesScreen() }
             }
@@ -99,7 +87,7 @@ struct MineScreen: View {
             }
 
             Section("通用") {
-                LabeledContent("关于", value: "evernight 0.1")
+                LabeledContent("关于", value: "evernight 0.2")
                 Button("操作指引") {}
                 Button("清理缓存") { showCacheCleared = true }
             }
@@ -116,7 +104,7 @@ struct MineScreen: View {
                 VStack(spacing: 8) {
                     Link("用户协议 · 隐私政策", destination: URL(string: "https://example.com")!)
                         .font(.footnote.weight(.medium))
-                    Text("evernight 0.1 (14)")
+                    Text("evernight 0.2 (15)")
                         .font(.caption)
                         .foregroundStyle(Theme.text2)
                 }
@@ -128,13 +116,9 @@ struct MineScreen: View {
         .scrollContentBackground(.hidden)
     }
 
-    /// 「待清理」：先关掉我的，等转场收尾再开待删除 sheet，避免同时呈现两个 presentation。
+    /// 「待清理」：直接开待删除 sheet。它现在是独立 tab，不必先关面板。
     private func openTrash() {
-        ui.showMine = false
-        Task {
-            try? await Task.sleep(for: .milliseconds(360))
-            ui.showTrash = true
-        }
+        ui.showTrash = true
     }
 }
 

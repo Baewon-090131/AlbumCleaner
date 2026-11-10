@@ -28,7 +28,8 @@ struct TrashScreen: View {
         ScrollView {
             if library.trash.isEmpty {
                 NightEmptyState(title: "待删除为空",
-                                message: "滑动删除的照片会先落到这里")
+                                message: "滑动删除的照片会先落到这里",
+                                spins: true)
                     .padding(.top, 60)
             } else {
                 MixedType.text("本轮 \(library.trash.count) 项 · 预计释放 \(Format.bytes(library.trashByteCount))", size: 11)
