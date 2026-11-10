@@ -2,9 +2,14 @@ import SwiftUI
 
 /// 整理页的单张照片卡。
 ///
-/// 照片自己就是卡片：**没有白边、没有木夹**，圆角取 DESIGN 的 `rounded.lg`。
-/// 顶部两枚胶囊角标（左：HDR / 实况 / 视频，右：日期 · 体积），
-/// 拖动到删除阈值时整张卡外缘浮起一圈绯红光晕（`glow` 0 → 1）。
+/// 照片自己就是卡片：没有白边、没有木夹，圆角取 `Theme.radiusCard`。
+/// 顶部两枚胶囊角标（左：HDR / 实况 / 视频，右：日期 · 体积）。
+///
+/// 两种反馈：
+/// - `glow`：上滑接近删除阈值时，外缘浮起一圈绯红光晕。
+/// - `hintSide` / `hintStrength`：横向拖动时，卡片**内缘**亮起一道内发光，
+///   右滑从左缘亮、左滑从右缘亮。颜色跟随动作（删除 = 绯红，其余 = 骨白）。
+///   这是整套交互里唯一的实时方向反馈，参考稿把它做在卡内侧而不是外侧。
 struct SwipePhotoCard: View {
     let photo: PhotoItem
     let cardSize: CGSize
@@ -13,10 +18,20 @@ struct SwipePhotoCard: View {
     var glow: CGFloat = 0
     /// 碎沙擦拭：0 = 完整，1 = 消失。
     var erase: CGFloat = 0
+    /// 方向光：+1 = 右滑（左缘亮），-1 = 左滑（右缘亮），0 = 不亮。
+    var hintSide: Int = 0
+    /// 方向光浓度 0…1。
+    var hintStrength: CGFloat = 0
+    /// 方向光是不是"删除"语义（决定用绯红还是骨白）。
+    var hintDeletes: Bool = true
     var onTap: () -> Void = {}
 
-    /// DESIGN：内联卡片图像用 `rounded.lg`，全 App 只有照片用这一档圆角。
     private var radius: CGFloat { Theme.radiusCard }
+
+    /// 方向光的颜色：删除用绯红，其它动作用骨白（避免和删除混淆）。
+    private var hintColor: Color {
+        hintDeletes ? Theme.accent : Theme.text
+    }
 
     var body: some View {
         AsyncThumbnail(asset: photo.asset,
@@ -42,6 +57,15 @@ struct SwipePhotoCard: View {
                     .strokeBorder(Theme.text.opacity(0.10), lineWidth: 0.5)
             }
             .overlay {
+                // 方向光：贴边一道内发光 + 一圈细描边
+                if hintStrength > 0.01, hintSide != 0 {
+                    RoundedRectangle(cornerRadius: radius, style: .continuous)
+                        .strokeBorder(hintColor.opacity(0.55 * Double(hintStrength)),
+                                      lineWidth: 1.5)
+                }
+            }
+            .overlay { directionGlow }
+            .overlay {
                 // 阈值光晕：贴边一道绯红线，外侧再发光
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .strokeBorder(Theme.accent.opacity(0.92 * Double(glow)), lineWidth: 1.5)
@@ -54,6 +78,28 @@ struct SwipePhotoCard: View {
             .onTapGesture { onTap() }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("待整理的照片")
+    }
+
+    /// 内缘方向光：从贴近的那一侧往内推 40pt 的渐变。
+    /// 参考稿是 `inset -18px 0 40px` 的内阴影，SwiftUI 用渐变叠片等价实现。
+    @ViewBuilder
+    private var directionGlow: some View {
+        if hintStrength > 0.01, hintSide != 0 {
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        stops: [
+                            .init(color: hintColor.opacity(0.55 * Double(hintStrength)), location: 0),
+                            .init(color: hintColor.opacity(0.18 * Double(hintStrength)), location: 0.55),
+                            .init(color: .clear, location: 1)
+                        ],
+                        startPoint: hintSide > 0 ? .leading : .trailing,
+                        endPoint: hintSide > 0 ? .trailing : .leading
+                    )
+                )
+                .blendMode(.plusLighter)
+                .allowsHitTesting(false)
+        }
     }
 
     /// 底部先透明；`erase` 越大透明区越往上长。`erase` 为 0 时整张不透。

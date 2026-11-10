@@ -5,3 +5,6 @@ build.log
 .DS_Store
 # 设计预览图（本地留档，不进仓库）
 Previews/
+# 参考物：竞品 IPA 与其解包，仅本地对照，不进仓库
+抄作业/
+ReelSort_*.ipa
