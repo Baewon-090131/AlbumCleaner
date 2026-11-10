@@ -45,8 +45,6 @@ struct SwipeDeck: View {
     @State private var pickIndex = 0
     /// 碎沙擦拭进度。
     @State private var erase: CGFloat = 0
-    /// 卡片整体淡出：飞出 / 存入相簿时让位，让新卡接位时不出现重叠。
-    @State private var leaving = false
     @State private var deckSize: CGSize = .zero
     @State private var deckOrigin: CGPoint = .zero
 
@@ -140,12 +138,13 @@ private extension SwipeDeck {
                                    onTap(photo, CGRect(origin: cardOrigin, size: card))
                                })
                     .frame(width: card.width, height: card.height)
-                    // 拖动跟手必须即时：位移与透明度都只在这个局部动，
+                    // 拖动跟手必须即时：位移与显隐都只在这个局部动，
                     // 不能挂到下面的 `.animation(value: current?.id)` 上。
-                    .modifier(DeckCardMotion(drag: drag, hidden: detailActive || leaving))
+                    .modifier(DeckCardMotion(drag: drag, hidden: detailActive))
                     .animation(.smooth(duration: 0.3), value: detailActive)
-                    // 换张：**旧卡瞬时移除**（它此刻已飞出 / 已擦净，淡出反而会闪回），
-                    // 新卡在原点从 0 浮上来——这才是「下一张从屏幕中间渐显」。
+                    // 换张：**旧卡瞬时移除**（它此刻已飞出屏幕 / 已擦净，
+                    // 淡出反而会在中心闪回），新卡在原点从 0 浮上来——
+                    // 这才是「下一张从屏幕中间渐显」。
                     .id(photo.id)
                     .transition(.asymmetric(insertion: .opacity, removal: .identity))
             }
@@ -161,13 +160,9 @@ private extension SwipeDeck {
         let maxW = size.width * CGFloat(cardWidthRatio)
         let maxH = max(40, size.height * CGFloat(cardHeightRatio) - Theme.spaceXS * 2)
         let ratio = min(max(current?.ratio ?? 0.75, 0.4), 2.2)
-        var w = maxW
-        var h = w / ratio
-        if h > maxH {
-            h = maxH
-            w = h * ratio
-        }
-        return CGSize(width: w, height: h)
+        let fullHeight = maxW / ratio
+        if fullHeight <= maxH { return CGSize(width: maxW, height: fullHeight) }
+        return CGSize(width: maxH * ratio, height: maxH)
     }
 }
 
@@ -300,7 +295,6 @@ private extension SwipeDeck {
             withAnimation(.smooth(duration: 0.3)) {
                 drag = CGSize(width: 0, height: deckSize.height + 200)
                 tray = 0
-                leaving = true
             }
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(310))
@@ -309,8 +303,7 @@ private extension SwipeDeck {
         }
     }
 
-    /// 左 / 右滑走：卡片顺着手势方向飞出并淡掉。
-    /// 位移与淡出必须在**同一个** `withAnimation` 里，否则卡片会先瞬隐再飞。
+    /// 左 / 右滑走：卡片顺着手势方向飞出。
     func fly(_ move: SortMove, forward: Bool) {
         guard !isPlaying else { return }
         isPlaying = true
@@ -318,7 +311,6 @@ private extension SwipeDeck {
         withAnimation(.smooth(duration: 0.26)) {
             drag = CGSize(width: forward ? -distance : distance, height: drag.height * 0.5)
             glow = 0
-            leaving = true
         }
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(268))
@@ -329,15 +321,14 @@ private extension SwipeDeck {
 
     /// 复位动效状态与数据变更放在同一帧：拆开会闪。
     ///
-    /// 旧卡的移除是瞬时的（`removal: .identity`），所以这里可以直接把 `leaving`
-    /// 归零而不会让旧卡在中心闪一下；新卡的入场由 `cardLayer` 的 insertion 过渡负责。
+    /// 旧卡此刻已经飞出屏幕（或被碎沙擦净），换数据时它是「瞬时移除」，
+    /// 所以这里把位移直接归零不会被看见；新卡随后按 insertion 过渡在正中渐显。
     func settle(_ move: SortMove) {
         withoutAnimation {
             drag = .zero
             glow = 0
             erase = 0
             tray = 0
-            leaving = false
             isPlaying = false
         }
         onFinished(move)

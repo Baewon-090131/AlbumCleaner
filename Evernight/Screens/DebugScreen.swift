@@ -53,10 +53,7 @@ private extension DebugScreen {
             let h = geo.size.height
             let maxW = w * CGFloat(cardWidthRatio)
             let maxH = h * CGFloat(cardHeightRatio)
-            let ratio: CGFloat = 3.0 / 4.0
-            var cw = maxW
-            var ch = cw / ratio
-            if ch > maxH { ch = maxH; cw = ch * ratio }
+            let card = sampleCardSize(maxW: maxW, maxH: maxH)
 
             ZStack {
                 Rectangle()
@@ -65,7 +62,7 @@ private extension DebugScreen {
 
                 RoundedRectangle(cornerRadius: Theme.radiusCard, style: .continuous)
                     .fill(Theme.nightPanel)
-                    .frame(width: cw, height: ch)
+                    .frame(width: card.width, height: card.height)
                     .overlay {
                         RoundedRectangle(cornerRadius: Theme.radiusCard, style: .continuous)
                             .strokeBorder(Theme.text.opacity(0.10), lineWidth: 0.5)
@@ -82,6 +79,14 @@ private extension DebugScreen {
                 .strokeBorder(Theme.nightLine, lineWidth: 0.5)
         }
         .toolbarColorScheme(.dark, for: .navigationBar)
+    }
+
+    /// 按 3:4 竖图算示意卡尺寸。抽成普通函数，`ViewBuilder` 里只放视图。
+    func sampleCardSize(maxW: CGFloat, maxH: CGFloat) -> CGSize {
+        let ratio: CGFloat = 3.0 / 4.0
+        let fullHeight = maxW / ratio
+        if fullHeight <= maxH { return CGSize(width: maxW, height: fullHeight) }
+        return CGSize(width: maxH * ratio, height: maxH)
     }
 
     func tuner(_ title: String,

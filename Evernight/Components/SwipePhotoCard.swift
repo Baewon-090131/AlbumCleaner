@@ -16,7 +16,7 @@ struct SwipePhotoCard: View {
     var onTap: () -> Void = {}
 
     /// DESIGN：内联卡片图像用 `rounded.lg`，全 App 只有照片用这一档圆角。
-    private let radius = Theme.radiusCard
+    private var radius: CGFloat { Theme.radiusCard }
 
     var body: some View {
         AsyncThumbnail(asset: photo.asset,
@@ -151,6 +151,11 @@ struct AlbumDropTray: View {
         .padding(.bottom, Theme.spaceSM)
         .background(Theme.nightRaised,
                     in: RoundedRectangle(cornerRadius: Theme.radiusPlate, style: .continuous))
+        .overlay {
+            // 浮板边缘：与顶栏、底栏同一道发丝线；不加投影（DESIGN 只给照片留投影）
+            RoundedRectangle(cornerRadius: Theme.radiusPlate, style: .continuous)
+                .strokeBorder(Theme.nightLine, lineWidth: 0.5)
+        }
         .padding(.horizontal, 6)
         .padding(.bottom, Theme.spaceXS)
         .opacity(Double(progress))
