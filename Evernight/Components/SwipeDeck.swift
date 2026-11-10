@@ -1,27 +1,24 @@
 import SwiftUI
 
-/// 整理页的单卡手势区。
+/// 整理页的卡片区。
 ///
-/// **卡片区**由 `GeometryReader` 给定：顶栏以下、底栏以上的那块矩形。
-/// 每张照片卡都居中于这块区域的中点，尺寸被夹在区域内（四周各留 8pt），
-/// 所以无论照片是竖是横，卡片中点都落在区域中心、也不会越界。
+/// 结构照 ReelSort 的排序页：一个居中的**当前卡** + 一张压在它后方、略小略高的**后置卡**。
 ///
-/// 手势：
-/// - **左滑**：当前卡随手指平移，越过阈值飞出屏幕 → 下一张从「缩小按压」态用 Spring 升到正常
-/// - **右滑**：撤回。把上一步的「滑动分拣」**倒做**——当前卡向右让开，
-///   被撤那张从左侧飞回中心并弹回原大
-/// - **上滑**：删除。不到阈值外缘浮起绯红光晕；过阈值松手，照片在**它当时所在的位置**
-///   碎成粒子向上飘散，卡片原地自下而上被擦掉
-/// - **下拉**：底部浮起相簿轨道。卡片仍能左右移动，压在第几格就存进哪一格；也能直接点一格
+/// 关键做法（与之前几版最大的不同）：
+/// 手指抬起时**不等待飞出的旧卡**——旧卡被复制成一张"飞行卡"留在原地继续飞，
+/// 真正的当前卡立刻换内容并从后置卡的位置升上来。所以观感是连贯的，
+/// 不会出现「旧卡飞到一半、中间空一帧、新卡才出现」。
 ///
-/// 手势只把结论交给外层（`onSwipe`），数据变更永远发生在动效播完之后。
+/// - 拖动：卡随手指平移并绕自身微转，后置卡**跟着往上升、往大长**（跟手越大越接近正面）
+/// - 左滑 / 右滑：越过 80pt 即出手，旧卡带着惯性旋转飞出屏幕
+/// - 上滑：删除。过 90pt 松手，照片在它当时的位置碎成粒子向上飘散
+/// - 下拉：底部浮起相簿轨道，卡片仍可左右移动选格子
 struct SwipeDeck: View {
     let photos: [PhotoItem]
     @Binding var index: Int
     let command: DeckCommand?
     @Binding var isPlaying: Bool
     let albums: [AlbumItem]
-    /// 顶栏「相簿」按钮选好的目标；手势下拉选的目标直接走 `onAddToAlbum`。
     var albumPick: AlbumItem?
     let endTitle: String
     var endDeleted = 0
@@ -35,44 +32,61 @@ struct SwipeDeck: View {
     let onSandBurst: (SandBurst) -> Void
     var detailActive = false
 
-    /// 当前卡片的跟手位移（横竖都跟，所以下拉时也能左右选相簿）。
+    // MARK: 跟手状态
     @State private var drag: CGSize = .zero
-    /// 删除阈值光晕（0…1）。
     @State private var glow: CGFloat = 0
-    /// 相簿轨道展开度（0…1）。
     @State private var tray: CGFloat = 0
-    /// 轨道上压着第几格。按手指原始位移换算，不受卡片橡皮筋上限影响。
     @State private var pickIndex = 0
-    /// 碎沙擦拭进度。
     @State private var erase: CGFloat = 0
-    /// 入场缩放：0.94 = 缩小按压态，1 = 正常。换张时由它做 Spring 过渡。
-    @State private var enterScale: CGFloat = 1
-    /// 入场横向偏移：撤回时被撤那张从左侧飞回，所以从负值升到 0。
-    @State private var enterOffset: CGFloat = 0
+
+    // MARK: 飞行卡（旧卡的复制体，独立飞出去）
+    @State private var flying: PhotoItem?
+    @State private var flyingCardSize: CGSize = .zero
+    @State private var flyingOffset: CGSize = .zero
+    @State private var flyingRotation: Double = 0
+    @State private var flyingOpacity: Double = 1
+
+    // MARK: 新卡升起 0 → 1（弹簧会冲过 1，那就是那一点回弹）
+    @State private var rise: CGFloat = 1
+
     @State private var deckSize: CGSize = .zero
     @State private var deckOrigin: CGPoint = .zero
 
     @Environment(\.displayScale) private var displayScale
 
-    /// 卡片尺寸上限与三个方向阈值都能在「我的 › 整理手感」里调。
     @AppStorage("ac_deck_w") private var cardWidthRatio = 1.0
     @AppStorage("ac_deck_h") private var cardHeightRatio = 1.0
-    @AppStorage("ac_deck_swap") private var swapSetting = 88.0
-    @AppStorage("ac_deck_del") private var deleteSetting = 104.0
+    @AppStorage("ac_deck_swap") private var swapSetting = 80.0
+    @AppStorage("ac_deck_del") private var deleteSetting = 90.0
     @AppStorage("ac_deck_tray") private var traySetting = 64.0
+
+    // MARK: 常量（对齐 ReelSort 的数值）
+    /// 后置卡：缩到 0.95、向上抬 28pt。
+    private let backScale: CGFloat = 0.95
+    private let backLift: CGFloat = 28
+    /// 拖到 120pt 时，后置卡已经完全升到正面。
+    private let revealDistance: CGFloat = 120
+    /// 卡片绕自身转动的系数：水平 1pt → 0.08°。
+    private let rotationFactor: Double = 0.08
+    /// 竖直方向打三折：上滑要拖得比左右更长才算数。
+    private let verticalDamping: CGFloat = 0.3
+    /// 飞行卡出屏时长与曲线。
+    private let exitDuration: Double = 0.92
+    /// 新卡升起的弹簧。
+    private var riseSpring: Animation { .spring(duration: 0.42, bounce: 0.26) }
 
     private var swapThreshold: CGFloat { CGFloat(swapSetting) }
     private var deleteThreshold: CGFloat { CGFloat(deleteSetting) }
     private var trayThreshold: CGFloat { CGFloat(traySetting) }
 
-    /// 缩小按压态的比例：新卡就停在这个尺寸等着被升上来。
-    private let pressedScale: CGFloat = 0.94
-    /// 入场用的弹性曲线：先快后慢、末尾带一点回弹（不是恒定斜率）。
-    /// `spring(duration:bounce:)` 是 iOS 17 API，正好是本工程的部署目标。
-    private var enterSpring: Animation { .spring(duration: 0.5, bounce: 0.2) }
-
     private var current: PhotoItem? {
         photos.indices.contains(index) ? photos[index] : nil
+    }
+    private var nextPhoto: PhotoItem? {
+        photos.indices.contains(index + 1) ? photos[index + 1] : nil
+    }
+    private func album(at slot: Int) -> AlbumItem? {
+        albums.indices.contains(slot) ? albums[slot] : nil
     }
 
     var body: some View {
@@ -83,15 +97,12 @@ struct SwipeDeck: View {
 
             ZStack(alignment: .bottom) {
                 if current == nil {
-                    // 花落在卡片区正中：容器给满、内容居中，MonthDoneView 自己负责生长
                     MonthDoneView(title: endTitle, deleted: endDeleted, freed: endFreed)
                         .frame(width: size.width, height: size.height, alignment: .center)
                 } else {
-                    cardLayer(card: card, origin: origin, size: size)
+                    cardArea(card: card, origin: origin, size: size)
                 }
 
-                // 轨道**常驻**在层级里，靠 `tray` 控制显隐。
-                // 只在展开时才插入视图会打断正在进行的手势，表现就是「拉到一半拉不动了」。
                 AlbumDropTray(albums: albums,
                               selectedIndex: pickIndex,
                               progress: tray,
@@ -113,75 +124,75 @@ struct SwipeDeck: View {
     }
 }
 
-// MARK: - 布局
-
-/// 卡片的跟手位移 / 按压缩放 / 入场偏移。
-/// 拆成修饰器是为了让这些量**不参与**任何按 `index` 触发的动画——
-/// 拖动必须即时，入场才该有 Spring。
-private struct DeckCardMotion: ViewModifier {
-    let drag: CGSize
-    let scale: CGFloat
-    let offsetX: CGFloat
-    let hidden: Bool
-
-    func body(content: Content) -> some View {
-        content
-            .scaleEffect(scale)
-            .offset(x: drag.width + offsetX, y: drag.height)
-            .opacity(hidden ? 0 : 1)
-    }
-}
+// MARK: - 卡片区
 
 private extension SwipeDeck {
-    func cardLayer(card: CGSize, origin: CGPoint, size: CGSize) -> some View {
-        // 区域中心（全局），详情页的放大动画以它为锚
+    func cardArea(card: CGSize, origin: CGPoint, size: CGSize) -> some View {
         let center = CGPoint(x: origin.x + size.width / 2, y: origin.y + size.height / 2)
+        // 跟手越大，后置卡越接近正面
+        let reveal = min(abs(drag.width) / revealDistance, 1)
 
         return ZStack {
-            // 垫在后面那张：缩小按压态，等当前张飞出后由它 Spring 升上来。
-            // 只画一层，不参与命中——点按永远落到当前张。
-            if let next = photo(at: index + 1), !isPlaying {
-                SwipePhotoCard(photo: next,
-                               cardSize: card,
-                               sizeLabel: sizeLabel(next))
-                    .frame(width: card.width, height: card.height)
-                    .scaleEffect(pressedScale)
-                    .opacity(0.5)
+            // 后置卡：下一张。静止时缩 0.95、抬 28pt；拖动时随手指往上升
+            if let upcoming = nextPhoto {
+                cardView(upcoming, size: card)
+                    .scaleEffect(backScale + (1 - backScale) * reveal)
+                    .offset(y: -backLift * (1 - reveal))
+                    .opacity(0.9 + 0.1 * reveal)
                     .allowsHitTesting(false)
             }
 
+            // 当前卡：跟手平移 + 微转，换张时由 `rise` 从后方升上来
             if let photo = current {
-                SwipePhotoCard(photo: photo,
-                               cardSize: card,
-                               sizeLabel: sizeLabel(photo),
-                               glow: glow,
-                               erase: erase,
-                               onTap: {
-                                   guard !isPlaying, tray < 0.2 else { return }
-                                   let frame = CGRect(x: center.x - card.width / 2 + drag.width,
-                                                      y: center.y - card.height / 2 + drag.height,
-                                                      width: card.width,
-                                                      height: card.height)
-                                   onTap(photo, frame)
-                               })
-                    .frame(width: card.width, height: card.height)
-                    .modifier(DeckCardMotion(drag: drag,
-                                             scale: enterScale,
-                                             offsetX: enterOffset,
-                                             hidden: detailActive))
+                cardView(photo, size: card, glow: glow, erase: erase)
+                    .scaleEffect(riseScale)
+                    .offset(x: drag.width, y: drag.height + riseLift)
+                    .rotationEffect(.degrees(drag.width * rotationFactor))
+                    .opacity(detailActive ? 0 : 1)
+                    .animation(.smooth(duration: 0.3), value: detailActive)
                     .id(photo.id)
-                    .transition(.identity)
+                    .contentShape(RoundedRectangle(cornerRadius: Theme.radiusCard,
+                                                   style: .continuous))
+                    .onTapGesture {
+                        guard !isPlaying, tray < 0.2 else { return }
+                        let frame = CGRect(x: center.x - card.width / 2 + drag.width,
+                                           y: center.y - card.height / 2 + drag.height,
+                                           width: card.width,
+                                           height: card.height)
+                        onTap(photo, frame)
+                    }
+            }
+
+            // 飞行卡：旧卡的复制体，只管飞，不参与任何逻辑
+            if let flying {
+                cardView(flying, size: flyingCardSize)
+                    .offset(x: flyingOffset.width, y: flyingOffset.height)
+                    .rotationEffect(.degrees(flyingRotation))
+                    .opacity(flyingOpacity)
+                    .allowsHitTesting(false)
             }
         }
         .frame(width: size.width, height: size.height, alignment: .center)
     }
 
-    func photo(at slot: Int) -> PhotoItem? {
-        photos.indices.contains(slot) ? photos[slot] : nil
+    @ViewBuilder
+    func cardView(_ photo: PhotoItem,
+                  size: CGSize,
+                  glow: CGFloat = 0,
+                  erase: CGFloat = 0) -> some View {
+        SwipePhotoCard(photo: photo,
+                       cardSize: size,
+                       sizeLabel: sizeLabel(photo),
+                       glow: glow,
+                       erase: erase)
+            .frame(width: size.width, height: size.height)
     }
 
-    /// 卡片尺寸：按照片比例铺满卡片区，四周各留 8pt（区域中点即卡片中点）。
-    /// 竖图吃满高度、横图吃满宽度；比例夹在 `0.4…2.2`，极端长图也不会撑破区域。
+    /// `rise` 为 0 时正好落在后置卡的位置；弹簧冲过 1 就是那一下回弹。
+    var riseScale: CGFloat { backScale + (1 - backScale) * rise }
+    var riseLift: CGFloat { -backLift * (1 - rise) }
+
+    /// 卡片尺寸：按照片比例铺满卡片区，四周各留 8pt，中点与区域中点重合。
     func cardSize(in size: CGSize) -> CGSize {
         let inset = Theme.spaceXS
         let maxW = max(40, size.width * CGFloat(cardWidthRatio) - inset * 2)
@@ -202,14 +213,13 @@ private extension SwipeDeck {
                 guard !isPlaying, current != nil else { return }
                 let t = value.translation
 
-                // 自由跟手：横竖都走。下拉时纵向打七折，卡片沉得慢一点、给轨道留位置
-                drag = CGSize(width: rubber(t.width, limit: 220),
-                              height: rubber(t.height < 0 ? t.height : t.height * 0.7,
-                                             limit: t.height < 0 ? 260 : 200))
+                // 竖直打三折：上滑要拖得更久，下拉时卡片沉得慢、给轨道让位
+                drag = CGSize(width: rubber(t.width, limit: 260),
+                              height: rubber(t.height * verticalDamping, limit: 200))
 
                 // 上滑：越接近删除阈值，外缘的绯红光晕越亮
                 glow = t.height < 0
-                    ? min(max((-t.height - 28) / (deleteThreshold - 28), 0), 1)
+                    ? min(max((-t.height - 24) / (deleteThreshold - 24), 0), 1)
                     : 0
 
                 // 下拉：升起相簿轨道
@@ -226,30 +236,23 @@ private extension SwipeDeck {
                 let t = value.translation
 
                 guard current != nil else {
-                    // 空态：只认「右滑回去看最后一张」——同样走一次入场（缩放 + 从右侧飞回）
+                    // 空态：右滑回去看最后一张
                     if t.width > swapThreshold, abs(t.width) > abs(t.height), !photos.isEmpty {
-                        withoutAnimation {
-                            index = photos.count - 1
-                            enterScale = pressedScale
-                            enterOffset = -deckSize.width * 0.5
-                        }
-                        withAnimation(enterSpring) {
-                            enterScale = 1
-                            enterOffset = 0
-                        }
+                        restoreToLast()
                     } else {
                         springBack()
                     }
                     return
                 }
 
+                // 方向判定先用**原始**位移，跟手上的打折不影响阈值
                 if abs(t.width) > abs(t.height), abs(t.width) > swapThreshold {
                     if t.width < 0 {
                         _ = onSwipe(.next)
                     } else if !onSwipe(.undo) {
                         springBack()
                     }
-                } else if t.height < -deleteThreshold {
+                } else if t.height < -deleteThreshold, abs(t.height) > abs(t.width) {
                     if !onSwipe(.delete) { springBack() }
                 } else if t.height > trayThreshold, let target = album(at: pickIndex) {
                     onAddToAlbum(target)
@@ -259,24 +262,29 @@ private extension SwipeDeck {
             }
     }
 
-    func album(at slot: Int) -> AlbumItem? {
-        albums.indices.contains(slot) ? albums[slot] : nil
-    }
-
     func rubber(_ value: CGFloat, limit: CGFloat) -> CGFloat {
-        if value < -limit { return -limit + (value + limit) * 0.3 }
-        if value > limit { return limit + (value - limit) * 0.3 }
+        if value < -limit { return -limit + (value + limit) * 0.28 }
+        if value > limit { return limit + (value - limit) * 0.28 }
         return value
     }
 
-    /// 没到阈值：严格回原位，不留半截位移。
+    /// 没到阈值：卡片回原位，后置卡退回后方。
     func springBack() {
-        withAnimation(.snappy(duration: 0.34)) {
+        withAnimation(.snappy(duration: 0.32)) {
             drag = .zero
             glow = 0
             tray = 0
         }
         pickIndex = 0
+    }
+
+    /// 空态右滑回看：从后方升起最后一张。
+    func restoreToLast() {
+        withoutAnimation {
+            index = photos.count - 1
+            rise = 0
+        }
+        withAnimation(riseSpring) { rise = 1 }
     }
 }
 
@@ -287,30 +295,11 @@ private extension SwipeDeck {
         guard !isPlaying else { return }
         switch cmd.move {
         case .next:
-            fly(.next, forward: true)
-
+            commit(.next, exit: .left)
         case .undo:
-            // 把「左滑分拣」倒做：当前卡顺着右滑方向飞出，
-            // 被撤那张随后从左侧飞回中心（入场量在 settle 里给）
-            isPlaying = true
-            withAnimation(.smooth(duration: 0.24)) {
-                drag = CGSize(width: deckSize.width + 200, height: 0)
-                glow = 0
-            }
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(250))
-                settle(.undo)
-            }
-
+            commit(.undo, exit: .right)
         case .delete:
-            isPlaying = true
-            emitSand()
-            withAnimation(.smooth(duration: 0.66)) { erase = 1 }
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(880))
-                settle(.delete)
-            }
-
+            deleteNow()
         case .favorite:
             isPlaying = true
             withAnimation(.bouncy(duration: 0.3, extraBounce: 0.22)) {
@@ -319,67 +308,118 @@ private extension SwipeDeck {
             }
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(320))
-                settle(.favorite)
+                isPlaying = false
+                onFinished(.favorite)
             }
-
         case .album:
             isPlaying = true
-            withAnimation(.smooth(duration: 0.3)) {
-                drag = CGSize(width: 0, height: deckSize.height + 200)
+            withAnimation(.smooth(duration: 0.28)) {
+                drag = CGSize(width: 0, height: deckSize.height)
                 tray = 0
             }
             Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(310))
-                settle(.album)
+                try? await Task.sleep(for: .milliseconds(300))
+                isPlaying = false
+                onFinished(.album)
+                poseIncoming()
             }
         }
     }
 
-    /// 左 / 右滑走：卡片顺着手势方向飞出屏幕。
-    func fly(_ move: SortMove, forward: Bool) {
-        guard !isPlaying else { return }
-        isPlaying = true
-        let distance = deckSize.width + 200
-        withAnimation(.smooth(duration: 0.26)) {
-            drag = CGSize(width: forward ? -distance : distance, height: drag.height * 0.5)
-            glow = 0
-        }
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(268))
-            settle(move)
-            if move == .next, index >= photos.count { onReachEnd() }
-        }
-    }
+    enum Exit { case left, right }
 
-    /// 复位动效状态与数据变更放在同一帧：拆开会闪。
-    ///
-    /// 入场量按操作给：
-    /// - **下一张 / 删除 / 存相簿**：新卡从「缩小按压态」原位 Spring 升到正常
-    /// - **撤回**：分拣倒做，被撤那张从左侧飞回中心，同时从按压态弹回原大
-    /// - **收藏**：游标不动，静默归位
-    func settle(_ move: SortMove) {
+    /// 出手：先把当前卡复制成飞行卡，再立刻换内容、让新卡升起来。
+    /// **不等**旧卡飞完——这是整套动效连贯的原因。
+    func commit(_ move: SortMove, exit: Exit) {
+        guard let photo = current else { return }
+        isPlaying = true
+
+        let card = cardSize(in: deckSize)
+        // 1. 飞行卡接住当前的位移与转角，从这一刻开始独立
+        withoutAnimation {
+            flying = photo
+            flyingCardSize = card
+            flyingOffset = drag
+            flyingRotation = drag.width * rotationFactor
+            flyingOpacity = 1
+        }
+
+        // 2. 立刻换数据：当前卡变成下一张，并停在「后方」的位置
         withoutAnimation {
             drag = .zero
             glow = 0
             erase = 0
             tray = 0
-            isPlaying = false
-            switch move {
-            case .next, .delete, .album:
-                enterScale = pressedScale
-                enterOffset = 0
-            case .undo:
-                enterScale = pressedScale
-                enterOffset = -deckSize.width * 0.55
-            case .favorite:
-                enterScale = 1
-                enterOffset = 0
-            }
+            rise = 0
         }
         onFinished(move)
-        withAnimation(enterSpring) {
-            enterScale = 1
-            enterOffset = 0
+
+        // 3. 下一帧同时开两条动画：飞行卡出屏、新卡升起
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(16))
+
+            withAnimation(.timingCurve(0.22, 0.74, 0.24, 1, duration: exitDuration)) {
+                flyingOffset = exitOffset(exit, card: card)
+                flyingRotation = exitRotation(exit)
+                flyingOpacity = 0.94
+            }
+            withAnimation(riseSpring) { rise = 1 }
+
+            // 输入闸门：给新卡 280ms 站稳（ReelSort 的 CARD_READY_DELAY）
+            try? await Task.sleep(for: .milliseconds(280))
+            isPlaying = false
+
+            // 飞行卡落屏后回收
+            try? await Task.sleep(for: .milliseconds(660))
+            withoutAnimation {
+                flying = nil
+                flyingOpacity = 1
+                flyingRotation = 0
+            }
+        }
+    }
+
+    /// 上滑删除：碎沙从卡片当前位置起飞，卡片原地自下而上被擦掉，然后换张。
+    func deleteNow() {
+        guard current != nil else { return }
+        isPlaying = true
+        emitSand()
+        withAnimation(.smooth(duration: 0.66)) { erase = 1 }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(760))
+            withoutAnimation {
+                drag = .zero
+                glow = 0
+                erase = 0
+                tray = 0
+                rise = 0
+            }
+            onFinished(.delete)
+            withAnimation(riseSpring) { rise = 1 }
+            try? await Task.sleep(for: .milliseconds(280))
+            isPlaying = false
+        }
+    }
+
+    /// 外部改游标（切月、详情页送进待删除…）后让卡片归位。
+    func poseIncoming() {
+        withoutAnimation { rise = 0 }
+        withAnimation(riseSpring) { rise = 1 }
+    }
+
+    func exitOffset(_ exit: Exit, card: CGSize) -> CGSize {
+        // 用「半屏 + 卡片」保证无论屏幕多大都真的出画
+        let dx = deckSize.width / 2 + card.width
+        switch exit {
+        case .left:  return CGSize(width: -dx, height: drag.height * 0.3)
+        case .right: return CGSize(width: dx, height: drag.height * 0.3)
+        }
+    }
+
+    func exitRotation(_ exit: Exit) -> Double {
+        switch exit {
+        case .left:  return -16
+        case .right: return 16
         }
     }
 
@@ -391,7 +431,6 @@ private extension SwipeDeck {
             width: min(card.width * displayScale * 1.5, 2800),
             height: min(card.height * displayScale * 1.5, 2800)
         )
-        // 关键：带上跟手位移。上滑到哪儿，粒子就从哪儿散。
         let frame = CGRect(
             x: deckOrigin.x + (deckSize.width - card.width) / 2 + drag.width,
             y: deckOrigin.y + (deckSize.height - card.height) / 2 + drag.height,

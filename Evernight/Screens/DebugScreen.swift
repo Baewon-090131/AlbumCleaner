@@ -7,8 +7,8 @@ import SwiftUI
 struct DebugScreen: View {
     @AppStorage("ac_deck_w") private var cardWidthRatio = 1.0
     @AppStorage("ac_deck_h") private var cardHeightRatio = 1.0
-    @AppStorage("ac_deck_swap") private var swap = 88.0
-    @AppStorage("ac_deck_del") private var del = 104.0
+    @AppStorage("ac_deck_swap") private var swap = 80.0
+    @AppStorage("ac_deck_del") private var del = 90.0
     @AppStorage("ac_deck_tray") private var tray = 64.0
 
     var body: some View {
@@ -29,15 +29,15 @@ struct DebugScreen: View {
             }
 
             Section("手感") {
-                tuner("左右切张阈值", value: $swap, range: 50...160, format: "%.0f", suffix: "pt")
-                tuner("上滑删除阈值", value: $del, range: 60...200, format: "%.0f", suffix: "pt")
+                tuner("左右切张阈值", value: $swap, range: 40...160, format: "%.0f", suffix: "pt")
+                tuner("上滑删除阈值", value: $del, range: 50...200, format: "%.0f", suffix: "pt")
                 tuner("下拉托盘阈值", value: $tray, range: 30...140, format: "%.0f", suffix: "pt")
             }
 
             Section {
                 Button("恢复默认值", role: .destructive) { reset() }
             } footer: {
-                Text("默认：宽 1.0 · 高 1.0 · 切张 88 · 删除 104 · 托盘 64")
+                Text("默认：宽 1.0 · 高 1.0 · 切张 80 · 删除 90 · 托盘 64")
             }
         }
         .navigationTitle("整理手感")
@@ -110,8 +110,8 @@ private extension DebugScreen {
     func reset() {
         cardWidthRatio = 1.0
         cardHeightRatio = 1.0
-        swap = 88
-        del = 104
+        swap = 80
+        del = 90
         tray = 64
     }
 }

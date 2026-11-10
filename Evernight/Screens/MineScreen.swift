@@ -87,7 +87,7 @@ struct MineScreen: View {
             }
 
             Section("通用") {
-                LabeledContent("关于", value: "evernight 0.2")
+                LabeledContent("关于", value: "evernight 0.3")
                 Button("操作指引") {}
                 Button("清理缓存") { showCacheCleared = true }
             }
@@ -104,7 +104,7 @@ struct MineScreen: View {
                 VStack(spacing: 8) {
                     Link("用户协议 · 隐私政策", destination: URL(string: "https://example.com")!)
                         .font(.footnote.weight(.medium))
-                    Text("evernight 0.2 (15)")
+                    Text("evernight 0.3 (16)")
                         .font(.caption)
                         .foregroundStyle(Theme.text2)
                 }

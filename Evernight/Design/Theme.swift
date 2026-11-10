@@ -51,9 +51,10 @@ enum Theme {
     static let cornerTile: CGFloat = 20
 
     // MARK: - 圆角阶（对齐 DESIGN 的 rounded 系列）
-    /// 照片卡：DESIGN 的 `rounded.lg`。全 App 只有照片用这一档。
-    static let radiusCard: CGFloat = 18
-    /// 浮板 / 托盘：介于卡片与浮岛之间，用来把「承托照片的东西」和照片本身分开。
+    /// 照片卡：28。全 App 只有照片用这一档——它得比下面所有面板都圆，
+    /// 才能读成「一张实体卡片压在板子上」，而不是「一块裁圆的图」。
+    static let radiusCard: CGFloat = 28
+    /// 浮板 / 托盘：比卡片小一档，把「承托照片的东西」和照片本身分开。
     static let radiusPlate: CGFloat = 22
     /// 胶囊内的方块按钮：DESIGN 的 `rounded.md`。
     static let radiusInner: CGFloat = 11
