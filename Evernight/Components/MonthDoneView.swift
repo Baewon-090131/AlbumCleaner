@@ -13,7 +13,7 @@ struct MonthDoneView: View {
     var freed: String = ""
 
     /// 与「待删除」空态同一尺寸，两页的记号看起来是一套东西。
-    private let flowerSize: CGFloat = NightEmptyState.flowerSize
+    private let flowerSize: CGFloat = NightEmptyState.defaultFlowerSize
 
     @State private var appeared = false
     /// 花的转角：0.5s 内 45° → 135°。

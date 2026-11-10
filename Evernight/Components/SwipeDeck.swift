@@ -138,6 +138,18 @@ private extension SwipeDeck {
         let center = CGPoint(x: origin.x + size.width / 2, y: origin.y + size.height / 2)
 
         return ZStack {
+            // 垫在后面那张：缩小按压态，等当前张飞出后由它 Spring 升上来。
+            // 只画一层，不参与命中——点按永远落到当前张。
+            if let next = photo(at: index + 1), !isPlaying {
+                SwipePhotoCard(photo: next,
+                               cardSize: card,
+                               sizeLabel: sizeLabel(next))
+                    .frame(width: card.width, height: card.height)
+                    .scaleEffect(pressedScale)
+                    .opacity(0.5)
+                    .allowsHitTesting(false)
+            }
+
             if let photo = current {
                 SwipePhotoCard(photo: photo,
                                cardSize: card,
@@ -161,7 +173,11 @@ private extension SwipeDeck {
                     .transition(.identity)
             }
         }
-        .frame(width: size.width, height: size.height)
+        .frame(width: size.width, height: size.height, alignment: .center)
+    }
+
+    func photo(at slot: Int) -> PhotoItem? {
+        photos.indices.contains(slot) ? photos[slot] : nil
     }
 
     /// 卡片尺寸：按照片比例铺满卡片区，四周各留 8pt（区域中点即卡片中点）。
