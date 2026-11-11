@@ -31,6 +31,10 @@ struct SwipeDeck: View {
     let onAddToAlbum: (AlbumItem) -> Void
     let onReachEnd: () -> Void
     let onSandBurst: (SandBurst) -> Void
+    /// 单轮制：翻完本轮后「继续整理」。nil 表示这是整月的最后一张，没有下一轮。
+    var onNextRound: (() -> Void)?
+    /// 结算页直达待删除。
+    var onOpenTrash: (() -> Void)?
     var detailActive = false
 
     // MARK: 跟手
@@ -104,7 +108,11 @@ struct SwipeDeck: View {
 
             ZStack(alignment: .bottom) {
                 if current == nil {
-                    MonthDoneView(title: endTitle, deleted: endDeleted, freed: endFreed)
+                    MonthDoneView(title: endTitle,
+                                  deleted: endDeleted,
+                                  freed: endFreed,
+                                  onNextRound: onNextRound,
+                                  onOpenTrash: onOpenTrash)
                         .frame(width: size.width, height: size.height, alignment: .center)
                 } else {
                     cardArea(card: card, origin: origin, size: size)

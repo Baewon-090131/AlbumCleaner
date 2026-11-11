@@ -54,7 +54,7 @@ struct MineScreen: View {
                     .listRowBackground(Color.clear)
             }
 
-            Section("整理") {
+            Section {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         Text("每轮数量")
@@ -71,6 +71,10 @@ struct MineScreen: View {
                         .foregroundStyle(Theme.text2)
                 }
                 .padding(.vertical, 2)
+            } header: {
+                Text("整理")
+            } footer: {
+                Text("整理页每轮只切出这么多张，翻完即止，进度条也按本轮计算。")
             }
 
             Section("整理偏好") {
@@ -87,7 +91,7 @@ struct MineScreen: View {
             }
 
             Section("通用") {
-                LabeledContent("关于", value: "evernight 0.3")
+                LabeledContent("关于", value: "evernight 0.4")
                 Button("操作指引") {}
                 Button("清理缓存") { showCacheCleared = true }
             }
@@ -104,7 +108,7 @@ struct MineScreen: View {
                 VStack(spacing: 8) {
                     Link("用户协议 · 隐私政策", destination: URL(string: "https://example.com")!)
                         .font(.footnote.weight(.medium))
-                    Text("evernight 0.3 (16)")
+                    Text("evernight 0.4 (17)")
                         .font(.caption)
                         .foregroundStyle(Theme.text2)
                 }

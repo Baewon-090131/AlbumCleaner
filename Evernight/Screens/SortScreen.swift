@@ -29,6 +29,12 @@ struct SortScreen: View {
     @State private var sessionFreedBytes: Int64 = 0
     /// 卡片区正在播动效：这期间不接新操作，避免动效播到一半被覆盖。
     @State private var isPlaying = false
+    /// 单轮制：这一轮要整理的张数。0 表示「整月」（不启用单轮）。
+    @AppStorage("ac_batchSize") private var batchSize = 30.0
+    /// 本轮游标上限（含）。翻到这里就算本轮结束，不必翻完整月。
+    @State private var roundCap: Int?
+    /// 本轮从整月的第几张开始。翻完一轮后往后推，下一轮接着没看过的走。
+    @State private var roundStart = 0
 
     private let undoDepth = 50
 
@@ -41,13 +47,33 @@ struct SortScreen: View {
         return library.months.first
     }
 
-    private var photos: [PhotoItem] {
+    /// 整月（或整个相簿）的照片。
+    private var allPhotos: [PhotoItem] {
         isAlbumMode ? albumPhotos : (month?.photos ?? [])
     }
 
-    /// 翻过最后一张时的收尾文案。
+    /// 本轮实际参与的照片：从 `roundStart` 起取 N 张。
+    /// 单轮制不是在整月里反复切前 N 张——翻完一轮后 `roundStart` 往后推，
+    /// 所以「继续整理」永远接着没看过的那批走。
+    private var photos: [PhotoItem] {
+        let start = roundStart
+        let rest = start > 0 ? Array(allPhotos.dropFirst(start)) : allPhotos
+        guard let cap = roundCap, cap > 0, cap < rest.count else { return rest }
+        return Array(rest.prefix(cap))
+    }
+
+    /// 还有没有下一轮：整月里本轮之后还剩下照片。
+    /// 用 `roundStart + 本轮长度` 判断而不是 `index`——删除会让数组变短，
+    /// 但"这一轮覆盖到哪里"是按进轮时刻定下的，不该随删照片漂移。
+    private var nextRoundAvailable: Bool {
+        guard roundCap != nil else { return false }
+        return roundStart + photos.count < allPhotos.count
+    }
+
+    /// 翻过最后一张时的收尾文案。单轮制下说「本轮」。
     private var endTitle: String {
-        isAlbumMode ? "相簿整理完毕" : "本月整理完毕"
+        if roundCap != nil { return "本轮整理完成" }
+        return isAlbumMode ? "相簿整理完毕" : "本月整理完毕"
     }
 
     /// 撤回会倒做哪一步（撤销栈是通用的，光一个箭头看不出会撤什么）。
@@ -85,6 +111,8 @@ struct SortScreen: View {
                 onAddToAlbum: { target in pickAlbum(target) },
                 onReachEnd: { ui.celebrate() },
                 onSandBurst: { ui.playSand($0) },
+                onNextRound: nextRoundAvailable ? startNextRound : nil,
+                onOpenTrash: library.trash.isEmpty ? nil : { ui.showTrash = true },
                 detailActive: ui.detailPhoto != nil
             )
         } else {
@@ -167,11 +195,25 @@ struct SortScreen: View {
                 return
             }
             albumPhotos = library.photos(in: album)
+            // 照片到齐后才能算本轮上限（首帧时 albumPhotos 还是空的）
+            roundCap = resolveRoundCap()
         }
         .onChange(of: photos.count) { _, new in
             // 删掉最后一张时游标会停在数组末尾之外，回退一格
             guard new > 0, index >= new else { return }
             index = new - 1
+        }
+        .onAppear {
+            // 首屏进来自动切一轮：让「每轮数量」这个设置真的生效
+            roundCap = resolveRoundCap()
+        }
+        .onChange(of: batchSize) { _, _ in
+            // 改了每轮数量：本轮重新切，但只在还没开始翻的时候，免得打断正在整理的这张
+            guard index == 0 else { return }
+            roundCap = resolveRoundCap()
+        }
+        .onChange(of: month?.id) { _, _ in
+            roundCap = resolveRoundCap()
         }
     }
 }
@@ -191,11 +233,35 @@ private extension SortScreen {
 
     func resetCursor() {
         index = 0
+        roundStart = 0
         undoStack.removeAll()
         command = nil
         pendingAlbum = nil
         sessionDeleted = 0
         sessionFreedBytes = 0
+        roundCap = resolveRoundCap()
+    }
+
+    /// 翻完一轮后开下一轮：起点往后推本轮的长度，游标归零，重新切一批。
+    func startNextRound() {
+        guard nextRoundAvailable else { return }
+        roundStart += photos.count
+        index = 0
+        undoStack.removeAll()
+        command = nil
+        sessionDeleted = 0
+        sessionFreedBytes = 0
+    }
+
+    /// 按「每轮数量」算本轮上限。相簿模式下不启用单轮——相簿通常就几十张，
+    /// 再切一刀反而打断整理节奏。
+    func resolveRoundCap() -> Int? {
+        guard !isAlbumMode else { return nil }
+        let wanted = Int(batchSize.rounded())
+        guard wanted > 1 else { return nil }
+        // 只有当剩余的张数确实比一轮多时才截断
+        let remaining = allPhotos.count - roundStart
+        return wanted < remaining ? wanted : nil
     }
 
     /// 手势是唯一入口：只写 command，动效和数据变更都等卡片区播完再收尾。
